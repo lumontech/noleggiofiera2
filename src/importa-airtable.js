@@ -69,12 +69,13 @@ function categoria(nome, pollici) {
   return 'Accessorio';
 }
 
-// Fiere per cui Airtable non riporta date su nessuna richiesta: si stima il
-// periodo dal momento in cui le righe sono state inserite. Vanno confermate.
-const DATE_STIMATE = {
-  'recPQpmr2ItoDpNYV': ['2026-03-19', '2026-03-21'], // BMT 2026
-  'recPguldBDBtaHw9I': ['2026-10-09', '2026-10-11'], // Pharmexpo 2026
-  'recE96akFiwhiUXzQ': ['2026-05-21', '2026-05-23'], // Siferr 2026
+// Fiere per cui Airtable non riporta date su nessuna richiesta: le date sono
+// quelle pubblicate dagli organizzatori (bmtnapoli.com, pharmexpo.it,
+// mostradoltremare.it).
+const DATE_UFFICIALI = {
+  'recPQpmr2ItoDpNYV': ['2026-03-12', '2026-03-14'], // BMT 2026
+  'recPguldBDBtaHw9I': ['2026-10-23', '2026-10-25'], // Pharmexpo 2026
+  'recE96akFiwhiUXzQ': ['2026-05-16', '2026-05-17'], // Siferr 2026
 };
 
 /**
@@ -113,10 +114,7 @@ for (const [, , , , , inizio, fine, fieraId] of noleggiAirtable) {
 const daConfermare = [];
 for (const [idAirtable] of fiereAirtable) {
   if (periodoFiera.has(idAirtable)) continue;
-  if (DATE_STIMATE[idAirtable]) {
-    periodoFiera.set(idAirtable, DATE_STIMATE[idAirtable]);
-    daConfermare.push(idAirtable);
-  }
+  if (DATE_UFFICIALI[idAirtable]) periodoFiera.set(idAirtable, DATE_UFFICIALI[idAirtable]);
 }
 
 /* ---------- importazione ---------- */

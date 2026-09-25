@@ -95,7 +95,7 @@ function unAnnoDopo(iso) {
  */
 function propostaNuovaEdizione(g) {
   // L'edizione più avanti nel tempo, qualunque sia l'ordine in cui sono mostrate.
-  const ultima = g.edizioni.reduce((u, e) => (e.data_inizio > u.data_inizio ? e : u));
+  const ultima = (g.tutte || g.edizioni).reduce((u, e) => (e.data_inizio > u.data_inizio ? e : u));
   const annoUltima = ultima.anno || Number(ultima.data_inizio.slice(0, 4));
   return {
     manifestazione: g.manifestazione,
@@ -445,24 +445,18 @@ function gruppoManifestazione(g, contesto) {
     h('div', { class: 'griglia-fiere' }, g.edizioni.map((e) => schedaEdizione(e, contesto))));
 }
 
-/** Prima le fiere in programma, poi quelle già svolte; ognuna in ordine di calendario. */
-function sezioniPerData(gruppi, contesto) {
-  const inProgramma = gruppi.filter((g) => g.prossima);
-  const svolte = gruppi.filter((g) => !g.prossima);
-  const titolo = (testo, n) => h('h2', { class: 'titolo-sezione' }, `${testo} (${numero(n)})`);
-  return [
-    inProgramma.length ? titolo('In programma', inProgramma.length) : null,
-    ...inProgramma.map((g) => gruppoManifestazione(g, contesto)),
-    svolte.length ? titolo('Già svolte', svolte.length) : null,
-    ...svolte.map((g) => gruppoManifestazione(g, contesto)),
-  ];
-}
+/** Un'edizione è in archivio quando è finita (o annullata). */
+const inArchivio = (e) => e.data_fine < oggiISO() || e.stato === 'conclusa' || e.stato === 'annullata';
+
+// Si ricorda la scheda aperta finché non si ricarica la pagina.
+let schedaFiere = 'programma';
 
 export default async function vistaFiere({ corpo, azioni, ricarica }) {
   const { stati_fiera: statiFiera } = statoApp.costanti;
   const prodotti = await api.prodotti();
   const filtri = { q: '', stato: '' };
   const contenitore = h('div', { class: 'manifestazioni' });
+  const barraSchede = h('div', { class: 'schede', role: 'tablist' });
   const contesto = { prodotti, ricarica, note: [] };
 
   const nuovaFiera = () => apriForm({ modo: 'fiera', ricarica, manifestazioniNote: contesto.note });
@@ -473,14 +467,32 @@ export default async function vistaFiere({ corpo, azioni, ricarica }) {
     contesto.note = gruppi.map((g) => g.manifestazione);
     const testo = filtri.q.toLowerCase();
 
-    // I filtri agiscono sulle edizioni; una fiera resta se ne salva almeno una.
-    const visibili = gruppi
+    // Le fiere già svolte stanno in archivio: la scheda "In programma" mostra
+    // solo le edizioni da fare. I filtri agiscono sulle edizioni; una fiera
+    // resta se ne salva almeno una.
+    const filtra = (archivio) => gruppi
       .map((g) => ({
         ...g,
-        edizioni: g.edizioni.filter((e) => (!filtri.stato || e.stato === filtri.stato)
+        tutte: g.edizioni,
+        edizioni: g.edizioni.filter((e) => inArchivio(e) === archivio
+          && (!filtri.stato || e.stato === filtri.stato)
           && (!testo || `${g.manifestazione} ${e.nome} ${e.citta} ${e.luogo}`.toLowerCase().includes(testo))),
       }))
       .filter((g) => g.edizioni.length);
+    const perScheda = { programma: filtra(false), archivio: filtra(true) };
+    const primaData = (g) => g.edizioni[0].data_inizio;
+    perScheda.programma.sort((a, b) => primaData(a).localeCompare(primaData(b)));
+    perScheda.archivio.sort((a, b) => primaData(a).localeCompare(primaData(b)));
+    const visibili = perScheda[schedaFiere];
+    const conta = (lista) => lista.reduce((t, g) => t + g.edizioni.length, 0);
+
+    monta(barraSchede, [['programma', 'In programma'], ['archivio', 'Archivio · già svolte']].map(([id, testoScheda]) => h('button', {
+      class: `scheda ${id === schedaFiere ? 'scheda--attiva' : ''}`,
+      role: 'tab',
+      'aria-selected': id === schedaFiere ? 'true' : 'false',
+      dataset: { scheda: id },
+      onclick: () => { schedaFiere = id; disegna(); },
+    }, testoScheda, h('span', { class: 'scheda__conta' }, numero(conta(perScheda[id]))))));
 
     const edizioni = visibili.reduce((t, g) => t + g.edizioni.length, 0);
     monta(contenitore,
@@ -488,10 +500,13 @@ export default async function vistaFiere({ corpo, azioni, ricarica }) {
         `${numero(visibili.length)} fiere · ${numero(edizioni)} edizioni · `
         + `${euro(visibili.reduce((t, g) => t + g.edizioni.reduce((s, e) => s + e.valore, 0), 0))} di fatturato`),
       visibili.length
-        ? sezioniPerData(visibili, contesto)
-        : vuoto('Nessuna fiera trovata',
-            'Cambia i filtri oppure crea la prima fiera.',
-            h('button', { class: 'btn btn--primario', onclick: nuovaFiera }, '+ Nuova fiera')));
+        ? visibili.map((g) => gruppoManifestazione(g, contesto))
+        : schedaFiere === 'programma' && !testo && !filtri.stato
+          ? vuoto('Nessuna fiera in programma',
+              'Le fiere già svolte sono nell\'archivio.',
+              h('button', { class: 'btn btn--primario', onclick: nuovaFiera }, '+ Nuova fiera'))
+          : vuoto('Nessuna fiera trovata', schedaFiere === 'programma'
+            ? 'Prova a cercare nell\'archivio.' : 'Cambia i filtri.'));
   };
 
   const cerca = input('q', { placeholder: 'Cerca per fiera o città…', type: 'search' });
@@ -501,6 +516,6 @@ export default async function vistaFiere({ corpo, azioni, ricarica }) {
     [{ valore: '', testo: 'Tutti gli stati' }, ...statiFiera.map((s) => ({ valore: s, testo: etichetta(s) }))], '');
   selStato.addEventListener('change', () => { filtri.stato = selStato.value; disegna(); });
 
-  monta(corpo, h('div', { class: 'filtri' }, cerca, selStato), contenitore);
+  monta(corpo, barraSchede, h('div', { class: 'filtri' }, cerca, selStato), contenitore);
   await disegna();
 }

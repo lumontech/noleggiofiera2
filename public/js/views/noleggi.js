@@ -30,13 +30,17 @@ function apriForm(n, fiere, ricarica) {
   }
   const { stati_noleggio: statiNoleggio } = statoApp.costanti;
 
+  // Le fiere già svolte sono in archivio: si propongono solo quelle da fare,
+  // più quella del noleggio che si sta modificando.
+  const scegliibili = fiere.filter((f) => f.data_fine >= oggiISO() || f.id === n?.fiera_id);
+  const elencoFiere = scegliibili.length ? scegliibili : fiere;
   // Nuovo noleggio: si parte dalla prossima fiera, che è il caso più comune.
-  const fieraIniziale = n?.fiera_id ?? fiere[0].id;
+  const fieraIniziale = n?.fiera_id ?? elencoFiere[0].id;
   const selettore = selettoreApparecchi({ selezionato: n?.prodotto_id ?? null, escludi: n?.id ?? null });
   const daInizio = input('data_inizio', { value: n?.data_inizio || '', type: 'date', required: true });
   const aFine = input('data_fine', { value: n?.data_fine || '', type: 'date', required: true });
   const selFiera = select('fiera_id',
-    fiere.map((f) => ({ valore: f.id, testo: `${f.nome} — ${intervalloDate(f.data_inizio, f.data_fine)}` })),
+    elencoFiere.map((f) => ({ valore: f.id, testo: `${f.nome} — ${intervalloDate(f.data_inizio, f.data_fine)}` })),
     fieraIniziale);
 
   const aggiorna = () => selettore.aggiorna(daInizio.value, aFine.value);

@@ -5,6 +5,7 @@
 import { api, caricaAllegato } from '../api.js';
 import { stato as statoApp } from '../app.js';
 import { selettoreApparecchi } from '../selettore-apparecchi.js';
+import { apriPianta } from '../pianta/visore.js';
 import {
   h, monta, badge, modale, avviso, campo, input, select, areaTesto,
   griglia, numero, euro, vuoto, intervalloDate, dataLunga, etichetta, oggiISO, addGiorni,
@@ -233,6 +234,12 @@ function voceAllegato(fiera, a, { gestione, dopoModifica }) {
         h('strong', {}, a.nome),
         h('span', {}, `${dimensioneFile(a.dimensione)} · caricata il ${dataLunga(a.creato_il.slice(0, 10))}`))),
     h('div', { class: 'allegato__azioni' },
+      h('button', {
+        class: 'btn btn--mini btn--primario',
+        type: 'button',
+        title: 'La planimetria con coperti gli stand dove vanno i televisori',
+        onclick: () => apriPianta({ fiera, allegato: a }),
+      }, 'Pianta con TV'),
       h('a', { class: 'btn btn--mini', href: a.url, target: '_blank', rel: 'noopener' }, 'Apri'),
       elimina));
 }

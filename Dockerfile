@@ -5,7 +5,9 @@
 FROM node:22-slim AS dipendenze
 WORKDIR /app
 COPY package.json package-lock.json* ./
-RUN npm install --omit=dev --no-audit --no-fund
+# --omit=optional: pdf.js porta con sé un modulo nativo che serve solo per
+# usarlo da Node; qui lo usa il browser.
+RUN npm install --omit=dev --omit=optional --no-audit --no-fund
 
 FROM node:22-slim
 ENV NODE_ENV=production \

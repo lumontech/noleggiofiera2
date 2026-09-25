@@ -49,6 +49,11 @@ export const api = {
 
   fiere: (p) => richiesta('GET', `/api/fiere${qs(p)}`),
   eliminaAllegato: (fieraId, id) => richiesta('DELETE', `/api/fiere/${fieraId}/allegati/${id}`),
+  posizioni: (fieraId, id) => richiesta('GET', `/api/fiere/${fieraId}/allegati/${id}/posizioni`),
+  salvaPosizione: (fieraId, id, chiave, pos) => richiesta('PUT',
+    `/api/fiere/${fieraId}/allegati/${id}/posizioni/${encodeURIComponent(chiave)}`, pos),
+  eliminaPosizione: (fieraId, id, chiave) => richiesta('DELETE',
+    `/api/fiere/${fieraId}/allegati/${id}/posizioni/${encodeURIComponent(chiave)}`),
   manifestazioni: () => richiesta('GET', '/api/fiere/raggruppate'),
   fiera: (id) => richiesta('GET', `/api/fiere/${id}`),
   finestraFiera: (id) => richiesta('GET', `/api/fiere/${id}/finestra`),

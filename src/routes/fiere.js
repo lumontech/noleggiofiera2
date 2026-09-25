@@ -150,7 +150,8 @@ router.get('/:id', (req, res) => {
   const fiera = trovaFiera(req.params.id);
   const noleggi = db.prepare(`
     SELECT n.*, p.nome AS prodotto_nome, p.categoria AS prodotto_categoria,
-           p.pollici AS prodotto_pollici, p.quantita AS prodotto_quantita
+           p.pollici AS prodotto_pollici, p.quantita AS prodotto_quantita,
+           p.marca AS prodotto_marca, p.codice AS prodotto_codice
       FROM noleggi n JOIN prodotti p ON p.id = n.prodotto_id
      WHERE n.fiera_id = ? ORDER BY p.categoria, p.nome`).all(fiera.id);
   const allegati = db.prepare('SELECT * FROM allegati WHERE fiera_id = ? ORDER BY creato_il DESC')
@@ -235,6 +236,8 @@ router.put('/:id', (req, res) => {
 router.delete('/:id', (req, res) => {
   const fiera = trovaFiera(req.params.id);
   db.prepare('DELETE FROM noleggi WHERE fiera_id = ?').run(fiera.id);
+  db.prepare(`DELETE FROM posizioni_stand
+               WHERE allegato_id IN (SELECT id FROM allegati WHERE fiera_id = ?)`).run(fiera.id);
   db.prepare('DELETE FROM allegati WHERE fiera_id = ?').run(fiera.id);
   db.prepare('DELETE FROM fiere WHERE id = ?').run(fiera.id);
   archivio.eliminaTuttiDellaFiera(fiera.id);
@@ -288,9 +291,51 @@ router.get('/:id/allegati/:allegato', (req, res) => {
   fs.createReadStream(file).pipe(res);
 });
 
+/* Posizioni degli stand messe a mano su una planimetria. x e y sono frazioni
+   (0-1) della pagina, così non dipendono dallo zoom con cui la si guarda. */
+
+router.get('/:id/allegati/:allegato/posizioni', (req, res) => {
+  const fiera = trovaFiera(req.params.id);
+  const allegato = trovaAllegato(fiera, req.params.allegato);
+  res.json(db.prepare('SELECT chiave, pagina, x, y FROM posizioni_stand WHERE allegato_id = ?')
+    .all(allegato.id));
+});
+
+router.put('/:id/allegati/:allegato/posizioni/:chiave', express.json(), (req, res) => {
+  const fiera = trovaFiera(req.params.id);
+  const allegato = trovaAllegato(fiera, req.params.allegato);
+  const chiave = testo(req.params.chiave, 'chiave', { obbligatorio: true, max: 120 });
+  const frazione = (v, campo) => {
+    const n = Number(v);
+    if (!Number.isFinite(n) || n < 0 || n > 1) throw new HttpError(400, `"${campo}" deve essere tra 0 e 1.`);
+    return n;
+  };
+  const posizione = {
+    pagina: intero(req.body?.pagina, 'pagina', { min: 1, max: 500, predefinito: 1 }),
+    x: frazione(req.body?.x, 'x'),
+    y: frazione(req.body?.y, 'y'),
+  };
+  db.prepare(`
+    INSERT INTO posizioni_stand (allegato_id, chiave, pagina, x, y, aggiornato_il)
+    VALUES (?, ?, ?, ?, ?, ?)
+    ON CONFLICT (allegato_id, chiave) DO UPDATE
+       SET pagina = excluded.pagina, x = excluded.x, y = excluded.y, aggiornato_il = excluded.aggiornato_il`)
+    .run(allegato.id, chiave, posizione.pagina, posizione.x, posizione.y, new Date().toISOString());
+  res.json({ chiave, ...posizione });
+});
+
+router.delete('/:id/allegati/:allegato/posizioni/:chiave', (req, res) => {
+  const fiera = trovaFiera(req.params.id);
+  const allegato = trovaAllegato(fiera, req.params.allegato);
+  db.prepare('DELETE FROM posizioni_stand WHERE allegato_id = ? AND chiave = ?')
+    .run(allegato.id, req.params.chiave);
+  res.json({ ok: true });
+});
+
 router.delete('/:id/allegati/:allegato', (req, res) => {
   const fiera = trovaFiera(req.params.id);
   const allegato = trovaAllegato(fiera, req.params.allegato);
+  db.prepare('DELETE FROM posizioni_stand WHERE allegato_id = ?').run(allegato.id);
   db.prepare('DELETE FROM allegati WHERE id = ?').run(allegato.id);
   archivio.elimina(fiera.id, allegato.nome_file);
   res.json({ ok: true });

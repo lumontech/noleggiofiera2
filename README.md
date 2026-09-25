@@ -77,6 +77,33 @@ verificato dal contenuto, non dall'estensione.
 I file stanno nella cartella dei dati, accanto al database (`/dati/allegati`
 nel container): sopravvivono ad aggiornamenti e riavvii.
 
+### Pianta con TV
+
+Dal bottone **Pianta con TV** di una planimetria si apre la pianta con
+**coperti in arancione gli stand dove vanno i televisori** di quell'edizione,
+ciascuno con cliente e numero di TV. È una copia generata al momento: il file
+originale non cambia, e la copia rispecchia sempre i noleggi di quell'istante.
+
+- **PDF con testo** (gli export dal CAD, il caso tipico): i numeri degli stand
+  si trovano da soli. La copertura prende il riquadro disegnato dello stand;
+  se lo stand non è disegnato come riquadro, un'area attorno al numero
+  (bordo tratteggiato).
+- **Immagini e PDF scansionati**: il testo non si può leggere. Si usa
+  **Posiziona** e si clicca lo stand sulla pianta; la posizione resta salvata
+  per quella planimetria. Lo stesso vale per correggere uno stand trovato male
+  (**Sposta**, e **Ripristina** per tornare alla posizione automatica).
+- A lato l'elenco degli stand: quelli sulla pianta e quelli **non trovati**,
+  per esempio perché stanno in un padiglione che quella pianta non mostra.
+- **Scarica PNG** e **Stampa** producono la pianta con le coperture, da dare a
+  chi installa.
+
+Il numero dello stand viene letto dal campo Stand del noleggio, comunque sia
+scritto: `PAD 5 - 5042` → 5042, `PAD 3 3042-43` → 3042 e 3043, `E3E5` → E3 ed
+E5, `D29 D31 - altezza da 138 da terra` → D29 e D31. La regola è in
+`public/js/pianta/stand.js` ed è verificata su tutti i 75 modi di scrivere lo
+stand presenti nello storico. pdf.js è servito dalla VPS stessa
+(`/vendor/pdfjs`), senza dipendere da siti esterni.
+
 Cliente e stand stanno sul **noleggio**, non sulla fiera: a una stessa fiera
 partecipano decine di aziende, ognuna con il proprio stand e le proprie date.
 L'importo è quello **del lavoro**, non un prezzo al giorno: è così che vengono

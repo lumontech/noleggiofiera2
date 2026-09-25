@@ -41,6 +41,19 @@ app.use('/api/disponibilita', disponibilita);
 // non con la pagina d'errore HTML di Express.
 app.use('/api', (_req, _res, next) => next(new HttpError(404, 'Endpoint non trovato.')));
 
+// pdf.js per disegnare le planimetrie nel browser. Servito da qui e non da un
+// sito esterno, così l'app non dipende da altri. Express 4 non conosce
+// l'estensione .mjs: senza il tipo esplicito il browser rifiuta il modulo.
+app.use('/vendor/pdfjs', express.static(
+  path.join(RADICE, '..', 'node_modules', 'pdfjs-dist', 'build'),
+  {
+    maxAge: '30d',
+    setHeaders: (res, file) => {
+      if (file.endsWith('.mjs')) res.setHeader('Content-Type', 'text/javascript; charset=utf-8');
+    },
+  },
+));
+
 app.use(express.static(path.join(RADICE, '..', 'public'), { extensions: ['html'] }));
 app.get('*', (_req, res) => res.sendFile(path.join(RADICE, '..', 'public', 'index.html')));
 

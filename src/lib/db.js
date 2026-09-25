@@ -74,6 +74,16 @@ CREATE TABLE IF NOT EXISTS allegati (
 );
 CREATE INDEX IF NOT EXISTS idx_allegati_fiera ON allegati(fiera_id);
 
+CREATE TABLE IF NOT EXISTS posizioni_stand (
+  allegato_id   INTEGER NOT NULL REFERENCES allegati(id) ON DELETE CASCADE,
+  chiave        TEXT    NOT NULL,
+  pagina        INTEGER NOT NULL DEFAULT 1,
+  x             REAL    NOT NULL,
+  y             REAL    NOT NULL,
+  aggiornato_il TEXT    NOT NULL,
+  PRIMARY KEY (allegato_id, chiave)
+);
+
 CREATE INDEX IF NOT EXISTS idx_noleggi_prodotto ON noleggi(prodotto_id);
 CREATE INDEX IF NOT EXISTS idx_noleggi_fiera    ON noleggi(fiera_id);
 CREATE INDEX IF NOT EXISTS idx_noleggi_periodo  ON noleggi(data_inizio, data_fine);

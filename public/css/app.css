@@ -31,6 +31,9 @@
 
 * { box-sizing: border-box; }
 
+/* Un display impostato da una classe scavalca l'attributo hidden: qui no. */
+[hidden] { display: none !important; }
+
 html, body {
   margin: 0;
   padding: 0;
@@ -914,3 +917,137 @@ a.btn { text-decoration: none; display: inline-block; }
 
 .barra__versione { margin: -0.75rem 0 0; text-align: center; font-size: 0.72rem; color: var(--grigio-500); font-variant-numeric: tabular-nums; }
 @media (max-width: 820px) { .barra__versione { display: none; } }
+
+/* ---------- pianta con TV ---------- */
+
+body.pianta-aperta { overflow: hidden; }
+
+.pianta {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  display: flex;
+  flex-direction: column;
+  background: var(--grigio-100);
+}
+
+.pianta__testa {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.65rem 1rem;
+  background: var(--inchiostro);
+  color: var(--bianco);
+}
+.pianta__chiudi { flex-shrink: 0; }
+.pianta__titolo { display: flex; flex-direction: column; min-width: 0; margin-right: auto; }
+.pianta__titolo strong { font-size: 1rem; }
+.pianta__titolo span { font-size: 0.78rem; color: var(--grigio-400); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pianta__comandi { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
+.pianta__gruppo-bottoni { display: flex; align-items: center; gap: 0.3rem; }
+.pianta__gruppo-bottoni:empty { display: none; }
+.pianta__zoom, .pianta__pagina { min-width: 3.2rem; text-align: center; font-size: 0.8rem; color: var(--grigio-300); font-variant-numeric: tabular-nums; }
+.pianta__pagina { min-width: 6.5rem; }
+
+.pianta__corpo { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 340px; min-height: 0; }
+.pianta__vista { position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.pianta__area { flex: 1; overflow: auto; padding: 16px; }
+.pianta__foglio { position: relative; margin: 0 auto; background: var(--bianco); box-shadow: var(--ombra); }
+.pianta__tela, .pianta__immagine { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.pianta__livello { position: absolute; inset: 0; }
+.pianta__livello--posiziona { cursor: crosshair; background: rgb(2 132 199 / 6%); outline: 3px dashed var(--azzurro); outline-offset: -3px; }
+
+.pianta__banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.6rem 1rem;
+  background: var(--ambra-tenue);
+  color: #78350f;
+  font-size: 0.86rem;
+  border-bottom: 1px solid #fcd34d;
+}
+.pianta__banner--azione { background: var(--azzurro); color: var(--bianco); border-bottom-color: #0369a1; font-weight: 600; }
+
+/* La copertura dello stand: arancione, ben distinguibile dai colori delle piante. */
+.pianta__copertura {
+  position: absolute;
+  background: rgb(234 88 12 / 30%);
+  border: 2px solid rgb(234 88 12);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+.pianta__copertura:hover { background: rgb(234 88 12 / 45%); }
+.pianta__copertura--attorno { border-style: dashed; }
+.pianta__copertura--manuale { border-radius: 50%; }
+.pianta__copertura--evidenziata {
+  background: rgb(234 88 12 / 55%);
+  box-shadow: 0 0 0 4px rgb(234 88 12 / 35%), 0 0 0 9999px rgb(15 23 42 / 18%);
+  z-index: 2;
+}
+.pianta__livello--posiziona .pianta__copertura { pointer-events: none; opacity: 0.6; }
+.pianta__etichetta {
+  position: absolute;
+  left: -2px;
+  bottom: 100%;
+  margin-bottom: 2px;
+  max-width: 220px;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  background: rgb(194 65 12);
+  color: var(--bianco);
+  font-size: 0.72rem;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+.pianta__lato { overflow-y: auto; background: var(--bianco); border-left: 1px solid var(--grigio-200); }
+.pianta__elenco { padding: 1rem; }
+.pianta__elenco h3 {
+  margin: 1.1rem 0 0.4rem;
+  font-size: 0.74rem;
+  font-weight: 650;
+  color: var(--grigio-500);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.pianta__attesa, .pianta__errore { color: var(--grigio-500); font-size: 0.9rem; }
+.pianta__errore { color: #991b1b; }
+.pianta__riepilogo { padding: 0.8rem 0.9rem; border-radius: var(--raggio-s); background: var(--grigio-50); font-size: 0.88rem; }
+.pianta__riepilogo strong { font-size: 1.2rem; }
+.pianta__riepilogo-mancanti { color: #b45309; font-weight: 600; margin-top: 0.2rem; }
+.pianta__riepilogo-ok { color: var(--verde); font-weight: 600; margin-top: 0.2rem; }
+
+.pianta__voce {
+  padding: 0.65rem 0.7rem;
+  border-radius: var(--raggio-s);
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.pianta__voce:hover { background: var(--grigio-50); }
+.pianta__voce--evidenziata { border-color: rgb(234 88 12); background: #fff7ed; }
+.pianta__voce-testa { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; }
+.pianta__voce-testa strong { font-size: 0.95rem; font-variant-numeric: tabular-nums; }
+.pianta__stato { font-size: 0.7rem; font-weight: 650; padding: 0.05rem 0.45rem; border-radius: 999px; white-space: nowrap; }
+.pianta__stato--ok { background: var(--verde-tenue); color: #065f46; }
+.pianta__stato--attenzione { background: var(--ambra-tenue); color: #92400e; }
+.pianta__stato--mancante { background: var(--grigio-100); color: var(--grigio-500); }
+.pianta__cliente { font-size: 0.86rem; font-weight: 600; margin-top: 0.15rem; }
+.pianta__cliente span { font-weight: 400; color: var(--grigio-500); }
+.pianta__apparecchi { font-size: 0.78rem; color: var(--grigio-500); margin-top: 0.1rem; }
+.pianta__voce-azioni { display: flex; gap: 0.3rem; margin-top: 0.4rem; }
+
+@media (max-width: 900px) {
+  .pianta__corpo { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1.4fr) minmax(0, 1fr); }
+  .pianta__lato { border-left: 0; border-top: 1px solid var(--grigio-200); }
+  .pianta__comandi { width: 100%; justify-content: space-between; }
+}
+.pianta__senza-numero { font-weight: 500; color: var(--grigio-500); font-size: 0.85rem; }
+.pianta__nota { margin: 0.35rem 0 0.25rem; font-size: 0.78rem; color: var(--grigio-500); }
+.pianta__copertura--a-destra .pianta__etichetta { left: auto; right: -2px; }

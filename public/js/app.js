@@ -123,11 +123,15 @@ function shell() {
       h('button', {
         class: 'btn btn--fantasma btn--blocco',
         onclick: async () => { await api.uscita(); schermataAccesso(); },
-      }, 'Esci')),
+      }, 'Esci'),
+      h('p', { class: 'barra__versione', id: 'versione' })),
     contenuto);
 
   window.addEventListener('hashchange', disegnaVista);
   disegnaVista();
+  api.salute()
+    .then(({ versione }) => { document.getElementById('versione').textContent = `versione ${versione}`; })
+    .catch(() => {});
 }
 
 /* ---------------- avvio ---------------- */

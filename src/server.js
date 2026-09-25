@@ -23,7 +23,9 @@ app.use(cookieParser());
 // Express 4 non propaga i rifiuti delle async handler: wrapper esplicito.
 const asincrono = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
-app.get('/api/salute', (_req, res) => res.json({ ok: true, versione: '1.0.0' }));
+// La versione è il commit in uso, impostato dall'aggiornamento automatico.
+const VERSIONE = process.env.VERSIONE || 'sviluppo';
+app.get('/api/salute', (_req, res) => res.json({ ok: true, versione: VERSIONE }));
 
 app.post('/api/accesso', asincrono((req, res) => res.json(accedi(req, res))));
 app.post('/api/uscita', asincrono((req, res) => res.json(esci(req, res))));

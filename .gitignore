@@ -6,3 +6,5 @@ data/
 .env
 .DS_Store
 npm-debug.log*
+# Versione scartata dall'aggiornamento automatico (scripts/aggiorna.sh)
+.aggiorna-scartata

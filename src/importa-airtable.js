@@ -13,6 +13,17 @@ import db from './lib/db.js';
 import { oggi, giorniTra } from './lib/domain.js';
 
 const SCRIVI = process.argv.includes('--scrivi');
+
+// Per gli script di installazione: importa solo in un archivio ancora vuoto.
+// Ripetere l'importazione dopo averci lavorato farebbe ricomparire le righe
+// di Airtable cancellate a mano dall'app.
+if (process.argv.includes('--solo-se-vuoto')) {
+  const presenti = db.prepare('SELECT COUNT(*) AS n FROM prodotti').get().n;
+  if (presenti > 0) {
+    console.log(`Archivio già popolato (${presenti} prodotti): importazione non necessaria.`);
+    process.exit(0);
+  }
+}
 // Relativa a questo file, non alla cartella da cui si lancia il comando:
 // così funziona uguale in locale e dentro il container.
 const CARTELLA = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'dati');

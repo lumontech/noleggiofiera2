@@ -911,3 +911,6 @@ a.btn { text-decoration: none; display: inline-block; }
 /* Quattro azioni per edizione: in griglia 2×2 invece di un bottone orfano a capo. */
 .manifestazione .fiera__azioni { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
 .manifestazione .fiera__azioni .btn { width: 100%; text-align: center; }
+
+.barra__versione { margin: -0.75rem 0 0; text-align: center; font-size: 0.72rem; color: var(--grigio-500); font-variant-numeric: tabular-nums; }
+@media (max-width: 820px) { .barra__versione { display: none; } }

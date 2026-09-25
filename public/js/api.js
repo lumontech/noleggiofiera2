@@ -31,6 +31,7 @@ const qs = (parametri) => {
 
 export const api = {
   sessione: () => richiesta('GET', '/api/sessione'),
+  salute: () => richiesta('GET', '/api/salute'),
   accesso: (password) => richiesta('POST', '/api/accesso', { password }),
   uscita: () => richiesta('POST', '/api/uscita'),
 

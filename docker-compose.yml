@@ -12,6 +12,7 @@ services:
       APP_PASSWORD: "${APP_PASSWORD:?imposta APP_PASSWORD nel file .env}"
       SESSION_SECRET: "${SESSION_SECRET:?imposta SESSION_SECRET nel file .env}"
       TZ: "${TZ:-Europe/Rome}"
+      VERSIONE: "${VERSIONE:-sviluppo}"
     volumes:
       - dati:/dati
 

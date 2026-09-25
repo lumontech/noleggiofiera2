@@ -202,6 +202,38 @@ Se `curl` in locale risponde ma dall'esterno no, il blocco è nel firewall della
 macchina **o nel pannello di controllo del provider** (molti hanno un firewall
 separato, a monte della VPS): apri la porta anche lì.
 
+### Aggiornamenti automatici
+
+Dopo la prima installazione basta attivarli una volta:
+
+```bash
+cd /opt/noleggiofiera && git pull && ./scripts/installa-aggiornamenti.sh
+```
+
+Da quel momento la VPS controlla GitHub ogni 2 minuti e, se c'è una versione
+nuova, la installa da sola. Non servono chiavi né segreti: è la VPS a
+scaricare, GitHub non ha alcun accesso al server.
+
+- **Se una versione nuova non parte**, si torna automaticamente a quella
+  precedente, e quella difettosa non viene più riprovata finché non ne arriva
+  un'altra: il sito non resta giù e non viene riavviato di continuo.
+- **Dati e password** (`.env` e il volume Docker) non fanno parte del
+  repository e un aggiornamento non li tocca.
+- La **versione in uso** compare in basso a sinistra nell'app ed è restituita
+  da `/api/salute`.
+- Lo storico di Airtable viene importato solo alla prima attivazione, e solo
+  se l'archivio è vuoto: un aggiornamento non fa ricomparire righe cancellate.
+
+```bash
+journalctl -u noleggiofiera-aggiorna --since today   # cosa è successo
+systemctl list-timers noleggiofiera-aggiorna.timer  # prossimo controllo
+systemctl disable --now noleggiofiera-aggiorna.timer  # per spegnerli
+```
+
+Funziona finché il repository è pubblico. Se lo si rende privato, la VPS non
+può più scaricare le novità (il sito resta sull'ultima versione installata):
+in quel caso serve un token di sola lettura in `.git/config`.
+
 ### Indirizzo con dominio nip.io
 
 [nip.io](https://nip.io) risolve qualsiasi nome nella forma

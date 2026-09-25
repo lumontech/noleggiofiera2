@@ -95,6 +95,27 @@ Se la porta 8099 è già occupata:
 PORTA_HOST=8123 ./scripts/deploy.sh
 ```
 
+### Se il sito va in timeout
+
+Quasi sempre è il **firewall**: il container gira ma la porta non è raggiungibile
+da fuori. Lo script avvisa se se ne accorge, ma controllalo comunque.
+
+```bash
+# la porta è aperta sul firewall della macchina?
+ufw allow 8099/tcp                                   # se usi ufw
+firewall-cmd --permanent --add-port=8099/tcp && firewall-cmd --reload   # se usi firewalld
+
+# l'app risponde in locale sulla VPS?
+curl -s http://127.0.0.1:8099/api/salute             # atteso: {"ok":true,...}
+
+# il container è in piedi?
+docker compose ps
+```
+
+Se `curl` in locale risponde ma dall'esterno no, il blocco è nel firewall della
+macchina **o nel pannello di controllo del provider** (molti hanno un firewall
+separato, a monte della VPS): apri la porta anche lì.
+
 ### Indirizzo con dominio nip.io
 
 [nip.io](https://nip.io) risolve qualsiasi nome nella forma

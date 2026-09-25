@@ -66,7 +66,28 @@ if command -v ss >/dev/null 2>&1 && ss -ltn "sport = :$PORTA" 2>/dev/null | grep
   fi
 fi
 
-# --- 4. Avvio ----------------------------------------------------------------
+# --- 4. Il firewall lascia passare la porta? ---------------------------------
+# Causa numero uno di "sito irraggiungibile" dopo un deploy andato a buon fine.
+avviso_firewall() {
+  echo
+  rosso "ATTENZIONE: la porta $PORTA sembra chiusa dal firewall."
+  echo "Dall'esterno il sito risulterebbe irraggiungibile (timeout di connessione)."
+  echo "Aprila con uno di questi comandi, secondo il firewall che usi:"
+  echo "  ufw:       ufw allow $PORTA/tcp"
+  echo "  firewalld: firewall-cmd --permanent --add-port=$PORTA/tcp && firewall-cmd --reload"
+  echo "  iptables:  iptables -I INPUT -p tcp --dport $PORTA -j ACCEPT"
+  echo
+  echo "Se il provider ha un firewall nel suo pannello di controllo, apri la porta anche lì."
+  echo
+}
+
+if command -v ufw >/dev/null 2>&1 && ufw status 2>/dev/null | grep -q '^Status: active'; then
+  ufw status 2>/dev/null | grep -qE "(^|[[:space:]])$PORTA(/tcp)?[[:space:]]+ALLOW" || avviso_firewall
+elif command -v firewall-cmd >/dev/null 2>&1 && firewall-cmd --state >/dev/null 2>&1; then
+  firewall-cmd --list-ports 2>/dev/null | grep -q "$PORTA/tcp" || avviso_firewall
+fi
+
+# --- 5. Avvio ----------------------------------------------------------------
 info "Costruisco l'immagine e avvio il container..."
 $COMPOSE up -d --build
 
@@ -79,6 +100,10 @@ for tentativo in $(seq 1 30); do
     echo "  Indirizzo:  http://noleggiofierafinale.$IP.nip.io:$PORTA"
     echo "  Oppure:     http://$IP:$PORTA"
     echo "  Password:   $(grep '^APP_PASSWORD=' .env | cut -d= -f2-)"
+    echo
+    echo "Se dal tuo computer il sito va in timeout, l'app sta girando ma la porta"
+    echo "$PORTA e' chiusa: aprila nel firewall (ufw allow $PORTA/tcp) e nel pannello"
+    echo "del provider, poi riprova."
     echo
     echo "Dati salvati nel volume Docker 'noleggiofiera_dati' (sopravvivono ai riavvii)."
     echo "Per caricare dati di esempio:  $COMPOSE exec app npm run seed"

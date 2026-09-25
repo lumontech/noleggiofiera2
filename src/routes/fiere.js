@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import db from '../lib/db.js';
 import {
-  STATI_FIERA, HttpError,
+  STATI_FIERA, STATI_IMPEGNATIVI, HttpError,
   testo, intero, enumerato, periodo, addGiorni, giorniTra, oggi,
 } from '../lib/domain.js';
+import { impegnoMassimo } from '../lib/disponibilita.js';
 
 const router = Router();
 
@@ -152,16 +153,61 @@ router.post('/', (req, res) => {
 router.put('/:id', (req, res) => {
   const fiera = trovaFiera(req.params.id);
   const dati = leggiCorpo(req.body);
-  db.prepare(`
-    UPDATE fiere SET nome=@nome, manifestazione=@manifestazione, anno=@anno,
-                     cliente=@cliente, luogo=@luogo, citta=@citta,
-                     padiglione=@padiglione, stand=@stand, data_inizio=@data_inizio,
-                     data_fine=@data_fine, giorni_allestimento=@giorni_allestimento,
-                     giorni_smontaggio=@giorni_smontaggio, stato=@stato, note=@note,
-                     aggiornato_il=@aggiornato_il
-     WHERE id=@id`)
-    .run({ ...dati, id: fiera.id, aggiornato_il: new Date().toISOString() });
-  res.json(riepilogo(trovaFiera(fiera.id)));
+  const prima = finestraLogistica(fiera);
+  const dopo = finestraLogistica(dati);
+
+  // I noleggi che seguono le date della fiera devono spostarsi con lei,
+  // altrimenti la disponibilità resta calcolata sulle date vecchie. Quelli
+  // con date proprie restano dove sono.
+  const esito = db.transaction(() => {
+    db.prepare(`
+      UPDATE fiere SET nome=@nome, manifestazione=@manifestazione, anno=@anno,
+                       cliente=@cliente, luogo=@luogo, citta=@citta,
+                       padiglione=@padiglione, stand=@stand, data_inizio=@data_inizio,
+                       data_fine=@data_fine, giorni_allestimento=@giorni_allestimento,
+                       giorni_smontaggio=@giorni_smontaggio, stato=@stato, note=@note,
+                       aggiornato_il=@aggiornato_il
+       WHERE id=@id`)
+      .run({ ...dati, id: fiera.id, aggiornato_il: new Date().toISOString() });
+
+    if (prima.from === dopo.from && prima.to === dopo.to) return { spostati: 0, fermi: 0 };
+
+    const daSpostare = db.prepare(`
+      SELECT * FROM noleggi WHERE fiera_id = ? AND data_inizio = ? AND data_fine = ?`)
+      .all(fiera.id, prima.from, prima.to);
+    const fermi = db.prepare('SELECT COUNT(*) AS n FROM noleggi WHERE fiera_id = ?')
+      .get(fiera.id).n - daSpostare.length;
+
+    db.prepare(`
+      UPDATE noleggi SET data_inizio = ?, data_fine = ?, aggiornato_il = ?
+       WHERE fiera_id = ? AND data_inizio = ? AND data_fine = ?`)
+      .run(dopo.from, dopo.to, new Date().toISOString(), fiera.id, prima.from, prima.to);
+
+    // Si verifica dopo aver spostato tutto: controllare una riga alla volta
+    // confronterebbe ognuna con le altre ancora sulle date vecchie.
+    const prodotti = [...new Set(daSpostare
+      .filter((n) => STATI_IMPEGNATIVI.includes(n.stato))
+      .map((n) => n.prodotto_id))];
+    for (const prodottoId of prodotti) {
+      const prodotto = db.prepare('SELECT * FROM prodotti WHERE id = ?').get(prodottoId);
+      const { picco, righe } = impegnoMassimo({ prodottoId, from: dopo.from, to: dopo.to });
+      if (picco > prodotto.quantita) {
+        const altri = righe.filter((r) => r.fiera_id !== fiera.id)
+          .map((r) => `${r.cliente || 'un cliente'} (${r.fiera_nome})`);
+        throw new HttpError(409,
+          `Con le nuove date "${prodotto.nome}"${prodotto.codice ? ` (${prodotto.codice})` : ''} `
+          + `sarebbe noleggiato due volte: nello stesso periodo è già assegnato a ${altri.join(', ')}. `
+          + 'Le date non sono state cambiate: libera prima quell\'apparecchio o scegline un altro.');
+      }
+    }
+    return { spostati: daSpostare.length, fermi };
+  })();
+
+  res.json({
+    ...riepilogo(trovaFiera(fiera.id)),
+    noleggi_spostati: esito.spostati,
+    noleggi_con_date_proprie: esito.fermi,
+  });
 });
 
 router.delete('/:id', (req, res) => {

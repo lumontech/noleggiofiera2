@@ -4,7 +4,7 @@ import {
   CATEGORIE, STATI_PRODOTTO, STATI_FIERA, STATI_NOLEGGIO,
   oggi, addGiorni, giorniTra, isData,
 } from '../lib/domain.js';
-import { prospettoDisponibilita, noleggiImpegnativi } from '../lib/disponibilita.js';
+import { prospettoDisponibilita, noleggiImpegnativi, apparecchiPerPeriodo } from '../lib/disponibilita.js';
 
 const router = Router();
 
@@ -50,6 +50,17 @@ router.get('/', (req, res) => {
     occupati,
     prospetto,
   });
+});
+
+/**
+ * Apparecchi liberi e occupati in un periodo, per il modulo di noleggio.
+ * `escludi` è il noleggio in modifica: non deve occupare sé stesso.
+ */
+router.get('/apparecchi', (req, res) => {
+  const { from, to } = intervallo(req, 0);
+  const escludi = Number.isInteger(Number(req.query.escludi)) && req.query.escludi
+    ? Number(req.query.escludi) : null;
+  res.json(apparecchiPerPeriodo({ from, to, escludiNoleggio: escludi }));
 });
 
 /**

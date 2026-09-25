@@ -35,8 +35,17 @@ pezzi disponibili sono `N - picco`: sono quelli che puoi promettere per
 
 Conseguenze pratiche:
 
-- Un noleggio che porterebbe il picco oltre `N` viene **rifiutato** con un
-  messaggio che dice quanti pezzi restano e in che giorno si crea il conflitto.
+- Quando assegni un apparecchio, il modulo **propone solo quelli liberi** nelle
+  date scelte. Quelli già noleggiati restano in fondo alla lista, non
+  selezionabili, con accanto il cliente e la fiera a cui sono assegnati; la
+  lista si ricalcola appena cambi date o fiera.
+- Un noleggio che porterebbe il picco oltre `N` viene comunque **rifiutato**
+  anche lato server, con un messaggio che dice quanti pezzi restano e in che
+  giorno si crea il conflitto.
+- **Cambiando le date di una fiera, i suoi noleggi la seguono** (quelli che ne
+  avevano le stesse date; chi ha date proprie resta com'è). Se lo spostamento
+  farebbe noleggiare due volte lo stesso apparecchio, il cambio viene rifiutato
+  e non si modifica nulla.
 - Non puoi abbassare i pezzi in magazzino sotto a quelli già impegnati.
 - Solo gli stati **prenotato** e **consegnato** occupano magazzino.
   *Rientrato* e *annullato* liberano subito i pezzi, anche a metà periodo.

@@ -38,6 +38,7 @@ export const api = {
   dashboard: () => richiesta('GET', '/api/disponibilita/dashboard'),
   disponibilita: (p) => richiesta('GET', `/api/disponibilita${qs(p)}`),
   timeline: (p) => richiesta('GET', `/api/disponibilita/timeline${qs(p)}`),
+  apparecchi: (p) => richiesta('GET', `/api/disponibilita/apparecchi${qs(p)}`),
 
   prodotti: (p) => richiesta('GET', `/api/prodotti${qs(p)}`),
   prodotto: (id) => richiesta('GET', `/api/prodotti/${id}`),

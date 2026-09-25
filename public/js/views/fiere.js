@@ -1,5 +1,6 @@
 import { api } from '../api.js';
 import { stato as statoApp } from '../app.js';
+import { selettoreApparecchi } from '../selettore-apparecchi.js';
 import {
   h, monta, badge, modale, conferma, avviso, campo, input, select, areaTesto,
   griglia, numero, euro, vuoto, intervalloDate, etichetta, oggiISO, addGiorni, notePulite,
@@ -44,9 +45,18 @@ function apriForm(f, ricarica, manifestazioniNote = []) {
     testoConferma: modifica ? 'Salva modifiche' : 'Crea edizione',
     larga: true,
     onConferma: async (dati) => {
-      if (modifica) await api.modificaFiera(f.id, dati);
-      else await api.creaFiera(dati);
-      avviso(modifica ? 'Fiera aggiornata.' : 'Fiera creata.');
+      if (modifica) {
+        const esito = await api.modificaFiera(f.id, dati);
+        const parti = ['Edizione aggiornata.'];
+        if (esito.noleggi_spostati) parti.push(`${esito.noleggi_spostati} noleggi spostati sulle nuove date.`);
+        if (esito.noleggi_con_date_proprie) {
+          parti.push(`${esito.noleggi_con_date_proprie} con date proprie sono rimasti invariati.`);
+        }
+        avviso(parti.join(' '));
+      } else {
+        await api.creaFiera(dati);
+        avviso('Edizione creata.');
+      }
       await ricarica();
     },
   });
@@ -54,32 +64,34 @@ function apriForm(f, ricarica, manifestazioniNote = []) {
 
 /* --- assegnazione prodotti a una fiera --- */
 
-async function apriAssegna(fiera, prodotti, ricarica) {
+async function apriAssegna(fiera, _prodotti, ricarica) {
   const finestra = await api.finestraFiera(fiera.id);
-  const selProdotto = select('prodotto_id',
-    prodotti.filter((p) => p.stato === 'attivo').map((p) => ({
-      valore: p.id,
-      testo: `${p.nome} — ${p.quantita} pz in magazzino`,
-    })), '');
+  const selettore = selettoreApparecchi();
+  const daInizio = input('data_inizio', { value: finestra.data_inizio, type: 'date', required: true });
+  const aFine = input('data_fine', { value: finestra.data_fine, type: 'date', required: true });
+  const aggiorna = () => selettore.aggiorna(daInizio.value, aFine.value);
+  daInizio.addEventListener('change', aggiorna);
+  aFine.addEventListener('change', aggiorna);
 
   modale({
-    titolo: 'Assegna materiale alla fiera',
+    titolo: 'Assegna materiale',
     sottotitolo: `${fiera.nome} · ${intervalloDate(fiera.data_inizio, fiera.data_fine)}`,
     larga: true,
     testoConferma: 'Aggiungi al noleggio',
     corpo: [
       griglia(
-        campo('Prodotto', selProdotto, { largo: true }),
         campo('Cliente', input('cliente', { placeholder: 'Nome dell\'azienda espositrice' })),
         campo('Stand', input('stand', { placeholder: 'PAD 5 - 5042' })),
-        campo('Pezzi', input('quantita', { value: 1, type: 'number', min: '1', required: true })),
-        campo('Stato', select('stato', statoApp.costanti.stati_noleggio, 'prenotato')),
-        campo('Uscita dal magazzino', input('data_inizio', { value: finestra.data_inizio, type: 'date', required: true }),
-          { aiuto: 'Precompilata con i giorni di allestimento.' }),
-        campo('Rientro in magazzino', input('data_fine', { value: finestra.data_fine, type: 'date', required: true }),
-          { aiuto: 'Precompilata con i giorni di smontaggio.' }),
+        campo('Uscita dal magazzino', daInizio, { aiuto: 'Precompilata con i giorni di allestimento.' }),
+        campo('Rientro in magazzino', aFine, { aiuto: 'Precompilata con i giorni di smontaggio.' }),
+        h('label', { class: 'campo campo--largo' },
+          h('span', { class: 'campo__etichetta' }, 'Apparecchio'),
+          selettore.select,
+          selettore.nota),
         campo('Importo (€)', input('importo', { type: 'number', min: '0', step: '0.01', placeholder: 'calcolato dal listino' }),
           { aiuto: 'Totale del lavoro, non il prezzo al giorno.' }),
+        campo('Pezzi', input('quantita', { value: 1, type: 'number', min: '1', required: true })),
+        campo('Stato', select('stato', statoApp.costanti.stati_noleggio, 'prenotato')),
         campo('Note', areaTesto('note', {}), { largo: true }),
       ),
     ],
@@ -89,6 +101,7 @@ async function apriAssegna(fiera, prodotti, ricarica) {
       await ricarica();
     },
   });
+  aggiorna();
 }
 
 async function apriDettaglio(id, prodotti, ricarica) {

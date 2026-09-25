@@ -4,9 +4,10 @@
 
 import { api } from '../api.js';
 import { stato as statoApp } from '../app.js';
+import { selettoreApparecchi } from '../selettore-apparecchi.js';
 import {
   h, monta, badge, modale, avviso, campo, input, select, areaTesto,
-  griglia, numero, euro, vuoto, intervalloDate, dataLunga, etichetta, oggiISO, addGiorni, nomeBreve,
+  griglia, numero, euro, vuoto, intervalloDate, dataLunga, etichetta, oggiISO, nomeBreve,
 } from '../ui.js';
 
 const PROSSIMO_STATO = { prenotato: 'consegnato', consegnato: 'rientrato' };
@@ -21,42 +22,57 @@ const SCHEDE = [
 
 /* ---------- form ---------- */
 
-function formNoleggio(n, prodotti, fiere) {
-  const { stati_noleggio: statiNoleggio } = statoApp.costanti;
-  const oggi = oggiISO();
-  return [
-    griglia(
-      campo('Cliente', input('cliente', { value: n?.cliente || '', placeholder: 'Nome dell\'azienda espositrice' })),
-      campo('Stand', input('stand', { value: n?.stand || '', placeholder: 'PAD 5 - 5042' })),
-      campo('Apparecchio', select('prodotto_id',
-        prodotti.map((p) => ({ valore: p.id, testo: `${nomeBreve(p)} — ${p.codice || p.nome}` })),
-        n?.prodotto_id), { largo: true }),
-      campo('Fiera', select('fiera_id',
-        fiere.map((f) => ({ valore: f.id, testo: `${f.nome} — ${intervalloDate(f.data_inizio, f.data_fine)}` })),
-        n?.fiera_id), { largo: true }),
-      campo('Uscita dal magazzino', input('data_inizio', { value: n?.data_inizio || oggi, type: 'date', required: true })),
-      campo('Rientro in magazzino', input('data_fine', { value: n?.data_fine || addGiorni(oggi, 5), type: 'date', required: true })),
-      campo('Importo (€)', input('importo', {
-        value: n?.importo ?? '', type: 'number', min: '0', step: '0.01', placeholder: 'calcolato dal listino',
-      }), { aiuto: 'Totale del lavoro, non il prezzo al giorno.' }),
-      campo('Pezzi', input('quantita', { value: n?.quantita ?? 1, type: 'number', min: '1', required: true })),
-      campo('Stato', select('stato', statiNoleggio, n?.stato || 'prenotato')),
-      campo('Note', areaTesto('note', { value: (n?.note || '').replace(/\[airtable:[^\]]+\]/g, '').trim() }), { largo: true }),
-    ),
-  ];
-}
-
-function apriForm(n, prodotti, fiere, ricarica) {
+function apriForm(n, fiere, ricarica) {
   const modifica = Boolean(n?.id);
-  if (!prodotti.length || !fiere.length) {
-    return avviso('Servono almeno un prodotto e una fiera per creare un noleggio.', 'attenzione');
+  if (!fiere.length) {
+    return avviso('Crea prima una fiera: ogni noleggio appartiene a una fiera.', 'attenzione');
   }
-  return modale({
+  const { stati_noleggio: statiNoleggio } = statoApp.costanti;
+
+  // Nuovo noleggio: si parte dalla prossima fiera, che è il caso più comune.
+  const fieraIniziale = n?.fiera_id ?? fiere[0].id;
+  const selettore = selettoreApparecchi({ selezionato: n?.prodotto_id ?? null, escludi: n?.id ?? null });
+  const daInizio = input('data_inizio', { value: n?.data_inizio || '', type: 'date', required: true });
+  const aFine = input('data_fine', { value: n?.data_fine || '', type: 'date', required: true });
+  const selFiera = select('fiera_id',
+    fiere.map((f) => ({ valore: f.id, testo: `${f.nome} — ${intervalloDate(f.data_inizio, f.data_fine)}` })),
+    fieraIniziale);
+
+  const aggiorna = () => selettore.aggiorna(daInizio.value, aFine.value);
+  const dateDellaFiera = async () => {
+    const finestra = await api.finestraFiera(selFiera.value);
+    daInizio.value = finestra.data_inizio;
+    aFine.value = finestra.data_fine;
+    aggiorna();
+  };
+  selFiera.addEventListener('change', dateDellaFiera);
+  daInizio.addEventListener('change', aggiorna);
+  aFine.addEventListener('change', aggiorna);
+
+  modale({
     titolo: modifica ? (n.cliente || 'Noleggio') : 'Nuovo noleggio',
     sottotitolo: modifica
       ? `${nomeBreve({ nome: n.prodotto_nome, marca: n.prodotto_marca, pollici: n.prodotto_pollici })} · ${n.fiera_nome}`
-      : 'Impegna un apparecchio su una fiera.',
-    corpo: formNoleggio(n, prodotti, fiere),
+      : 'Scegli la fiera: le date si compilano da sole e vedi solo gli apparecchi liberi.',
+    corpo: [
+      griglia(
+        campo('Cliente', input('cliente', { value: n?.cliente || '', placeholder: 'Nome dell\'azienda espositrice' })),
+        campo('Stand', input('stand', { value: n?.stand || '', placeholder: 'PAD 5 - 5042' })),
+        campo('Fiera', selFiera, { largo: true }),
+        campo('Uscita dal magazzino', daInizio),
+        campo('Rientro in magazzino', aFine),
+        h('label', { class: 'campo campo--largo' },
+          h('span', { class: 'campo__etichetta' }, 'Apparecchio'),
+          selettore.select,
+          selettore.nota),
+        campo('Importo (€)', input('importo', {
+          value: n?.importo ?? '', type: 'number', min: '0', step: '0.01', placeholder: 'calcolato dal listino',
+        }), { aiuto: 'Totale del lavoro, non il prezzo al giorno.' }),
+        campo('Pezzi', input('quantita', { value: n?.quantita ?? 1, type: 'number', min: '1', required: true })),
+        campo('Stato', select('stato', statiNoleggio, n?.stato || 'prenotato')),
+        campo('Note', areaTesto('note', { value: (n?.note || '').replace(/\[airtable:[^\]]+\]/g, '').trim() }), { largo: true }),
+      ),
+    ],
     testoConferma: modifica ? 'Salva modifiche' : 'Crea noleggio',
     larga: true,
     azionePericolosa: modifica ? {
@@ -75,6 +91,11 @@ function apriForm(n, prodotti, fiere, ricarica) {
       await ricarica();
     },
   });
+
+  // In modifica si tengono le date del noleggio; se nuovo, quelle della fiera.
+  if (modifica) aggiorna();
+  else dateDellaFiera();
+  return null;
 }
 
 /* ---------- gruppi per fiera ---------- */
@@ -169,10 +190,18 @@ function gruppo(g, { aperto, azioni }) {
 
 export default async function vistaNoleggi({ corpo, azioni, ricarica }) {
   const [prodotti, fiere] = await Promise.all([api.prodotti(), api.fiere()]);
+  // Nel modulo si propone per prima la fiera più vicina ancora da svolgere.
+  const fiereOrdinate = [...fiere].sort((a, b) => {
+    const oggi = oggiISO();
+    const futuraA = a.data_fine >= oggi;
+    const futuraB = b.data_fine >= oggi;
+    if (futuraA !== futuraB) return futuraA ? -1 : 1;
+    return futuraA ? a.data_inizio.localeCompare(b.data_inizio) : b.data_inizio.localeCompare(a.data_inizio);
+  });
 
   azioni.appendChild(h('button', {
     class: 'btn btn--primario',
-    onclick: () => apriForm(null, prodotti, fiere, ricarica),
+    onclick: () => apriForm(null, fiereOrdinate, ricarica),
   }, '+ Nuovo noleggio'));
 
   const filtri = { q: '', fiera_id: '', prodotto_id: '' };
@@ -182,7 +211,7 @@ export default async function vistaNoleggi({ corpo, azioni, ricarica }) {
   const contenitore = h('div', { class: 'nol-gruppi' });
 
   const azioniRiga = {
-    apri: (n) => apriForm(n, prodotti, fiere, ricarica),
+    apri: (n) => apriForm(n, fiereOrdinate, ricarica),
     avanza: async (n) => {
       const nuovo = PROSSIMO_STATO[n.stato];
       await api.statoNoleggio(n.id, nuovo);

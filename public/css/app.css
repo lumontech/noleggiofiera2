@@ -800,3 +800,9 @@ textarea.controllo { resize: vertical; }
   .nol-riga__azione:empty { display: none; }
   .nol-gruppo__numeri { width: 100%; justify-content: space-between; padding-left: 1.3rem; }
 }
+
+/* ---------- selettore apparecchi ---------- */
+.selettore__nota { margin-top: 0.15rem; }
+.selettore__nota--allerta { color: #b45309; font-weight: 600; }
+select.controllo optgroup { font-weight: 650; color: var(--grigio-500); }
+select.controllo option:disabled { color: var(--grigio-400); }

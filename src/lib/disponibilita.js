@@ -38,12 +38,10 @@ export function noleggiImpegnativi({ from, to, prodottoId = null, escludiNoleggi
 }
 
 /**
- * Picco massimo di pezzi impegnati per un prodotto nel periodo.
- * Non basta sommare i noleggi: due noleggi consecutivi non si sommano.
- * Si scorrono i giorni del periodo e si prende il massimo impegno giornaliero.
+ * Dato un insieme di righe di noleggio, il massimo di pezzi impegnati in uno
+ * stesso giorno del periodo, e quale giorno è.
  */
-export function impegnoMassimo({ prodottoId, from, to, escludiNoleggio = null }) {
-  const righe = noleggiImpegnativi({ from, to, prodottoId, escludiNoleggio });
+function piccoGiornaliero(righe, from, to) {
   let picco = 0;
   let giornoPicco = null;
   for (let giorno = from; giorno <= to; giorno = addGiorni(giorno, 1)) {
@@ -56,7 +54,17 @@ export function impegnoMassimo({ prodottoId, from, to, escludiNoleggio = null })
       giornoPicco = giorno;
     }
   }
-  return { picco, giornoPicco, righe };
+  return { picco, giornoPicco };
+}
+
+/**
+ * Picco massimo di pezzi impegnati per un prodotto nel periodo.
+ * Non basta sommare i noleggi: due noleggi consecutivi non si sommano.
+ * Si scorrono i giorni del periodo e si prende il massimo impegno giornaliero.
+ */
+export function impegnoMassimo({ prodottoId, from, to, escludiNoleggio = null }) {
+  const righe = noleggiImpegnativi({ from, to, prodottoId, escludiNoleggio });
+  return { ...piccoGiornaliero(righe, from, to), righe };
 }
 
 /**
@@ -100,18 +108,7 @@ export function prospettoDisponibilita({ from, to, categoria = null, soloAttivi 
 
   return prodotti.map((prodotto) => {
     const righe = perProdotto.get(prodotto.id) || [];
-    let picco = 0;
-    let giornoPicco = null;
-    for (let giorno = from; giorno <= to; giorno = addGiorni(giorno, 1)) {
-      let impegno = 0;
-      for (const r of righe) {
-        if (r.data_inizio <= giorno && r.data_fine >= giorno) impegno += r.quantita;
-      }
-      if (impegno > picco) {
-        picco = impegno;
-        giornoPicco = giorno;
-      }
-    }
+    const { picco, giornoPicco } = piccoGiornaliero(righe, from, to);
     const inManutenzione = prodotto.stato === 'manutenzione';
     const disponibili = inManutenzione ? 0 : Math.max(prodotto.quantita - picco, 0);
     return {
@@ -130,6 +127,44 @@ export function prospettoDisponibilita({ from, to, categoria = null, soloAttivi 
         data_fine: r.data_fine,
         stato: r.stato,
         giorni: giorniTra(r.data_inizio, r.data_fine),
+      })),
+    };
+  });
+}
+
+/**
+ * Ogni apparecchio noleggiabile con quanti pezzi restano liberi nel periodo e,
+ * per quelli occupati, a chi sono già assegnati. Serve al modulo di noleggio
+ * per proporre solo ciò che si può davvero noleggiare in quelle date.
+ */
+export function apparecchiPerPeriodo({ from, to, escludiNoleggio = null }) {
+  const prodotti = db.prepare(`
+    SELECT * FROM prodotti WHERE stato != 'dismesso'
+     ORDER BY CASE categoria WHEN 'TV' THEN 1 WHEN 'Monitor' THEN 2 WHEN 'Videowall' THEN 3
+                             WHEN 'Totem' THEN 4 WHEN 'Supporto' THEN 5 ELSE 6 END,
+              pollici DESC, marca, codice`).all();
+  const righe = noleggiImpegnativi({ from, to, escludiNoleggio });
+
+  return prodotti.map((prodotto) => {
+    const proprie = righe.filter((r) => r.prodotto_id === prodotto.id);
+    const { picco } = piccoGiornaliero(proprie, from, to);
+    const inManutenzione = prodotto.stato === 'manutenzione';
+    return {
+      id: prodotto.id,
+      nome: prodotto.nome,
+      marca: prodotto.marca,
+      pollici: prodotto.pollici,
+      codice: prodotto.codice,
+      categoria: prodotto.categoria,
+      quantita: prodotto.quantita,
+      stato: prodotto.stato,
+      liberi: inManutenzione ? 0 : Math.max(prodotto.quantita - picco, 0),
+      occupato_da: proprie.map((r) => ({
+        cliente: r.cliente,
+        stand: r.stand,
+        fiera_nome: r.fiera_nome,
+        data_inizio: r.data_inizio,
+        data_fine: r.data_fine,
       })),
     };
   });

@@ -63,6 +63,19 @@ CREATE TABLE IF NOT EXISTS noleggi (
   aggiornato_il TEXT    NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS utenti (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  nome              TEXT    NOT NULL,
+  accesso           TEXT    NOT NULL UNIQUE COLLATE NOCASE,
+  password_hash     TEXT    NOT NULL,
+  ruolo             TEXT    NOT NULL DEFAULT 'tecnico',
+  attivo            INTEGER NOT NULL DEFAULT 1,
+  versione_sessione INTEGER NOT NULL DEFAULT 1,
+  ultimo_accesso    TEXT,
+  creato_il         TEXT    NOT NULL,
+  aggiornato_il     TEXT    NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS allegati (
   id             INTEGER PRIMARY KEY AUTOINCREMENT,
   fiera_id       INTEGER NOT NULL REFERENCES fiere(id) ON DELETE CASCADE,

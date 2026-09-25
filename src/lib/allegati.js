@@ -69,3 +69,15 @@ export function elimina(fieraId, nomeFile) {
 export function eliminaTuttiDellaFiera(fieraId) {
   fs.rmSync(cartellaFiera(fieraId), { recursive: true, force: true });
 }
+
+/** Invia al browser il file di un allegato, col tipo stabilito da noi e non dal client. */
+export function invia(res, fieraId, allegato) {
+  const file = percorso(fieraId, allegato.nome_file);
+  if (!fs.existsSync(file)) throw new HttpError(404, 'Il file non è più presente sul server.');
+  res.setHeader('Content-Type', allegato.tipo);
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Cache-Control', 'private, max-age=3600');
+  res.setHeader('Content-Disposition',
+    `inline; filename*=UTF-8''${encodeURIComponent(allegato.nome_originale)}`);
+  fs.createReadStream(file).pipe(res);
+}

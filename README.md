@@ -109,6 +109,54 @@ partecipano decine di aziende, ognuna con il proprio stand e le proprie date.
 L'importo è quello **del lavoro**, non un prezzo al giorno: è così che vengono
 quotati i noleggi.
 
+### Utenti e ruoli
+
+Ognuno entra con il proprio nome utente e la propria password. Gli utenti si
+gestiscono dalla sezione **Utenti** (solo amministratori): crea, modifica,
+disattiva, elimina.
+
+| Ruolo | Cosa vede |
+|---|---|
+| **Amministratore** | Tutto: prodotti, fiere, noleggi, importi, utenti. |
+| **Tecnico** | Solo la sezione **Installazioni**: fiera per fiera, quali apparecchi montare (con il codice INV), in quale stand e per quale cliente, e la **Pianta con TV** in sola lettura. **Nessun prezzo.** |
+
+Il tecnico vede le edizioni in cui c'è materiale prenotato ("Da installare")
+o consegnato ("Installato", oppure "Da ritirare" a fiera finita); quando tutto
+è rientrato l'edizione sparisce dalla sua lista. Da ogni stand, **Dov'è?** apre
+la pianta con quello stand evidenziato. La schermata è pensata per il telefono.
+
+Perché al tecnico non arrivi mai un prezzo, la separazione è fatta dal server,
+non dall'interfaccia:
+
+- il tecnico legge solo da `/api/tecnico`, che restituisce campi scelti uno per
+  uno (niente importi, niente note libere, dove un prezzo potrebbe essere
+  scritto a mano);
+- tutto il resto dell'API gli risponde 403, anche chiamandola a mano.
+
+Altre regole:
+
+- Cambiando password, ruolo, o disattivando un utente, le sue sessioni aperte
+  si chiudono subito, su ogni dispositivo.
+- Non puoi disattivare, eliminare o togliere il ruolo di amministratore a te
+  stesso, e resta sempre almeno un amministratore attivo.
+- Dopo 5 password sbagliate sullo stesso nome utente, l'accesso da quell'indirizzo
+  si blocca per 5 minuti (poi 10, 20… fino a un'ora).
+- Ognuno cambia la propria password dal bottone **Password** nella barra.
+
+**Primo avvio.** Se non ci sono utenti, viene creato l'amministratore `admin`
+con la password di `APP_PASSWORD`. Da quel momento la password si cambia
+dall'app: modificare `APP_PASSWORD` nel `.env` non ha più effetto.
+
+**Password dimenticata.** Dalla VPS:
+
+```bash
+cd /opt/noleggiofiera
+docker compose exec app node src/reimposta-password.js admin NuovaPassword
+```
+
+Riattiva l'utente e chiude le sue sessioni; se il nome non esiste, lo crea come
+amministratore.
+
 ---
 
 ## Importare lo storico da Airtable
@@ -171,15 +219,16 @@ npm run seed     # dati di esempio: 12 prodotti, 5 fiere, i relativi noleggi
 npm start
 ```
 
-L'app risponde su <http://localhost:3000>. La password predefinita è
-`noleggio2026`; cambiala con la variabile `APP_PASSWORD`.
+L'app risponde su <http://localhost:3000>. Si entra con l'utente `admin` e la
+password `noleggio2026` (o quella di `APP_PASSWORD` al primo avvio).
 
 | Variabile | Predefinito | A cosa serve |
 |---|---|---|
 | `PORT` | `3000` | Porta di ascolto. |
-| `APP_PASSWORD` | `noleggio2026` | Password unica di accesso. |
+| `APP_PASSWORD` | `noleggio2026` | Password dell'utente `admin`, creato al primo avvio. Dopo si cambia dall'app. |
 | `SESSION_SECRET` | casuale a ogni avvio | Firma i cookie di sessione. Se non la imposti, a ogni riavvio tutti devono rifare il login. |
 | `DATA_DIR` | `./data` | Cartella del file SQLite. |
+| `TRUST_PROXY` | `loopback` | Da quali proxy accettare `X-Forwarded-For` (serve al blocco dei tentativi). Se metti l'app dietro un reverse proxy su un'altra macchina, indica il suo indirizzo. |
 
 ---
 
@@ -314,11 +363,11 @@ docker compose restart app
 
 ## Messa in sicurezza
 
-L'accesso è protetto da una password condivisa, sufficiente per un piccolo
-team interno. Prima di usarla con dati veri:
+Ogni persona ha il suo utente (vedi *Utenti e ruoli*); le password sono
+salvate con scrypt, mai in chiaro. Prima di usarla con dati veri:
 
-1. **Cambia `APP_PASSWORD`** nel file `.env` (lo script ne genera già una
-   casuale, ma puoi metterne una tua) e riavvia con `docker compose up -d`.
+1. **Cambia la password di `admin`** dall'app (bottone **Password**) e crea un
+   utente per ciascuno invece di condividerla.
 2. **Imposta `SESSION_SECRET`** con una stringa lunga e casuale
    (`openssl rand -hex 32`). Se manca, viene rigenerata a ogni riavvio e le
    sessioni decadono.
@@ -364,11 +413,16 @@ ripristinarlo basta spostare quel file.
 ### API
 
 Tutte le rotte sotto `/api` richiedono il cookie di sessione, tranne
-`/api/salute`, `/api/accesso` e `/api/sessione`.
+`/api/salute`, `/api/accesso` e `/api/sessione`. Al tecnico sono aperte solo
+`/api/tecnico/*` e `/api/profilo/*`; il resto risponde 403.
 
 | Metodo | Rotta | Descrizione |
 |---|---|---|
-| `POST` | `/api/accesso` | Login con `{ password }`. |
+| `POST` | `/api/accesso` | Login con `{ utente, password }` (senza `utente` vale `admin`). |
+| `POST` | `/api/profilo/password` | Cambio della propria password `{ attuale, nuova }`. Tutti i ruoli. |
+| `GET` `POST` `PUT` `DELETE` | `/api/utenti[/:id]` | Gestione utenti. Solo amministratori. |
+| `GET` | `/api/tecnico/installazioni` | Edizioni con cosa installare, stand e planimetrie. Senza prezzi. Tutti i ruoli. |
+| `GET` | `/api/tecnico/fiere/:id[/allegati/:allegato[/posizioni]]` | Dettaglio, file e posizioni della pianta per il tecnico. |
 | `GET` | `/api/prodotti` | Elenco con disponibilità di oggi e picco a 30 giorni. |
 | `POST` `PUT` `DELETE` | `/api/prodotti[/:id]` | Gestione catalogo. |
 | `GET` | `/api/fiere` | Elenco con pezzi impegnati e valore stimato. |

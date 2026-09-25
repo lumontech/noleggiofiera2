@@ -5,18 +5,27 @@ import cookieParser from 'cookie-parser';
 
 import './lib/db.js';
 import { HttpError } from './lib/domain.js';
-import { accedi, esci, autenticato, richiediAutenticazione } from './lib/auth.js';
+import {
+  accedi, esci, sessione, richiediAutenticazione, soloAmministratore,
+} from './lib/auth.js';
 import prodotti from './routes/prodotti.js';
 import fiere from './routes/fiere.js';
 import noleggi from './routes/noleggi.js';
 import disponibilita from './routes/disponibilita.js';
+import utenti, { profilo } from './routes/utenti.js';
+import tecnico from './routes/tecnico.js';
 
 const RADICE = path.dirname(fileURLToPath(import.meta.url));
 const PORTA = Number(process.env.PORT || 3000);
 
 const app = express();
 app.disable('x-powered-by');
-app.set('trust proxy', true);
+// X-Forwarded-For si può falsificare: gli si crede solo se arriva da un proxy
+// sulla stessa macchina. Altrimenti il limite ai tentativi di accesso si
+// aggirerebbe cambiando indirizzo finto a ogni tentativo. Dietro un reverse
+// proxy su un'altra macchina, impostare TRUST_PROXY con il suo indirizzo.
+const fiduciaProxy = process.env.TRUST_PROXY;
+app.set('trust proxy', fiduciaProxy === undefined ? 'loopback' : fiduciaProxy === 'true' ? true : fiduciaProxy);
 app.use(express.json({ limit: '256kb' }));
 app.use(cookieParser());
 
@@ -29,9 +38,17 @@ app.get('/api/salute', (_req, res) => res.json({ ok: true, versione: VERSIONE })
 
 app.post('/api/accesso', asincrono((req, res) => res.json(accedi(req, res))));
 app.post('/api/uscita', asincrono((req, res) => res.json(esci(req, res))));
-app.get('/api/sessione', (req, res) => res.json({ autenticato: autenticato(req) }));
+app.get('/api/sessione', (req, res) => res.json(sessione(req)));
 
 app.use('/api', richiediAutenticazione);
+
+// Aperto a ogni ruolo: il canale del tecnico (senza prezzi) e la propria password.
+app.use('/api/tecnico', tecnico);
+app.use('/api/profilo', profilo);
+
+// Da qui in poi solo amministratori: prezzi, magazzino, fiere, utenti.
+app.use('/api', soloAmministratore);
+app.use('/api/utenti', utenti);
 app.use('/api/prodotti', prodotti);
 app.use('/api/fiere', fiere);
 app.use('/api/noleggi', noleggi);

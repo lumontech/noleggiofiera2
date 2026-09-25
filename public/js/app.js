@@ -1,18 +1,20 @@
 // Shell applicativa: login, navigazione e routing via hash.
 
 import { api, impostaGestoreLogout } from './api.js';
-import { h, monta, svuota, avviso } from './ui.js';
+import { h, monta, svuota, avviso, modale, campo, input } from './ui.js';
 import vistaDashboard from './views/dashboard.js';
 import vistaProdotti from './views/prodotti.js';
 import vistaFiere from './views/fiere.js';
 import vistaNoleggi from './views/noleggi.js';
 import vistaDisponibilita from './views/disponibilita.js';
+import vistaUtenti from './views/utenti.js';
+import vistaInstallazioni from './views/installazioni.js';
 
 const app = document.getElementById('app');
 
-export const stato = { costanti: null };
+export const stato = { costanti: null, utente: null };
 
-const SEZIONI = [
+const SEZIONI_AMMINISTRATORE = [
   { id: 'dashboard', titolo: 'Cruscotto', icona: '▦', vista: vistaDashboard,
     descrizione: 'La situazione di oggi in una schermata.' },
   { id: 'disponibilita', titolo: 'Disponibilità', icona: '◧', vista: vistaDisponibilita,
@@ -23,11 +25,30 @@ const SEZIONI = [
     descrizione: 'Gli eventi dove il materiale viene noleggiato.' },
   { id: 'noleggi', titolo: 'Noleggi', icona: '⇄', vista: vistaNoleggi,
     descrizione: 'Chi ha cosa, fiera per fiera. Clicca un noleggio per modificarlo.' },
+  { id: 'utenti', titolo: 'Utenti', icona: '◉', vista: vistaUtenti,
+    descrizione: 'Chi può entrare e cosa vede. Il tecnico vede solo le installazioni, senza prezzi.' },
 ];
+
+// Il tecnico ha una sezione sola: il resto dell'API gli è comunque chiuso dal server.
+const SEZIONI_TECNICO = [
+  { id: 'installazioni', titolo: 'Installazioni', icona: '▣', vista: vistaInstallazioni,
+    descrizione: 'Cosa montare e in quale stand. Apri la pianta per vedere dove.' },
+];
+
+const sezioniDelRuolo = () => (stato.utente?.ruolo === 'amministratore' ? SEZIONI_AMMINISTRATORE : SEZIONI_TECNICO);
+
+// Il nome utente si ricorda sul dispositivo, la password no.
+const ULTIMO_UTENTE = 'nf_ultimo_utente';
+const leggiUltimoUtente = () => { try { return localStorage.getItem(ULTIMO_UTENTE) || ''; } catch { return ''; } };
+const salvaUltimoUtente = (v) => { try { localStorage.setItem(ULTIMO_UTENTE, v); } catch { /* niente */ } };
 
 /* ---------------- login ---------------- */
 
 function schermataAccesso() {
+  const utente = h('input', {
+    class: 'controllo', type: 'text', name: 'utente', required: true, value: leggiUltimoUtente(),
+    autocomplete: 'username', autocapitalize: 'none', spellcheck: false, placeholder: 'es. mario',
+  });
   const password = h('input', {
     class: 'controllo', type: 'password', name: 'password', required: true,
     autocomplete: 'current-password', placeholder: '••••••••',
@@ -42,7 +63,8 @@ function schermataAccesso() {
       errore.hidden = true;
       bottone.disabled = true;
       try {
-        await api.accesso(password.value);
+        await api.accesso(utente.value.trim(), password.value);
+        salvaUltimoUtente(utente.value.trim());
         await avvia();
       } catch (err) {
         errore.textContent = err.message;
@@ -53,6 +75,7 @@ function schermataAccesso() {
       }
     },
   },
+  h('label', { class: 'campo' }, h('span', { class: 'campo__etichetta' }, 'Nome utente'), utente),
   h('label', { class: 'campo' }, h('span', { class: 'campo__etichetta' }, 'Password'), password),
   errore,
   bottone);
@@ -64,14 +87,32 @@ function schermataAccesso() {
     h('p', { class: 'accesso__testo' },
       'Gestione del parco monitor e TV a noleggio: disponibilità, fiere e occupazione nel tempo.'),
     form));
-  password.focus();
+  (utente.value ? password : utente).focus();
+}
+
+function cambiaPassword() {
+  modale({
+    titolo: 'Cambia la tua password',
+    sottotitolo: 'Gli altri dispositivi con cui sei entrato verranno disconnessi.',
+    corpo: [
+      campo('Password attuale', input('attuale', { type: 'password', required: true, autocomplete: 'current-password' })),
+      campo('Nuova password', input('nuova', { type: 'password', required: true, minlength: 4, autocomplete: 'new-password' }),
+        { aiuto: 'Almeno 4 caratteri.' }),
+    ],
+    testoConferma: 'Cambia password',
+    onConferma: async ({ attuale, nuova }) => {
+      await api.cambiaPassword(attuale, nuova);
+      avviso('Password cambiata.');
+    },
+  });
 }
 
 /* ---------------- shell ---------------- */
 
 function sezioneCorrente() {
-  const id = (location.hash.replace('#/', '').split('?')[0]) || 'dashboard';
-  return SEZIONI.find((s) => s.id === id) || SEZIONI[0];
+  const sezioni = sezioniDelRuolo();
+  const id = location.hash.replace('#/', '').split('?')[0];
+  return sezioni.find((s) => s.id === id) || sezioni[0];
 }
 
 function shell() {
@@ -81,7 +122,7 @@ function shell() {
   const disegnaNav = () => {
     const attiva = sezioneCorrente().id;
     svuota(nav);
-    for (const s of SEZIONI) {
+    for (const s of sezioniDelRuolo()) {
       nav.appendChild(h('a', {
         class: `voce ${s.id === attiva ? 'voce--attiva' : ''}`,
         href: `#/${s.id}`,
@@ -114,19 +155,26 @@ function shell() {
     }
   };
 
-  app.className = 'guscio';
+  app.className = `guscio guscio--${stato.utente.ruolo}`;
   monta(app,
     h('aside', { class: 'barra' },
       h('div', { class: 'logo' }, h('span', { class: 'logo__segno' }, '▤'),
         h('span', {}, 'Noleggio', h('strong', {}, 'Fiera'))),
       nav,
-      h('button', {
-        class: 'btn btn--fantasma btn--blocco',
-        onclick: async () => { await api.uscita(); schermataAccesso(); },
-      }, 'Esci'),
+      h('div', { class: 'barra__utente' },
+        h('p', { class: 'barra__nome' }, stato.utente.nome,
+          h('span', {}, stato.utente.ruolo === 'amministratore' ? 'Amministratore' : 'Tecnico')),
+        h('div', { class: 'barra__bottoni' },
+          h('button', { class: 'btn btn--fantasma', onclick: cambiaPassword }, 'Password'),
+          h('button', {
+            class: 'btn btn--fantasma',
+            onclick: async () => { await api.uscita(); schermataAccesso(); },
+          }, 'Esci'))),
       h('p', { class: 'barra__versione', id: 'versione' })),
     contenuto);
 
+  window.removeEventListener('hashchange', statoShell.disegna);
+  statoShell.disegna = disegnaVista;
   window.addEventListener('hashchange', disegnaVista);
   disegnaVista();
   api.salute()
@@ -136,10 +184,15 @@ function shell() {
 
 /* ---------------- avvio ---------------- */
 
+// Un solo ascoltatore di hashchange anche dopo esci/rientra.
+const statoShell = { disegna: null };
+
 async function avvia() {
-  const { autenticato } = await api.sessione();
+  const { autenticato, utente } = await api.sessione();
   if (!autenticato) return schermataAccesso();
-  stato.costanti = await api.costanti();
+  stato.utente = utente;
+  // Le costanti servono ai moduli dell'amministratore; al tecnico non servono (e non gli sono aperte).
+  stato.costanti = utente.ruolo === 'amministratore' ? await api.costanti() : null;
   return shell();
 }
 

@@ -115,7 +115,8 @@ for tentativo in $(seq 1 30); do
     verde "Fatto. NoleggioFiera è online."
     echo "  Indirizzo:  http://noleggiofierafinale.$IP.nip.io:$PORTA"
     echo "  Oppure:     http://$IP:$PORTA"
-    echo "  Password:   $(grep '^APP_PASSWORD=' .env | cut -d= -f2-)"
+    echo "  Utente:     admin"
+    echo "  Password:   $(grep '^APP_PASSWORD=' .env | cut -d= -f2-)  (solo al primo avvio; poi si cambia dall'app)"
     echo
     echo "Se dal tuo computer il sito va in timeout, l'app sta girando ma la porta"
     echo "$PORTA e' chiusa: aprila nel firewall (ufw allow $PORTA/tcp) e nel pannello"

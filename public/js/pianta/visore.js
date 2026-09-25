@@ -5,6 +5,9 @@
 // Nei PDF con testo i numeri degli stand si trovano da soli. Per le immagini e
 // per gli stand non trovati si clicca lo stand sulla pianta: la posizione
 // resta salvata per quella planimetria.
+//
+// In sola lettura (il tecnico) non si sposta nulla: si guarda la pianta, e i
+// dati arrivano dal canale del tecnico, che non contiene prezzi.
 
 import { api } from '../api.js';
 import { h, monta, svuota, avviso, numero, nomeBreve } from '../ui.js';
@@ -64,7 +67,22 @@ function dimensioneTipica(gruppi, pagina) {
   return { w: media('w'), h: media('h') };
 }
 
-export async function apriPianta({ fiera, allegato }) {
+const datiDaAmministratore = (fiera, allegato) => Promise.all([
+  api.fiera(fiera.id),
+  api.posizioni(fiera.id, allegato.id),
+]).then(([dettaglio, posizioni]) => ({ noleggi: dettaglio.noleggi, posizioni }));
+
+/**
+ * @param {object} o
+ * @param {object} o.fiera        l'edizione ({ id, nome })
+ * @param {object} o.allegato     la planimetria ({ id, nome, tipo, url })
+ * @param {boolean} [o.solaLettura] niente "Posiziona", "Sposta", "Ripristina"
+ * @param {Function} [o.caricaDati] () => Promise<{ noleggi, posizioni }>
+ * @param {string} [o.stand]      stand da mettere in evidenza all'apertura
+ */
+export async function apriPianta({
+  fiera, allegato, solaLettura = false, caricaDati = () => datiDaAmministratore(fiera, allegato), stand = '',
+}) {
   const radice = h('div', { class: 'pianta', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Pianta con TV' });
   document.body.appendChild(radice);
   document.body.classList.add('pianta-aperta');
@@ -134,11 +152,15 @@ export async function apriPianta({ fiera, allegato }) {
 
   /* ---------- caricamento e analisi ---------- */
 
-  const [dettaglio, salvate] = await Promise.all([
-    api.fiera(fiera.id),
-    api.posizioni(fiera.id, allegato.id),
-  ]);
-  const gruppiBase = gruppiDaNoleggi(dettaglio.noleggi);
+  let dati;
+  try {
+    dati = await caricaDati();
+  } catch (err) {
+    monta(elenco, h('p', { class: 'pianta__errore' }, err.message || 'Impossibile caricare i dati.'));
+    return;
+  }
+  const salvate = dati.posizioni;
+  const gruppiBase = gruppiDaNoleggi(dati.noleggi);
   const eImmagine = allegato.tipo.startsWith('image/');
 
   try {
@@ -182,9 +204,16 @@ export async function apriPianta({ fiera, allegato }) {
   }
   ricolloca();
 
-  // Si apre sulla pagina con più stand coperti.
+  // Si apre sulla pagina con più stand coperti, o su quella dello stand richiesto.
   const perPagina = stato.pagine.map((_, i) => stato.gruppi.filter((g) => g.spazi.some((s) => s.pagina === i + 1)).length);
   stato.pagina = perPagina.indexOf(Math.max(...perPagina)) + 1 || 1;
+  const codiceRichiesto = codiciStand(stand)[0];
+  const richiesto = codiceRichiesto
+    ? stato.gruppi.find((g) => g.codici.includes(codiceRichiesto) && g.spazi.length) : null;
+  if (richiesto) {
+    stato.evidenziato = richiesto;
+    stato.pagina = richiesto.spazi[0].pagina;
+  }
 
   /* ---------- disegno ---------- */
 
@@ -264,6 +293,11 @@ export async function apriPianta({ fiera, allegato }) {
           + `${stato.posiziona.stand ? ` (${stato.posiziona.stand})` : ''}.`),
         h('button', { class: 'btn btn--mini', onclick: annullaPosizionamento }, 'Annulla'));
       banner.className = 'pianta__banner pianta__banner--azione';
+    } else if (senzaTesto && solaLettura) {
+      monta(banner, h('span', {},
+        'I numeri degli stand non si leggono da soli su questa planimetria: vedi l\'elenco degli stand. '
+        + 'Quelli già posizionati dall\'ufficio sono coperti sulla pianta.'));
+      banner.className = 'pianta__banner';
     } else if (senzaTesto) {
       monta(banner, h('span', {}, eImmagine
         ? 'Questa planimetria è un\'immagine: i numeri degli stand non si possono leggere da soli. '
@@ -289,7 +323,7 @@ export async function apriPianta({ fiera, allegato }) {
         g.padiglione ? h('span', {}, ` · pad. ${g.padiglione}`) : null,
         stato.pagine.length > 1 && pagine.length ? h('span', {}, ` · pag. ${pagine.join(', ')}`) : null),
       h('p', { class: 'pianta__apparecchi' }, g.apparecchi.join(' · ')),
-      h('div', { class: 'pianta__voce-azioni' },
+      solaLettura ? null : h('div', { class: 'pianta__voce-azioni' },
         h('button', {
           class: `btn btn--mini ${g.spazi.length ? '' : 'btn--primario'}`,
           onclick: (e) => { e.stopPropagation(); avviaPosizionamento(g); },
@@ -316,9 +350,11 @@ export async function apriPianta({ fiera, allegato }) {
           : h('p', { class: 'pianta__riepilogo-ok' }, 'Tutti gli stand sono sulla pianta.')),
       !stato.gruppi.length ? h('p', { class: 'pianta__attesa' }, 'Nessun noleggio su questa edizione.') : null,
       mancanti.length ? h('h3', {}, 'Non trovati su questa pianta') : null,
-      mancanti.length ? h('p', { class: 'pianta__nota' },
-        'Possono essere in un padiglione che questa pianta non mostra: allega anche la sua, '
-        + 'oppure usa "Posiziona" e clicca lo stand.') : null,
+      mancanti.length ? h('p', { class: 'pianta__nota' }, solaLettura
+        ? 'Possono essere in un padiglione che questa pianta non mostra: guarda le altre planimetrie '
+          + 'della fiera o chiedi all\'ufficio.'
+        : 'Possono essere in un padiglione che questa pianta non mostra: allega anche la sua, '
+          + 'oppure usa "Posiziona" e clicca lo stand.') : null,
       mancanti.length ? h('ul', {}, mancanti.map(voce)) : null,
       coperti.length ? h('h3', {}, 'Sulla pianta') : null,
       coperti.length ? h('ul', {}, coperti.map(voce)) : null);
@@ -379,7 +415,7 @@ export async function apriPianta({ fiera, allegato }) {
   }
 
   livello.addEventListener('click', async (e) => {
-    if (!stato.posiziona) return;
+    if (!stato.posiziona || solaLettura) return;
     const r = livello.getBoundingClientRect();
     const posizione = {
       pagina: stato.pagina,
@@ -484,4 +520,5 @@ export async function apriPianta({ fiera, allegato }) {
 
   aggiornaTutto();
   await disegnaPagina();
+  if (richiesto) evidenzia(richiesto, true);
 }

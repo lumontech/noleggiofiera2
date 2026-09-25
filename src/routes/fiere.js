@@ -1,5 +1,4 @@
 import express, { Router } from 'express';
-import fs from 'node:fs';
 import db from '../lib/db.js';
 import * as archivio from '../lib/allegati.js';
 import {
@@ -279,16 +278,7 @@ router.post('/:id/allegati',
 
 router.get('/:id/allegati/:allegato', (req, res) => {
   const fiera = trovaFiera(req.params.id);
-  const allegato = trovaAllegato(fiera, req.params.allegato);
-  const file = archivio.percorso(fiera.id, allegato.nome_file);
-  if (!fs.existsSync(file)) throw new HttpError(404, 'Il file non è più presente sul server.');
-  // Si apre nel browser (PDF e immagini), col tipo deciso da noi e non dal client.
-  res.setHeader('Content-Type', allegato.tipo);
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('Cache-Control', 'private, max-age=3600');
-  res.setHeader('Content-Disposition',
-    `inline; filename*=UTF-8''${encodeURIComponent(allegato.nome_originale)}`);
-  fs.createReadStream(file).pipe(res);
+  archivio.invia(res, fiera.id, trovaAllegato(fiera, req.params.allegato));
 });
 
 /* Posizioni degli stand messe a mano su una planimetria. x e y sono frazioni

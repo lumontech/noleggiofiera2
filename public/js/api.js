@@ -32,7 +32,18 @@ const qs = (parametri) => {
 export const api = {
   sessione: () => richiesta('GET', '/api/sessione'),
   salute: () => richiesta('GET', '/api/salute'),
-  accesso: (password) => richiesta('POST', '/api/accesso', { password }),
+  accesso: (utente, password) => richiesta('POST', '/api/accesso', { utente, password }),
+  cambiaPassword: (attuale, nuova) => richiesta('POST', '/api/profilo/password', { attuale, nuova }),
+
+  utenti: () => richiesta('GET', '/api/utenti'),
+  creaUtente: (d) => richiesta('POST', '/api/utenti', d),
+  modificaUtente: (id, d) => richiesta('PUT', `/api/utenti/${id}`, d),
+  eliminaUtente: (id) => richiesta('DELETE', `/api/utenti/${id}`),
+
+  // Canale del tecnico: cosa installare e dove, senza prezzi.
+  installazioni: () => richiesta('GET', '/api/tecnico/installazioni'),
+  installazioniFiera: (id) => richiesta('GET', `/api/tecnico/fiere/${id}`),
+  posizioniTecnico: (fieraId, id) => richiesta('GET', `/api/tecnico/fiere/${fieraId}/allegati/${id}/posizioni`),
   uscita: () => richiesta('POST', '/api/uscita'),
 
   costanti: () => richiesta('GET', '/api/disponibilita/costanti'),

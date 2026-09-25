@@ -4,6 +4,7 @@ import * as archivio from '../lib/allegati.js';
 import {
   STATI_FIERA, STATI_IMPEGNATIVI, HttpError,
   testo, intero, enumerato, periodo, addGiorni, giorniTra, oggi,
+  idProdotto,
 } from '../lib/domain.js';
 import { impegnoMassimo } from '../lib/disponibilita.js';
 
@@ -221,7 +222,7 @@ router.put('/:id', (req, res) => {
         const altri = righe.filter((r) => r.fiera_id !== fiera.id)
           .map((r) => `${r.cliente || 'un cliente'} (${r.fiera_nome})`);
         throw new HttpError(409,
-          `Con le nuove date "${prodotto.nome}"${prodotto.codice ? ` (${prodotto.codice})` : ''} `
+          `Con le nuove date "${prodotto.nome}"${prodotto.codice ? ` (${idProdotto(prodotto.codice)})` : ''} `
           + `sarebbe noleggiato due volte: nello stesso periodo è già assegnato a ${altri.join(', ')}. `
           + 'Le date non sono state cambiate: libera prima quell\'apparecchio o scegline un altro.');
       }

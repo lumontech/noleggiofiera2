@@ -147,4 +147,29 @@ if (aggiungiColonna('noleggi', 'importo', 'REAL NOT NULL DEFAULT 0')) {
   }
 }
 
+// Costo d'acquisto, EAN e scheda tecnica (le misure servono agli allestitori).
+const nuovoCosto = aggiungiColonna('prodotti', 'costo_acquisto', 'REAL NOT NULL DEFAULT 0');
+aggiungiColonna('prodotti', 'ean', "TEXT DEFAULT ''");
+aggiungiColonna('prodotti', 'larghezza_mm', 'REAL');
+aggiungiColonna('prodotti', 'altezza_mm', 'REAL');
+aggiungiColonna('prodotti', 'profondita_mm', 'REAL');
+aggiungiColonna('prodotti', 'altezza_base_mm', 'REAL');
+aggiungiColonna('prodotti', 'peso_kg', 'REAL');
+aggiungiColonna('prodotti', 'vesa', "TEXT DEFAULT ''");
+aggiungiColonna('prodotti', 'scheda_url', "TEXT DEFAULT ''");
+if (nuovoCosto) {
+  // L'importatore Airtable aveva messo il costo nelle note ("Costo d'acquisto:
+  // 450 €") e l'EAN dentro il nome: si portano nei campi giusti.
+  const RIGA_COSTO = /^Costo d'acquisto: ([\d.]+) €\n?/m;
+  const aggiorna = db.prepare('UPDATE prodotti SET costo_acquisto = ?, ean = ?, note = ? WHERE id = ?');
+  for (const p of db.prepare('SELECT id, nome, note, ean FROM prodotti').all()) {
+    const costo = Number((p.note || '').match(RIGA_COSTO)?.[1] || 0);
+    const ean = p.ean || (p.nome.match(/\b(\d{13}|\d{8})\b/)?.[1] ?? '');
+    aggiorna.run(costo, ean, (p.note || '').replace(RIGA_COSTO, '').trim(), p.id);
+  }
+}
+
+// Gli ID dei prodotti tornano quelli di Airtable (1, 2, 3…), senza "INV-".
+db.exec("UPDATE prodotti SET codice = substr(codice, 5) WHERE codice GLOB 'INV-[0-9]*'");
+
 export default db;

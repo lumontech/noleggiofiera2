@@ -2,7 +2,7 @@
 // in un periodo e quanti restano liberi. È il cuore della piattaforma.
 
 import db from './db.js';
-import { STATI_IMPEGNATIVI, addGiorni, giorniTra } from './domain.js';
+import { STATI_IMPEGNATIVI, addGiorni, giorniTra, ORDINE_PER_ID } from './domain.js';
 
 const PLACEHOLDER_STATI = STATI_IMPEGNATIVI.map(() => '?').join(',');
 
@@ -96,7 +96,7 @@ export function prospettoDisponibilita({ from, to, categoria = null, soloAttivi 
     parametri.push(categoria);
   }
   if (condizioni.length) sql += ` WHERE ${condizioni.join(' AND ')}`;
-  sql += ` ORDER BY CASE categoria WHEN 'TV' THEN 1 WHEN 'Monitor' THEN 2 WHEN 'Videowall' THEN 3 WHEN 'Totem' THEN 4 WHEN 'Supporto' THEN 5 ELSE 6 END, pollici DESC, nome ASC`;
+  sql += ` ORDER BY ${ORDINE_PER_ID}`;
 
   const prodotti = db.prepare(sql).all(...parametri);
   const tutteLeRighe = noleggiImpegnativi({ from, to });
@@ -139,10 +139,7 @@ export function prospettoDisponibilita({ from, to, categoria = null, soloAttivi 
  */
 export function apparecchiPerPeriodo({ from, to, escludiNoleggio = null }) {
   const prodotti = db.prepare(`
-    SELECT * FROM prodotti WHERE stato != 'dismesso'
-     ORDER BY CASE categoria WHEN 'TV' THEN 1 WHEN 'Monitor' THEN 2 WHEN 'Videowall' THEN 3
-                             WHEN 'Totem' THEN 4 WHEN 'Supporto' THEN 5 ELSE 6 END,
-              pollici DESC, marca, codice`).all();
+    SELECT * FROM prodotti WHERE stato != 'dismesso' ORDER BY ${ORDINE_PER_ID}`).all();
   const righe = noleggiImpegnativi({ from, to, escludiNoleggio });
 
   return prodotti.map((prodotto) => {

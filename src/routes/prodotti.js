@@ -3,6 +3,7 @@ import db from '../lib/db.js';
 import {
   CATEGORIE, STATI_PRODOTTO, HttpError,
   testo, intero, decimale, enumerato, oggi, addGiorni, isData,
+  ORDINE_PER_ID,
 } from '../lib/domain.js';
 import { impegnoMassimo } from '../lib/disponibilita.js';
 
@@ -23,8 +24,24 @@ function leggiCorpo(body) {
     prezzo_giorno: decimale(body.prezzo_giorno, 'prezzo_giorno', { min: 0, predefinito: 0 }),
     stato: enumerato(body.stato, 'stato', STATI_PRODOTTO, 'attivo'),
     note: testo(body.note, 'note', { max: 2000 }),
+    costo_acquisto: decimale(body.costo_acquisto, 'costo d\'acquisto', { min: 0, predefinito: 0 }),
+    ean: testo(body.ean, 'EAN', { max: 20 }).replace(/\s+/g, ''),
+    larghezza_mm: misura(body.larghezza_mm, 'larghezza'),
+    altezza_mm: misura(body.altezza_mm, 'altezza'),
+    profondita_mm: misura(body.profondita_mm, 'profondità'),
+    altezza_base_mm: misura(body.altezza_base_mm, 'altezza con base'),
+    peso_kg: decimale(body.peso_kg, 'peso', { min: 0, max: 1000, predefinito: null }),
+    vesa: testo(body.vesa, 'VESA', { max: 30 }),
+    scheda_url: testo(body.scheda_url, 'link scheda tecnica', { max: 500 }),
   };
 }
+
+// Misure in millimetri, facoltative.
+const misura = (v, campo) => decimale(v, campo, { min: 0, max: 20000, predefinito: null });
+
+const CAMPI = ['nome', 'categoria', 'marca', 'modello', 'codice', 'pollici', 'risoluzione', 'quantita',
+  'prezzo_giorno', 'stato', 'note', 'costo_acquisto', 'ean', 'larghezza_mm', 'altezza_mm',
+  'profondita_mm', 'altezza_base_mm', 'peso_kg', 'vesa', 'scheda_url'];
 
 export function trovaProdotto(id) {
   const prodotto = db.prepare('SELECT * FROM prodotti WHERE id = ?').get(id);
@@ -45,9 +62,14 @@ router.get('/', (req, res) => {
   }
   let sql = 'SELECT * FROM prodotti';
   if (condizioni.length) sql += ` WHERE ${condizioni.join(' AND ')}`;
-  sql += ` ORDER BY CASE categoria WHEN 'TV' THEN 1 WHEN 'Monitor' THEN 2 WHEN 'Videowall' THEN 3 WHEN 'Totem' THEN 4 WHEN 'Supporto' THEN 5 ELSE 6 END, pollici DESC, nome ASC`;
+  sql += ` ORDER BY ${ORDINE_PER_ID}`;
 
   const prodotti = db.prepare(sql).all(...parametri);
+  // Quanto ha reso ogni apparecchio: la somma degli importi dei suoi noleggi.
+  const resa = new Map(db.prepare(`
+    SELECT prodotto_id, COALESCE(SUM(importo), 0) AS ricavi, COUNT(*) AS noleggi
+      FROM noleggi WHERE stato != 'annullato' GROUP BY prodotto_id`).all()
+    .map((r) => [r.prodotto_id, r]));
   const giorno = isData(req.query.giorno) ? req.query.giorno : oggi();
 
   // Arricchisce ogni prodotto con la situazione "adesso" e nei prossimi 30 giorni.
@@ -64,6 +86,8 @@ router.get('/', (req, res) => {
         : Math.max(prodotto.quantita - oggiImpegno.picco, 0),
       impegno_max_30gg: futuro.picco,
       noleggi_attivi: oggiImpegno.righe.length,
+      ricavi: Math.round((resa.get(prodotto.id)?.ricavi || 0) * 100) / 100,
+      noleggi_totali: resa.get(prodotto.id)?.noleggi || 0,
     };
   });
   res.json(arricchiti);
@@ -83,10 +107,8 @@ router.post('/', (req, res) => {
   const dati = leggiCorpo(req.body);
   const adesso = new Date().toISOString();
   const info = db.prepare(`
-    INSERT INTO prodotti (nome, categoria, marca, modello, codice, pollici, risoluzione,
-                          quantita, prezzo_giorno, stato, note, creato_il, aggiornato_il)
-    VALUES (@nome, @categoria, @marca, @modello, @codice, @pollici, @risoluzione,
-            @quantita, @prezzo_giorno, @stato, @note, @creato_il, @aggiornato_il)`)
+    INSERT INTO prodotti (${CAMPI.join(', ')}, creato_il, aggiornato_il)
+    VALUES (${CAMPI.map((c) => `@${c}`).join(', ')}, @creato_il, @aggiornato_il)`)
     .run({ ...dati, creato_il: adesso, aggiornato_il: adesso });
   res.status(201).json(trovaProdotto(info.lastInsertRowid));
 });
@@ -105,10 +127,7 @@ router.put('/:id', (req, res) => {
   }
 
   db.prepare(`
-    UPDATE prodotti SET nome=@nome, categoria=@categoria, marca=@marca, modello=@modello,
-                        codice=@codice, pollici=@pollici, risoluzione=@risoluzione,
-                        quantita=@quantita, prezzo_giorno=@prezzo_giorno, stato=@stato,
-                        note=@note, aggiornato_il=@aggiornato_il
+    UPDATE prodotti SET ${CAMPI.map((c) => `${c}=@${c}`).join(', ')}, aggiornato_il=@aggiornato_il
      WHERE id=@id`)
     .run({ ...dati, id: prodotto.id, aggiornato_il: new Date().toISOString() });
   res.json(trovaProdotto(prodotto.id));

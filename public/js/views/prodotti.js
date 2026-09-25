@@ -3,6 +3,7 @@ import { stato as statoApp } from '../app.js';
 import {
   h, monta, badge, modale, conferma, avviso, campo, input, select, areaTesto,
   griglia, numero, euro, vuoto, intervalloDate, etichetta,
+  idProdotto,
 } from '../ui.js';
 
 const CATEGORIA_ICONA = {
@@ -18,15 +19,44 @@ function formProdotto(p = {}) {
       campo('Stato', select('stato', statiProdotto, p.stato || 'attivo')),
       campo('Marca', input('marca', { value: p.marca || '', placeholder: 'Samsung' })),
       campo('Modello', input('modello', { value: p.modello || '', placeholder: 'QM55B' })),
-      campo('Codice interno', input('codice', { value: p.codice || '', placeholder: 'TV-55-A' })),
+      campo('ID', input('codice', { value: p.codice || '', placeholder: '38' }), { aiuto: 'Il numero dell\'apparecchio, come in Airtable.' }),
       campo('Pollici', input('pollici', { value: p.pollici ?? '', type: 'number', step: '0.1', min: '1', placeholder: '55' })),
       campo('Risoluzione', input('risoluzione', { value: p.risoluzione || '', placeholder: '4K UHD' })),
       campo('Pezzi in magazzino', input('quantita', { value: p.quantita ?? 1, type: 'number', min: '1', required: true }),
         { aiuto: 'Quante unità identiche possiedi.' }),
-      campo('Prezzo al giorno (€)', input('prezzo_giorno', { value: p.prezzo_giorno ?? 0, type: 'number', min: '0', step: '0.01' })),
+      campo('Costo d\'acquisto (€)', input('costo_acquisto', { value: p.costo_acquisto ?? 0, type: 'number', min: '0', step: '0.01' }),
+        { aiuto: 'Quanto l\'hai pagato, per pezzo. Serve per il bilancio nel cruscotto.' }),
+      campo('Prezzo al giorno (€)', input('prezzo_giorno', { value: p.prezzo_giorno ?? 0, type: 'number', min: '0', step: '0.01' }),
+        { aiuto: 'Listino indicativo: propone l\'importo nei nuovi noleggi.' }),
+    ),
+    h('h3', { class: 'form-sezione' }, 'Scheda tecnica'),
+    h('p', { class: 'form-sezione__testo' }, 'Le misure servono agli allestitori per preparare lo stand.'),
+    griglia(
+      campo('EAN', input('ean', { value: p.ean || '', inputmode: 'numeric', placeholder: '8806095478333' })),
+      campo('VESA', input('vesa', { value: p.vesa || '', placeholder: '300x300' })),
+      campo('Larghezza (mm)', misura('larghezza_mm', p)),
+      campo('Altezza senza base (mm)', misura('altezza_mm', p)),
+      campo('Profondità (mm)', misura('profondita_mm', p)),
+      campo('Altezza con base (mm)', misura('altezza_base_mm', p)),
+      campo('Peso senza base (kg)', input('peso_kg', { value: p.peso_kg ?? '', type: 'number', min: '0', step: '0.1' })),
+      campo('Link scheda tecnica', input('scheda_url', { value: p.scheda_url || '', type: 'url', placeholder: 'https://…' })),
       campo('Note', areaTesto('note', { value: p.note || '' }), { largo: true }),
     ),
   ];
+}
+
+const misura = (nome, p) => input(nome, { value: p[nome] ?? '', type: 'number', min: '0', step: '0.1' });
+
+/** "1450 × 830 mm · con base 886 mm · 14,3 kg · VESA 300x200", con quello che c'è. */
+export function misureInBreve(p) {
+  const mm = (n) => numero(Math.round(n));
+  return [
+    p.larghezza_mm && p.altezza_mm ? `${mm(p.larghezza_mm)} × ${mm(p.altezza_mm)} mm` : null,
+    p.profondita_mm ? `prof. ${mm(p.profondita_mm)} mm` : null,
+    p.altezza_base_mm ? `con base alto ${mm(p.altezza_base_mm)} mm` : null,
+    p.peso_kg ? `${String(p.peso_kg).replace('.', ',')} kg` : null,
+    p.vesa ? `VESA ${p.vesa}` : null,
+  ].filter(Boolean).join(' · ');
 }
 
 function apriForm(p, ricarica) {
@@ -55,19 +85,21 @@ function schedaProdotto(p, ricarica) {
     h('header', { class: 'prodotto__testa' },
       h('span', { class: 'prodotto__icona', 'aria-hidden': 'true' }, CATEGORIA_ICONA[p.categoria] || '📦'),
       h('div', { class: 'prodotto__titolo' },
-        h('h3', {}, p.nome),
+        h('h3', {}, p.codice ? h('span', { class: 'prodotto__id' }, idProdotto(p.codice)) : null, p.nome),
         h('p', {}, [p.marca, p.modello].filter(Boolean).join(' ')
-          || p.categoria, p.pollici ? ` · ${p.pollici}"` : '', p.codice ? ` · ${p.codice}` : '')),
+          || p.categoria, p.pollici ? ` · ${p.pollici}"` : '')),
       badge(p.stato)),
 
     h('div', { class: 'prodotto__numeri' },
       h('div', {}, h('span', { class: 'prodotto__cifra' }, numero(liberi)), h('span', {}, 'liberi oggi')),
       h('div', {}, h('span', { class: 'prodotto__cifra' }, numero(p.impegnati_oggi)), h('span', {}, 'noleggiati')),
       h('div', {}, h('span', { class: 'prodotto__cifra' }, numero(p.quantita)), h('span', {}, 'totali')),
-      h('div', {}, h('span', { class: 'prodotto__cifra' }, euro(p.prezzo_giorno)), h('span', {}, 'al giorno'))),
+      h('div', {}, h('span', { class: 'prodotto__cifra' }, euro(p.costo_acquisto)), h('span', {}, 'costo'))),
 
     h('div', { class: 'barra-occupazione barra-occupazione--sottile' },
       h('div', { class: 'barra-occupazione__riempimento', style: { width: `${perc}%` } })),
+    resa(p),
+    schedaTecnica(p),
     h('p', { class: 'prodotto__nota' },
       p.impegno_max_30gg > 0
         ? `Picco di ${p.impegno_max_30gg} pezzi impegnati nei prossimi 30 giorni.`
@@ -88,6 +120,29 @@ function schedaProdotto(p, ricarica) {
           },
         }),
       }, 'Elimina')));
+}
+
+/** Quanto ha reso l'apparecchio rispetto a quanto è costato. */
+function resa(p) {
+  if (!p.costo_acquisto && !p.ricavi) return null;
+  const costo = p.costo_acquisto * p.quantita;
+  const perc = costo ? Math.round((p.ricavi / costo) * 100) : null;
+  return h('p', { class: `prodotto__resa ${perc !== null && perc >= 100 ? 'prodotto__resa--ok' : ''}` },
+    h('strong', {}, euro(p.ricavi)), ` guadagnati in ${numero(p.noleggi_totali)} `,
+    p.noleggi_totali === 1 ? 'noleggio' : 'noleggi',
+    perc === null ? null : perc >= 100
+      ? ` · ripagato (${perc}%)`
+      : ` · ripagato al ${perc}%`);
+}
+
+function schedaTecnica(p) {
+  const misure = misureInBreve(p);
+  if (!misure && !p.ean) return null;
+  return h('div', { class: 'prodotto__scheda' },
+    misure ? h('p', {}, misure) : h('p', { class: 'prodotto__scheda-vuota' }, 'Misure non ancora inserite'),
+    h('p', { class: 'prodotto__ean' },
+      p.ean ? `EAN ${p.ean}` : null,
+      p.scheda_url ? h('a', { href: p.scheda_url, target: '_blank', rel: 'noopener' }, p.ean ? ' · Scheda tecnica' : 'Scheda tecnica') : null));
 }
 
 async function apriStorico(p) {
@@ -135,7 +190,7 @@ export default async function vistaProdotti({ corpo, azioni, ricarica }) {
             h('button', { class: 'btn btn--primario', onclick: () => apriForm(null, ricarica) }, '+ Nuovo prodotto')));
   };
 
-  const cerca = input('q', { placeholder: 'Cerca per nome, marca, modello o codice…', type: 'search' });
+  const cerca = input('q', { placeholder: 'Cerca per nome, marca, modello o ID…', type: 'search' });
   cerca.addEventListener('input', () => { filtri.q = cerca.value.trim(); disegna(); });
 
   const selCategoria = select('categoria',

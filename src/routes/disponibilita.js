@@ -3,6 +3,7 @@ import db from '../lib/db.js';
 import {
   CATEGORIE, STATI_PRODOTTO, STATI_FIERA, STATI_NOLEGGIO,
   oggi, addGiorni, giorniTra, isData,
+  ORDINE_PER_ID,
 } from '../lib/domain.js';
 import { prospettoDisponibilita, noleggiImpegnativi, apparecchiPerPeriodo } from '../lib/disponibilita.js';
 
@@ -69,8 +70,7 @@ router.get('/apparecchi', (req, res) => {
 router.get('/timeline', (req, res) => {
   const { from, to } = intervallo(req, 44);
   const righe = noleggiImpegnativi({ from, to });
-  const prodotti = db.prepare(`SELECT * FROM prodotti WHERE stato != 'dismesso'
-     ORDER BY CASE categoria WHEN 'TV' THEN 1 WHEN 'Monitor' THEN 2 WHEN 'Videowall' THEN 3 WHEN 'Totem' THEN 4 WHEN 'Supporto' THEN 5 ELSE 6 END, pollici DESC, nome`).all();
+  const prodotti = db.prepare(`SELECT * FROM prodotti WHERE stato != 'dismesso' ORDER BY ${ORDINE_PER_ID}`).all();
 
   res.json({
     periodo: { from, to, giorni: giorniTra(from, to) },
@@ -149,8 +149,33 @@ router.get('/dashboard', (_req, res) => {
       giorno: r.giorno_picco,
     }));
 
+  // Soldi: quanto è costato il parco e quanto hanno reso i noleggi.
+  const tondo = (n) => Math.round((n || 0) * 100) / 100;
+  const speso = db.prepare(
+    'SELECT COALESCE(SUM(costo_acquisto * quantita), 0) AS euro, COALESCE(SUM(quantita), 0) AS pezzi FROM prodotti').get();
+  const ricavi = db.prepare(`
+    SELECT COALESCE(SUM(CASE WHEN data_fine <  ? THEN importo END), 0) AS fatti,
+           COALESCE(SUM(CASE WHEN data_fine >= ? THEN importo END), 0) AS in_arrivo,
+           COUNT(CASE WHEN data_fine < ? THEN 1 END) AS lavori_fatti,
+           COUNT(CASE WHEN data_fine >= ? THEN 1 END) AS lavori_in_arrivo
+      FROM noleggi WHERE stato != 'annullato'`).get(giorno, giorno, giorno, giorno);
+  const perAnno = db.prepare(`
+    SELECT substr(data_inizio, 1, 4) AS anno, COALESCE(SUM(importo), 0) AS ricavi, COUNT(*) AS noleggi
+      FROM noleggi WHERE stato != 'annullato' GROUP BY anno ORDER BY anno`).all();
+  const economia = {
+    speso: tondo(speso.euro),
+    pezzi_acquistati: speso.pezzi,
+    guadagnato: tondo(ricavi.fatti),
+    in_arrivo: tondo(ricavi.in_arrivo),
+    lavori_fatti: ricavi.lavori_fatti,
+    lavori_in_arrivo: ricavi.lavori_in_arrivo,
+    bilancio: tondo(ricavi.fatti + ricavi.in_arrivo - speso.euro),
+    per_anno: perAnno.map((r) => ({ ...r, ricavi: tondo(r.ricavi) })),
+  };
+
   res.json({
     oggi: giorno,
+    economia,
     totali: { ...totali, manutenzione: inManutenzione },
     prodotti_totali: prospettoOggi.length,
     fiere_in_corso: inCorso,

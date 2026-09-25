@@ -7,6 +7,7 @@ import { apriPianta } from '../pianta/visore.js';
 import { codiciStand } from '../pianta/stand.js';
 import {
   h, monta, vuoto, numero, nomeBreve, intervalloDate, dataLunga, addGiorni, oggiISO,
+  idProdotto,
 } from '../ui.js';
 
 /** Cosa deve fare il tecnico con un noleggio, detto con le sue parole. */
@@ -33,7 +34,7 @@ function perStand(installazioni) {
 
 const testoRicerca = (fiera, g) => [
   fiera.nome, fiera.citta, fiera.luogo, g.stand, g.cliente,
-  ...g.righe.flatMap((n) => [n.prodotto_nome, n.prodotto_marca, n.prodotto_codice]),
+  ...g.righe.flatMap((n) => [n.prodotto_nome, n.prodotto_marca, idProdotto(n.prodotto_codice)]),
 ].filter(Boolean).join(' ').toLowerCase();
 
 function apriLaPianta(fiera, allegato, stand = '') {
@@ -73,7 +74,7 @@ function schedaStand(g, fiera) {
         h('span', { class: 'installa__apparecchio' },
           n.quantita > 1 ? h('strong', {}, `${n.quantita}× `) : null,
           nomeBreve({ nome: n.prodotto_nome, marca: n.prodotto_marca, pollici: n.prodotto_pollici }),
-          n.prodotto_codice ? h('span', { class: 'installa__codice' }, n.prodotto_codice) : null),
+          n.prodotto_codice ? h('span', { class: 'installa__codice' }, idProdotto(n.prodotto_codice)) : null),
         h('span', { class: `installa__compito installa__compito--${c.classe}` }, c.testo));
     })));
 }
@@ -116,7 +117,7 @@ export default async function vistaInstallazioni({ corpo }) {
   }
 
   const cerca = h('input', {
-    class: 'controllo', type: 'search', placeholder: 'Cerca stand, cliente, fiera o codice…', 'aria-label': 'Cerca',
+    class: 'controllo', type: 'search', placeholder: 'Cerca stand, cliente, fiera o ID…', 'aria-label': 'Cerca',
   });
   const elenco = h('div', { class: 'installazioni' });
 

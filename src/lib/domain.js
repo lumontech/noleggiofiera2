@@ -98,3 +98,12 @@ export function periodo(body) {
   if (fine < inizio) throw bad('La data di fine non può precedere la data di inizio.');
   return { inizio, fine };
 }
+
+/**
+ * Ordine dei prodotti: per ID (1, 2, 3… come in Airtable), poi quelli con un
+ * codice non numerico, poi quelli senza.
+ */
+export const ORDINE_PER_ID = `(codice GLOB '[0-9]*') DESC, CAST(codice AS INTEGER), codice = '', codice, nome`;
+
+/** Come si mostra il codice di un prodotto: "ID 7" se è un numero. */
+export const idProdotto = (codice) => (/^\d+$/.test(codice || '') ? `ID ${codice}` : codice || '');

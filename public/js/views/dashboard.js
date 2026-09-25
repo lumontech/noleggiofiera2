@@ -1,5 +1,5 @@
 import { api } from '../api.js';
-import { h, monta, badge, dataLunga, intervalloDate, numero, vuoto } from '../ui.js';
+import { h, monta, badge, dataLunga, intervalloDate, numero, euro, vuoto } from '../ui.js';
 
 const scheda = (etichetta, valore, dettaglio, tono = '') => h('div', { class: `kpi ${tono}` },
   h('p', { class: 'kpi__etichetta' }, etichetta),
@@ -18,6 +18,36 @@ function pannello(titolo, sottotitolo, contenuto, azione) {
       h('div', {}, h('h2', {}, titolo), sottotitolo && h('p', {}, sottotitolo)),
       azione),
     contenuto);
+}
+
+/** Quanto è costato il parco e quanto rendono i noleggi. */
+function pannelloSoldi(e, vai) {
+  const incassi = e.guadagnato + e.in_arrivo;
+  const ripagato = e.speso ? Math.round((incassi / e.speso) * 100) : null;
+  const positivo = e.bilancio >= 0;
+  return h('section', { class: 'pannello soldi' },
+    h('header', { class: 'pannello__testa' },
+      h('div', {},
+        h('h2', {}, 'Soldi'),
+        h('p', {}, 'Quanto hai speso per il parco e quanto ti stanno rendendo i noleggi.')),
+      h('button', { class: 'btn', onclick: () => vai('prodotti') }, 'Resa per prodotto')),
+    h('div', { class: 'kpi-griglia' },
+      scheda('Speso in apparecchi', euro(e.speso), `${numero(e.pezzi_acquistati)} pezzi acquistati`, 'kpi--speso'),
+      scheda('Guadagnato', euro(e.guadagnato), `${numero(e.lavori_fatti)} noleggi già fatti`, 'kpi--guadagno'),
+      scheda('In arrivo', euro(e.in_arrivo), `${numero(e.lavori_in_arrivo)} noleggi in programma`, 'kpi--arrivo'),
+      scheda('Bilancio', `${positivo ? '+' : ''}${euro(e.bilancio)}`,
+        ripagato === null ? 'guadagnato + in arrivo − speso'
+          : positivo ? `acquisti ripagati (${ripagato}%)` : `acquisti ripagati al ${ripagato}%`,
+        positivo ? 'kpi--positivo' : 'kpi--negativo')),
+    e.speso ? h('div', { class: 'soldi__ripagato' },
+      h('div', { class: 'barra-occupazione' },
+        h('div', { class: 'barra-occupazione__riempimento soldi__riempimento', style: { width: `${Math.min(ripagato, 100)}%` } })),
+      h('p', {}, positivo
+        ? `I noleggi hanno già coperto il costo degli apparecchi, con ${euro(e.bilancio)} in più.`
+        : `Mancano ${euro(-e.bilancio)} per ripagare gli apparecchi acquistati.`)) : null,
+    e.per_anno.length ? h('p', { class: 'soldi__anni' },
+      h('strong', {}, 'Noleggi per anno: '),
+      e.per_anno.map((a, i) => h('span', {}, `${i ? ' · ' : ''}${a.anno}: ${euro(a.ricavi)}`))) : null);
 }
 
 export default async function vistaDashboard({ corpo, vai }) {
@@ -69,6 +99,8 @@ export default async function vistaDashboard({ corpo, vai }) {
       scheda('Noleggiati oggi', numero(totali.impegnati), `${numero(d.noleggi_attivi)} righe di noleggio attive`, 'kpi--occupato'),
       scheda('Liberi oggi', numero(totali.disponibili), 'pronti da noleggiare', 'kpi--libero'),
       scheda('Fiere in corso', numero(d.fiere_in_corso), `${numero(d.fiere_totali)} fiere registrate`)),
+
+    pannelloSoldi(d.economia, vai),
 
     h('section', { class: 'pannello' },
       h('header', { class: 'pannello__testa' },

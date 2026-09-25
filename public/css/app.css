@@ -1134,3 +1134,36 @@ body.pianta-aperta { overflow: hidden; }
   .installa { padding: 0.85rem 0.8rem 0.9rem; }
   .installa__piante .btn { flex: 1 1 100%; }
 }
+
+/* ---------- soldi (cruscotto) ---------- */
+
+.soldi .kpi-griglia { margin-top: 0.25rem; }
+.soldi .kpi { box-shadow: none; background: var(--grigio-50); }
+.kpi--speso { border-left-color: var(--grigio-400); }
+.kpi--guadagno { border-left-color: var(--verde); }
+.kpi--arrivo { border-left-color: var(--azzurro); }
+.kpi--positivo { border-left-color: var(--verde); }
+.kpi--positivo .kpi__valore { color: var(--verde); }
+.kpi--negativo { border-left-color: var(--rosso); }
+.kpi--negativo .kpi__valore { color: var(--rosso); }
+.soldi__ripagato { margin-top: 1rem; }
+.soldi__ripagato p { margin: 0.45rem 0 0; font-size: 0.87rem; color: var(--grigio-700); }
+.soldi__riempimento { background: var(--verde); }
+.soldi__anni { margin: 0.75rem 0 0; font-size: 0.85rem; color: var(--grigio-500); }
+.soldi__anni strong { color: var(--grigio-700); font-weight: 600; }
+
+/* ---------- prodotti: resa e scheda tecnica ---------- */
+
+.prodotto__resa { margin: 0.6rem 0 0; font-size: 0.85rem; color: var(--grigio-700); }
+.prodotto__resa--ok strong { color: var(--verde); }
+.prodotto__scheda { margin-top: 0.6rem; padding: 0.55rem 0.7rem; border-radius: var(--raggio-s); background: var(--grigio-50); font-size: 0.82rem; }
+.prodotto__scheda p { margin: 0; color: var(--grigio-700); }
+.prodotto__scheda .prodotto__ean { margin-top: 0.15rem; color: var(--grigio-500); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.76rem; }
+.prodotto__scheda a { font-family: inherit; color: var(--azzurro); }
+.prodotto__scheda-vuota { font-style: italic; }
+.form-sezione { margin: 1.4rem 0 0.1rem; font-size: 0.95rem; }
+.form-sezione__testo { margin: 0 0 0.75rem; font-size: 0.82rem; color: var(--grigio-500); }
+.prodotto__id {
+  display: inline-block; margin-right: 0.4rem; padding: 0.05rem 0.45rem; border-radius: 6px;
+  background: var(--inchiostro); color: var(--bianco); font-size: 0.8rem; vertical-align: 0.1em;
+}

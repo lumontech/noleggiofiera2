@@ -252,3 +252,6 @@ export function select(name, opzioni, valore, props = {}) {
 export const areaTesto = (name, props = {}) => h('textarea', { name, class: 'controllo', rows: 3, ...props });
 
 export const griglia = (...figli) => h('div', { class: 'form-griglia' }, ...figli);
+
+/** Come si mostra il codice di un prodotto: "ID 7" se è un numero. */
+export const idProdotto = (codice) => (/^\d+$/.test(String(codice ?? '')) ? `ID ${codice}` : codice || '');

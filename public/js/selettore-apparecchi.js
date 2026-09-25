@@ -4,10 +4,10 @@
 // capisce subito perché uno manca.
 
 import { api } from './api.js';
-import { h, monta, numero, nomeBreve } from './ui.js';
+import { h, monta, numero, nomeBreve, idProdotto } from './ui.js';
 
 function etichettaApparecchio(a) {
-  const base = [nomeBreve(a), a.codice].filter(Boolean).join(' · ');
+  const base = [idProdotto(a.codice), nomeBreve(a)].filter(Boolean).join(' · ');
   return a.quantita > 1 ? `${base} — ${a.liberi} liberi su ${a.quantita}` : base;
 }
 

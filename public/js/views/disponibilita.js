@@ -6,6 +6,7 @@ import { stato as statoApp } from '../app.js';
 import {
   h, monta, badge, numero, vuoto, intervalloDate, dataBreve, dataLunga,
   oggiISO, addGiorni, giorniTra, select,
+  idProdotto,
 } from '../ui.js';
 
 const PERIODI_RAPIDI = [
@@ -27,7 +28,7 @@ function rigaDisponibile(r) {
     h('div', { class: 'disp-riga__info' },
       h('p', { class: 'disp-riga__nome' }, p.nome),
       h('p', { class: 'disp-riga__meta' },
-        p.categoria, p.pollici ? ` · ${p.pollici}"` : '', p.codice ? ` · ${p.codice}` : '')),
+        p.categoria, p.pollici ? ` · ${p.pollici}"` : '', p.codice ? ` · ${idProdotto(p.codice)}` : '')),
     h('div', { class: 'disp-riga__numeri' },
       h('span', { class: 'disp-riga__cifra disp-riga__cifra--verde' }, numero(r.disponibili)),
       h('span', { class: 'disp-riga__testo' }, `liberi su ${numero(p.quantita)}`)),

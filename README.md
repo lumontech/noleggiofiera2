@@ -8,11 +8,13 @@ Tre aree, come richiesto:
 
 | Area | A cosa serve |
 |---|---|
-| **Prodotti** | Il catalogo di quello che noleggi: TV, monitor, videowall, totem, supporti, accessori. Ogni articolo ha un numero di pezzi in magazzino. |
+| **Prodotti** | Il catalogo di quello che noleggi: TV, monitor, videowall, totem, supporti, accessori. Ogni apparecchio ha il suo **ID** (1, 2, 3… come in Airtable), il **costo d'acquisto**, quanto ha già reso e la **scheda tecnica**: EAN, larghezza e altezza (con e senza base), profondità, peso, attacco VESA. |
 | **Fiere** | Gli eventi dove il materiale viene noleggiato. Ogni fiera (Pharmexpo) raccoglie le sue **edizioni** (2025, 2026), e ogni edizione può avere una o più **planimetrie** allegate. |
 | **Noleggi** | Il collegamento tra i due: quale prodotto va a quale cliente, su quale fiera, in che stand, in quali date e per che importo. |
 
-A queste si aggiungono il **Cruscotto** (la situazione di oggi) e la
+A queste si aggiungono il **Cruscotto** (la situazione di oggi, e i **soldi**:
+quanto hai speso in apparecchi, quanto hai guadagnato con i noleggi già fatti,
+quanto è in arrivo e il bilancio) e la
 **Disponibilità**, la vista che separa in due elenchi *da noleggiare* e
 *noleggiati* per il periodo che scegli, con un calendario di occupazione in
 stile Gantt.

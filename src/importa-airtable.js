@@ -135,15 +135,15 @@ const importa = db.transaction(() => {
     if (gia) { mappaProdotti.set(idA, gia); conteggi.saltati += 1; continue; }
     const note = [
       sede && `Sede: ${sede}`,
-      costo && `Costo d'acquisto: ${costo} €`,
       marca(idA),
     ].filter(Boolean).join('\n');
+    const ean = nome.match(/\b(\d{13}|\d{8})\b/)?.[1] ?? '';
     const info = db.prepare(`
       INSERT INTO prodotti (nome, categoria, marca, modello, codice, pollici, risoluzione,
-                            quantita, prezzo_giorno, stato, note, creato_il, aggiornato_il)
-      VALUES (?, ?, ?, '', ?, ?, '', 1, 0, ?, ?, ?, ?)`)
-      .run(nome, categoria(nome, pollici), marchio || '', `INV-${numero}`, pollici,
-        STATO_PRODOTTO[stato] || 'attivo', note, adesso, adesso);
+                            quantita, prezzo_giorno, costo_acquisto, ean, stato, note, creato_il, aggiornato_il)
+      VALUES (?, ?, ?, '', ?, ?, '', 1, 0, ?, ?, ?, ?, ?, ?)`)
+      .run(nome, categoria(nome, pollici), marchio || '', String(numero), pollici,
+        Number(costo) || 0, ean, STATO_PRODOTTO[stato] || 'attivo', note, adesso, adesso);
     mappaProdotti.set(idA, info.lastInsertRowid);
     conteggi.prodotti += 1;
   }

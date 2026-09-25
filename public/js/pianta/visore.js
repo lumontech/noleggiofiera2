@@ -10,7 +10,7 @@
 // dati arrivano dal canale del tecnico, che non contiene prezzi.
 
 import { api } from '../api.js';
-import { h, monta, svuota, avviso, numero, nomeBreve } from '../ui.js';
+import { h, monta, svuota, avviso, numero, nomeBreve, idProdotto } from '../ui.js';
 import { codiciStand, padiglione } from './stand.js';
 import { analizzaPagina, collocaStand } from './analisi.js';
 
@@ -54,7 +54,7 @@ function gruppiDaNoleggi(noleggi) {
     g.tv += n.quantita;
     g.apparecchi.push(`${n.quantita > 1 ? `${n.quantita}× ` : ''}${nomeBreve({
       nome: n.prodotto_nome, marca: n.prodotto_marca, pollici: n.prodotto_pollici,
-    })}${n.prodotto_codice ? ` ${n.prodotto_codice}` : ''}`);
+    })}${n.prodotto_codice ? ` ${idProdotto(n.prodotto_codice)}` : ''}`);
   }
   return [...gruppi.values()].sort((a, b) => (a.codici[0] || '~').localeCompare(b.codici[0] || '~', 'it', { numeric: true }));
 }

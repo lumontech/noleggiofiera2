@@ -8,6 +8,7 @@ import { selettoreApparecchi } from '../selettore-apparecchi.js';
 import {
   h, monta, badge, modale, avviso, campo, input, select, areaTesto,
   griglia, numero, euro, vuoto, intervalloDate, dataLunga, etichetta, oggiISO, nomeBreve,
+  idProdotto,
 } from '../ui.js';
 
 const PROSSIMO_STATO = { prenotato: 'consegnato', consegnato: 'rientrato' };
@@ -154,7 +155,7 @@ function riga(n, azioni) {
       .filter(Boolean).join(' · ') || ' ')),
   h('div', { class: 'nol-riga__apparecchio', title: n.prodotto_nome },
     h('strong', {}, nomeBreve(apparecchio), n.quantita > 1 ? h('em', {}, ` ×${n.quantita}`) : null),
-    h('span', {}, n.prodotto_codice || n.prodotto_categoria)),
+    h('span', {}, idProdotto(n.prodotto_codice) || n.prodotto_categoria)),
   h('div', { class: 'nol-riga__importo' }, euro(n.importo)),
   h('div', { class: 'nol-riga__stato' },
     badge(n.stato),
@@ -278,7 +279,7 @@ export default async function vistaNoleggi({ corpo, azioni, ricarica }) {
 
   const selProdotto = select('prodotto_id',
     [{ valore: '', testo: 'Tutti gli apparecchi' },
-      ...prodotti.map((p) => ({ valore: p.id, testo: `${nomeBreve(p)} — ${p.codice || p.nome}` }))], '');
+      ...prodotti.map((p) => ({ valore: p.id, testo: `${nomeBreve(p)} — ${idProdotto(p.codice) || p.nome}` }))], '');
   selProdotto.addEventListener('change', () => { filtri.prodotto_id = selProdotto.value; carica(); });
 
   monta(corpo,

@@ -516,8 +516,13 @@ textarea.controllo { resize: vertical; }
 .tabella td { padding: 0.65rem 0.75rem; border-bottom: 1px solid var(--grigio-100); vertical-align: middle; }
 .tabella tbody tr:hover { background: var(--grigio-50); }
 .tabella tbody tr:last-child td { border-bottom: 0; }
-.tabella__azioni { display: flex; gap: 0.3rem; justify-content: flex-end; flex-wrap: wrap; }
-.tabella--ampia { min-width: 900px; }
+.tabella__azioni { display: flex; gap: 0.3rem; justify-content: flex-end; flex-wrap: nowrap; }
+/* La colonna azioni deve contenere i bottoni su una riga sola senza invadere
+   le colonne accanto: niente a capo e larghezza minima garantita. */
+.tabella th:last-child, .tabella td:last-child { white-space: nowrap; }
+.tabella--ampia td:last-child { min-width: 310px; }
+.tabella--ampia td:first-child, .tabella--ampia td:nth-child(2) { min-width: 150px; }
+.tabella--ampia { min-width: 1120px; }
 .pannello--tabella { overflow-x: auto; }
 .sottotesto { color: var(--grigio-500); font-size: 0.78rem; }
 .riga--annullato td:not(:last-child) { opacity: 0.55; text-decoration: line-through; }

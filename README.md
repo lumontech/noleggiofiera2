@@ -9,7 +9,7 @@ Tre aree, come richiesto:
 | Area | A cosa serve |
 |---|---|
 | **Prodotti** | Il catalogo di quello che noleggi: TV, monitor, videowall, totem, supporti, accessori. Ogni articolo ha un numero di pezzi in magazzino. |
-| **Fiere** | Gli eventi dove il materiale viene noleggiato: date, sede, padiglione, stand, cliente, giorni di allestimento e smontaggio. |
+| **Fiere** | Gli eventi dove il materiale viene noleggiato, raccolti per **manifestazione**: Pharmexpo è una manifestazione, Pharmexpo 2025 e 2026 sono due sue edizioni. |
 | **Noleggi** | Il collegamento tra i due: quale prodotto va a quale cliente, su quale fiera, in che stand, in quali date e per che importo. |
 
 A queste si aggiungono il **Cruscotto** (la situazione di oggi) e la
@@ -46,6 +46,12 @@ Conseguenze pratiche:
   fuori dal magazzino già prima dell'apertura e ancora dopo la chiusura. Quando
   assegni materiale a una fiera le date vengono precompilate tenendone conto.
 
+Una **manifestazione** si ripete negli anni; ogni anno è un'**edizione** con
+date, sede e noleggi propri. Aprendo un'edizione trovi il confronto con le
+altre — pezzi, clienti e fatturato — che è quello che serve quando prepari
+l'edizione nuova. Il campo Manifestazione suggerisce quelle già presenti, così
+un refuso non crea un doppione.
+
 Cliente e stand stanno sul **noleggio**, non sulla fiera: a una stessa fiera
 partecipano decine di aziende, ognuna con il proprio stand e le proprie date.
 L'importo è quello **del lavoro**, non un prezzo al giorno: è così che vengono
@@ -78,7 +84,7 @@ rilanciarla non crea duplicati.
 |---|---|
 | `Inventario` (un record per apparecchio) | un prodotto con 1 pezzo, codice `INV-<numero>` |
 | `Stato`: Da noleggiare / Guasto / Regalata | attivo / in manutenzione / dismesso |
-| `Clienti` (campo *Fiera*) | una fiera |
+| `Clienti` (campo *Fiera*) | un'edizione; il nome viene diviso in manifestazione + anno |
 | `Richieste` | un noleggio per ogni apparecchio collegato |
 | `Azienda`, `Stand` | cliente e stand del noleggio |
 | `Costo` | importo del noleggio (diviso, se la richiesta copre più apparecchi) |
@@ -93,7 +99,12 @@ Tre scelte fatte in fase di importazione, che è bene conoscere:
    fiera: vanno corrette a mano.
 2. **I noleggi già conclusi entrano come "rientrato"**, così lo storico non
    occupa il magazzino e non falsa il calcolo delle disponibilità future.
-3. **Le richieste senza materiale collegato vengono ignorate** (in Airtable ce
+3. **Le edizioni della stessa manifestazione vengono unite**: "Pharmexpo 2025"
+   e "Pharmexpo 2026" finiscono sotto Pharmexpo. "LTS Expo 2025" e "LTS 2026"
+   sono riconciliate tramite la tabella `ALIAS_MANIFESTAZIONE`
+   nell'importatore: aggiungine una riga se ne trovi altre scritte in modo
+   diverso negli anni.
+4. **Le richieste senza materiale collegato vengono ignorate** (in Airtable ce
    ne sono due, per 300 € complessivi) e così le fiere senza alcun noleggio.
 
 ---

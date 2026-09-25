@@ -46,6 +46,7 @@ export const api = {
   eliminaProdotto: (id) => richiesta('DELETE', `/api/prodotti/${id}`),
 
   fiere: (p) => richiesta('GET', `/api/fiere${qs(p)}`),
+  manifestazioni: () => richiesta('GET', '/api/fiere/raggruppate'),
   fiera: (id) => richiesta('GET', `/api/fiere/${id}`),
   finestraFiera: (id) => richiesta('GET', `/api/fiere/${id}/finestra`),
   creaFiera: (d) => richiesta('POST', '/api/fiere', d),

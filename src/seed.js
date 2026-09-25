@@ -42,9 +42,10 @@ const fiere = [
 ];
 
 const insFiera = db.prepare(`
-  INSERT INTO fiere (nome, cliente, luogo, citta, padiglione, stand, data_inizio, data_fine,
-                     giorni_allestimento, giorni_smontaggio, stato, note, creato_il, aggiornato_il)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?)`);
+  INSERT INTO fiere (nome, manifestazione, anno, cliente, luogo, citta, padiglione, stand,
+                     data_inizio, data_fine, giorni_allestimento, giorni_smontaggio,
+                     stato, note, creato_il, aggiornato_il)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?)`);
 
 const insNoleggio = db.prepare(`
   INSERT INTO noleggi (prodotto_id, fiera_id, cliente, stand, quantita, data_inizio, data_fine,
@@ -53,7 +54,10 @@ const insNoleggio = db.prepare(`
 
 db.transaction(() => {
   const idProdotti = prodotti.map((p) => insProdotto.run(...p, adesso, adesso).lastInsertRowid);
-  const idFiere = fiere.map((f) => insFiera.run(...f, adesso, adesso).lastInsertRowid);
+  const idFiere = fiere.map((f) => {
+    const anno = Number(f[6].slice(0, 4));
+    return insFiera.run(`${f[0]} ${anno}`, f[0], anno, ...f.slice(1), adesso, adesso).lastInsertRowid;
+  });
 
   const righe = [
     // [indice prodotto, indice fiera, quantità, stato, cliente, stand]

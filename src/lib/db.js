@@ -30,6 +30,8 @@ CREATE TABLE IF NOT EXISTS prodotti (
 CREATE TABLE IF NOT EXISTS fiere (
   id                  INTEGER PRIMARY KEY AUTOINCREMENT,
   nome                TEXT    NOT NULL,
+  manifestazione      TEXT    NOT NULL DEFAULT '',
+  anno                INTEGER,
   cliente             TEXT    DEFAULT '',
   luogo               TEXT    DEFAULT '',
   citta               TEXT    DEFAULT '',
@@ -78,6 +80,23 @@ function aggiungiColonna(tabella, colonna, definizione) {
   }
   return false;
 }
+
+aggiungiColonna('fiere', 'manifestazione', "TEXT NOT NULL DEFAULT ''");
+aggiungiColonna('fiere', 'anno', 'INTEGER');
+// Per i dati creati prima di questa distinzione: l'anno si legge dalla data di
+// inizio e la manifestazione dal nome, togliendogli l'anno finale.
+db.exec(`
+  UPDATE fiere
+     SET anno = CAST(substr(data_inizio, 1, 4) AS INTEGER)
+   WHERE anno IS NULL`);
+db.exec(`
+  UPDATE fiere
+     SET manifestazione = TRIM(
+           CASE WHEN nome LIKE '% 19__' OR nome LIKE '% 20__'
+                THEN substr(nome, 1, length(nome) - 5)
+                ELSE nome END)
+   WHERE manifestazione = ''`);
+db.exec('CREATE INDEX IF NOT EXISTS idx_fiere_manifestazione ON fiere(manifestazione, anno)');
 
 aggiungiColonna('noleggi', 'cliente', "TEXT DEFAULT ''");
 aggiungiColonna('noleggi', 'stand', "TEXT DEFAULT ''");

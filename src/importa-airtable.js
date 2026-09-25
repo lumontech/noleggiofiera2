@@ -54,6 +54,28 @@ const DATE_STIMATE = {
   'recE96akFiwhiUXzQ': ['2026-05-21', '2026-05-23'], // Siferr 2026
 };
 
+/**
+ * In Airtable la fiera è una riga per edizione, col nome che porta l'anno
+ * ("Pharmexpo 2025", "Pharmexpo 2026"). Qui si separa la manifestazione
+ * ricorrente dall'anno, così le edizioni si raggruppano.
+ *
+ * Alcune edizioni della stessa manifestazione sono state scritte in modo
+ * diverso negli anni: questa tabella le riconcilia.
+ */
+const ALIAS_MANIFESTAZIONE = {
+  'LTS Expo': 'LTS',
+};
+
+function scomponiNome(nome) {
+  const trovato = nome.match(/^(.*?)\s+((?:19|20)\d{2})$/);
+  if (!trovato) return { manifestazione: nome, anno: null };
+  const grezza = trovato[1].trim();
+  return {
+    manifestazione: ALIAS_MANIFESTAZIONE[grezza] || grezza,
+    anno: Number(trovato[2]),
+  };
+}
+
 /* ---------- calcolo delle date di ogni fiera ---------- */
 
 const periodoFiera = new Map();
@@ -116,11 +138,13 @@ const importa = db.transaction(() => {
     ].filter(Boolean).join('\n');
     // Senza allestimento/smontaggio: le date importate sono già quelle reali
     // di uscita e rientro del materiale.
+    const { manifestazione, anno } = scomponiNome(nome);
     const info = db.prepare(`
-      INSERT INTO fiere (nome, cliente, luogo, citta, padiglione, stand, data_inizio, data_fine,
-                         giorni_allestimento, giorni_smontaggio, stato, note, creato_il, aggiornato_il)
-      VALUES (?, '', '', '', '', '', ?, ?, 0, 0, ?, ?, ?, ?)`)
-      .run(nome, periodo[0], periodo[1],
+      INSERT INTO fiere (nome, manifestazione, anno, cliente, luogo, citta, padiglione, stand,
+                         data_inizio, data_fine, giorni_allestimento, giorni_smontaggio,
+                         stato, note, creato_il, aggiornato_il)
+      VALUES (?, ?, ?, '', '', '', '', '', ?, ?, 0, 0, ?, ?, ?, ?)`)
+      .run(nome, manifestazione, anno ?? Number(periodo[0].slice(0, 4)), periodo[0], periodo[1],
         periodo[1] < GIORNO ? 'conclusa' : 'pianificata', note, adesso, adesso);
     mappaFiere.set(idA, info.lastInsertRowid);
     conteggi.fiere += 1;
@@ -178,6 +202,16 @@ console.log(`
   noleggi creati  : ${conteggi.noleggi}
   già presenti    : ${conteggi.saltati}
   righe ignorate  : ${conteggi.senzaFiera}`);
+
+const manifestazioni = db.prepare(`
+  SELECT manifestazione, COUNT(*) AS edizioni, GROUP_CONCAT(anno, ', ') AS anni
+    FROM fiere GROUP BY manifestazione HAVING COUNT(*) > 1`).all();
+if (manifestazioni.length) {
+  console.log('\n  Manifestazioni con più edizioni riconosciute:');
+  for (const m of manifestazioni) {
+    console.log(`      ${m.manifestazione} → ${m.anni}`);
+  }
+}
 
 if (daConfermare.length) {
   const nomi = daConfermare.map((id) => fiereAirtable.find((f) => f[0] === id)[1]);

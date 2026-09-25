@@ -610,3 +610,53 @@ textarea.controllo { resize: vertical; }
   .kpi-griglia, .kpi-griglia--tre { grid-template-columns: minmax(0, 1fr); }
   .griglia-prodotti, .griglia-fiere { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ---------- manifestazioni (una fiera, più edizioni) ---------- */
+
+.manifestazioni { display: flex; flex-direction: column; gap: 1.5rem; }
+
+.manifestazione {
+  padding: 1.1rem 1.15rem 1.25rem;
+  border-radius: var(--raggio);
+  background: var(--bianco);
+  box-shadow: var(--ombra);
+}
+.manifestazione__testa {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-bottom: 0.85rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--grigio-100);
+}
+.manifestazione__testa h2 { font-size: 1.15rem; }
+.manifestazione__testa p { margin-top: 0.2rem; color: var(--grigio-500); font-size: 0.85rem; }
+.manifestazione__prossima {
+  padding: 0.28rem 0.7rem;
+  border-radius: 999px;
+  background: var(--azzurro-tenue);
+  color: #075985;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+/* Dentro un gruppo le edizioni sono schede semplici, senza ombra propria. */
+.manifestazione .fiera {
+  box-shadow: none;
+  border: 1px solid var(--grigio-200);
+  border-left-width: 3px;
+}
+.manifestazione .griglia-fiere { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+
+.edizioni-storico { margin-bottom: 1.25rem; }
+.edizioni-storico h3 {
+  font-size: 0.78rem;
+  font-weight: 650;
+  color: var(--grigio-500);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.4rem;
+}
+.edizioni-storico .tabella { border: 1px solid var(--grigio-200); border-radius: var(--raggio-s); overflow: hidden; }

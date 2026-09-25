@@ -559,6 +559,7 @@ textarea.controllo { resize: vertical; }
   background: var(--bianco);
   box-shadow: var(--ombra-alta);
   animation: entrata 0.15s ease-out;
+  overflow: hidden;
 }
 .modale--larga { width: min(760px, 100%); }
 @keyframes entrata { from { opacity: 0; transform: translateY(8px); } }
@@ -566,12 +567,11 @@ textarea.controllo { resize: vertical; }
 .modale__testa { padding: 1.25rem 1.4rem 0.9rem; border-bottom: 1px solid var(--grigio-100); }
 .modale__testa h2 { font-size: 1.15rem; }
 .modale__testa p { margin-top: 0.2rem; color: var(--grigio-500); font-size: 0.85rem; }
-.modale__form { display: flex; flex-direction: column; min-height: 0; }
-.modale__form > :not(.modale__azioni) { padding-inline: 1.4rem; }
-.modale__form > *:nth-child(1) { padding-top: 1.1rem; overflow-y: auto; }
-.modale__messaggio { padding-block: 1.1rem 0.5rem; color: var(--grigio-700); }
+.modale__form { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.modale__corpo { flex: 1; min-height: 0; overflow: auto; padding: 1.1rem 1.4rem 1.25rem; }
+.modale__messaggio { margin: 0; padding-block: 0 0.5rem; color: var(--grigio-700); }
 .modale__errore { margin-top: 0.9rem; padding: 0.6rem 0.75rem; border-radius: var(--raggio-s); background: var(--rosso-tenue); color: #991b1b; font-size: 0.85rem; }
-.modale__azioni { display: flex; justify-content: flex-end; gap: 0.5rem; padding: 1.1rem 1.4rem; margin-top: auto; border-top: 1px solid var(--grigio-100); background: var(--grigio-50); border-radius: 0 0 16px 16px; }
+.modale__azioni { flex-shrink: 0; display: flex; justify-content: flex-end; gap: 0.5rem; padding: 1.1rem 1.4rem; margin-top: auto; border-top: 1px solid var(--grigio-100); background: var(--grigio-50); border-radius: 0 0 16px 16px; }
 .modale .tabella { margin-top: 0.5rem; }
 
 /* ---------- avvisi ---------- */

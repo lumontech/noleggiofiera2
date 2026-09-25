@@ -75,7 +75,7 @@ router.get('/:id', (req, res) => {
     SELECT n.*, f.nome AS fiera_nome, f.citta AS fiera_citta
       FROM noleggi n JOIN fiere f ON f.id = n.fiera_id
      WHERE n.prodotto_id = ?
-     ORDER BY n.data_inizio DESC`).all(prodotto.id);
+     ORDER BY n.data_inizio ASC`).all(prodotto.id);
   res.json({ ...prodotto, noleggi: storico });
 });
 

@@ -196,7 +196,7 @@ export default async function vistaNoleggi({ corpo, azioni, ricarica }) {
     const futuraA = a.data_fine >= oggi;
     const futuraB = b.data_fine >= oggi;
     if (futuraA !== futuraB) return futuraA ? -1 : 1;
-    return futuraA ? a.data_inizio.localeCompare(b.data_inizio) : b.data_inizio.localeCompare(a.data_inizio);
+    return a.data_inizio.localeCompare(b.data_inizio);
   });
 
   azioni.appendChild(h('button', {
@@ -233,10 +233,8 @@ export default async function vistaNoleggi({ corpo, azioni, ricarica }) {
     const def = SCHEDE.find((s) => s.id === scheda);
     const visibili = elenco.filter(def.filtro);
     const gruppi = raggruppa(visibili);
-    // Da gestire: prima la fiera più vicina. Storico: prima la più recente.
-    gruppi.sort((a, b) => (scheda === 'attivi'
-      ? a.inizio.localeCompare(b.inizio)
-      : b.inizio.localeCompare(a.inizio)));
+    // Sempre in ordine di calendario: prima la fiera che viene prima.
+    gruppi.sort((a, b) => a.inizio.localeCompare(b.inizio));
 
     if (!gruppi.length) {
       const vuotoAttivi = scheda === 'attivi' && !filtri.q;

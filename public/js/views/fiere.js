@@ -445,6 +445,19 @@ function gruppoManifestazione(g, contesto) {
     h('div', { class: 'griglia-fiere' }, g.edizioni.map((e) => schedaEdizione(e, contesto))));
 }
 
+/** Prima le fiere in programma, poi quelle già svolte; ognuna in ordine di calendario. */
+function sezioniPerData(gruppi, contesto) {
+  const inProgramma = gruppi.filter((g) => g.prossima);
+  const svolte = gruppi.filter((g) => !g.prossima);
+  const titolo = (testo, n) => h('h2', { class: 'titolo-sezione' }, `${testo} (${numero(n)})`);
+  return [
+    inProgramma.length ? titolo('In programma', inProgramma.length) : null,
+    ...inProgramma.map((g) => gruppoManifestazione(g, contesto)),
+    svolte.length ? titolo('Già svolte', svolte.length) : null,
+    ...svolte.map((g) => gruppoManifestazione(g, contesto)),
+  ];
+}
+
 export default async function vistaFiere({ corpo, azioni, ricarica }) {
   const { stati_fiera: statiFiera } = statoApp.costanti;
   const prodotti = await api.prodotti();
@@ -475,7 +488,7 @@ export default async function vistaFiere({ corpo, azioni, ricarica }) {
         `${numero(visibili.length)} fiere · ${numero(edizioni)} edizioni · `
         + `${euro(visibili.reduce((t, g) => t + g.edizioni.reduce((s, e) => s + e.valore, 0), 0))} di fatturato`),
       visibili.length
-        ? visibili.map((g) => gruppoManifestazione(g, contesto))
+        ? sezioniPerData(visibili, contesto)
         : vuoto('Nessuna fiera trovata',
             'Cambia i filtri oppure crea la prima fiera.',
             h('button', { class: 'btn btn--primario', onclick: nuovaFiera }, '+ Nuova fiera')));

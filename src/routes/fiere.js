@@ -79,7 +79,7 @@ function riepilogo(fiera) {
              WHERE n.fiera_id = f.id AND n.stato != 'annullato' AND n.cliente != '') AS clienti
       FROM fiere f
      WHERE f.manifestazione = ? AND f.id != ?
-     ORDER BY f.anno DESC`).all(fiera.manifestazione, fiera.id);
+     ORDER BY f.data_inizio ASC`).all(fiera.manifestazione, fiera.id);
 
   return {
     ...fiera,
@@ -106,26 +106,20 @@ router.get('/', (req, res) => {
   }
   let sql = 'SELECT * FROM fiere';
   if (condizioni.length) sql += ` WHERE ${condizioni.join(' AND ')}`;
-  sql += ` ORDER BY (data_fine >= date('now')) DESC,
-                    CASE WHEN data_fine >= date('now') THEN data_inizio END ASC,
-                    data_inizio DESC`;
+  // Prima quelle in programma, poi le già svolte; sempre in ordine di calendario.
+  sql += ` ORDER BY (data_fine >= date('now')) DESC, data_inizio ASC`;
   res.json(db.prepare(sql).all(...parametri).map(riepilogo));
 });
 
 /**
- * Le manifestazioni con tutte le loro edizioni, dalla più vicina.
+ * Le manifestazioni con tutte le loro edizioni, in ordine di calendario.
  * È la vista naturale: "Pharmexpo" con dentro 2025 e 2026.
  */
-function inOrdineDiData(a, b) {
-  const oggiIso = oggi();
-  const futuraA = a.data_fine >= oggiIso;
-  const futuraB = b.data_fine >= oggiIso;
-  if (futuraA !== futuraB) return futuraA ? -1 : 1;
-  return futuraA ? a.data_inizio.localeCompare(b.data_inizio) : b.data_inizio.localeCompare(a.data_inizio);
-}
+// In ordine di calendario: prima quella che viene prima.
+const inOrdineDiData = (a, b) => a.data_inizio.localeCompare(b.data_inizio) || a.id - b.id;
 
 router.get('/raggruppate', (_req, res) => {
-  const edizioni = db.prepare('SELECT * FROM fiere ORDER BY anno DESC, data_inizio DESC')
+  const edizioni = db.prepare('SELECT * FROM fiere ORDER BY data_inizio ASC')
     .all().map(riepilogo);
   const gruppi = new Map();
   for (const edizione of edizioni) {
@@ -135,8 +129,6 @@ router.get('/raggruppate', (_req, res) => {
   }
   const risultato = [...gruppi.entries()].map(([manifestazione, righe]) => ({
     manifestazione,
-    // Prima le edizioni ancora da svolgere, dalla più vicina; poi quelle
-    // passate, dalla più recente.
     edizioni: [...righe].sort(inOrdineDiData),
     pezzi_totali: righe.reduce((t, e) => t + e.pezzi_totali, 0),
     valore_totale: Math.round(righe.reduce((t, e) => t + e.valore, 0) * 100) / 100,
@@ -146,11 +138,13 @@ router.get('/raggruppate', (_req, res) => {
       .filter((e) => e.stato !== 'conclusa' && e.stato !== 'annullata' && e.data_fine >= oggi())
       .sort((a, b) => a.data_inizio.localeCompare(b.data_inizio))[0] || null,
   }));
-  // Prima le manifestazioni con un'edizione in arrivo, poi le altre per data.
+  // Prima le fiere con un'edizione in programma, dalla più vicina; poi quelle
+  // già svolte, anche loro in ordine di calendario.
+  const ultima = (g) => g.edizioni[g.edizioni.length - 1].data_inizio;
   risultato.sort((a, b) => {
     if (Boolean(a.prossima) !== Boolean(b.prossima)) return a.prossima ? -1 : 1;
     if (a.prossima && b.prossima) return a.prossima.data_inizio.localeCompare(b.prossima.data_inizio);
-    return b.edizioni[0].data_inizio.localeCompare(a.edizioni[0].data_inizio);
+    return ultima(a).localeCompare(ultima(b));
   });
   res.json(risultato);
 });

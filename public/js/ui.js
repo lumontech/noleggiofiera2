@@ -156,8 +156,8 @@ export function modale({
       }
     },
   },
-  corpo,
-  errore,
+  // Tutto il contenuto scorre qui dentro; i bottoni restano fermi in fondo.
+  h('div', { class: 'modale__corpo' }, corpo, errore),
   h('div', { class: 'modale__azioni' },
     azionePericolosa ? bottonePericoloso(azionePericolosa, () => chiudi(), errore) : null,
     soloChiudi ? null : h('button', { class: 'btn', type: 'button', onclick: () => chiudi() }, 'Annulla'),

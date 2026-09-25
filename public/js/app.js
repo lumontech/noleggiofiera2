@@ -22,7 +22,7 @@ const SEZIONI = [
   { id: 'fiere', titolo: 'Fiere', icona: '◈', vista: vistaFiere,
     descrizione: 'Gli eventi dove il materiale viene noleggiato.' },
   { id: 'noleggi', titolo: 'Noleggi', icona: '⇄', vista: vistaNoleggi,
-    descrizione: 'Tutte le righe di noleggio, con stato e periodo.' },
+    descrizione: 'Chi ha cosa, fiera per fiera. Clicca un noleggio per modificarlo.' },
 ];
 
 /* ---------------- login ---------------- */

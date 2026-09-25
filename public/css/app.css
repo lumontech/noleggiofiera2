@@ -660,3 +660,143 @@ textarea.controllo { resize: vertical; }
   margin-bottom: 0.4rem;
 }
 .edizioni-storico .tabella { border: 1px solid var(--grigio-200); border-radius: var(--raggio-s); overflow: hidden; }
+
+/* ---------- noleggi raggruppati per fiera ---------- */
+
+.nol-schede { margin-bottom: 0; overflow-x: auto; scrollbar-width: none; }
+.nol-schede .scheda { white-space: nowrap; }
+.scheda__conta {
+  margin-left: 0.45rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  background: var(--grigio-200);
+  color: var(--grigio-700);
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+.scheda--attiva .scheda__conta { background: var(--azzurro-tenue); color: #075985; }
+
+.nol-gruppi { display: flex; flex-direction: column; gap: 0.85rem; }
+
+.nol-gruppo {
+  border-radius: var(--raggio);
+  background: var(--bianco);
+  box-shadow: var(--ombra);
+  border-left: 3px solid var(--grigio-300);
+  overflow: hidden;
+}
+.nol-gruppo--in-corso { border-left-color: var(--verde); }
+.nol-gruppo--vicina { border-left-color: var(--ambra); }
+.nol-gruppo--futura { border-left-color: var(--azzurro); }
+
+.nol-gruppo__testa {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.9rem 1.15rem;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.nol-gruppo__testa::-webkit-details-marker { display: none; }
+.nol-gruppo__testa:hover { background: var(--grigio-50); }
+/* Freccia che ruota quando il gruppo si apre. */
+.nol-gruppo__titolo { display: flex; flex-direction: column; gap: 0.1rem; position: relative; padding-left: 1.3rem; }
+.nol-gruppo__titolo::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.45rem;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-right: 2px solid var(--grigio-400);
+  border-bottom: 2px solid var(--grigio-400);
+  transform: rotate(-45deg);
+  transition: transform 0.15s;
+}
+.nol-gruppo[open] .nol-gruppo__titolo::before { transform: rotate(45deg); top: 0.3rem; }
+.nol-gruppo__titolo h3 { font-size: 1.02rem; }
+.nol-gruppo__titolo p { color: var(--grigio-500); font-size: 0.84rem; }
+
+.nol-quando {
+  margin-left: 0.5rem;
+  padding: 0.08rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 650;
+  background: var(--grigio-100);
+  color: var(--grigio-500);
+}
+.nol-quando--in-corso { background: var(--verde-tenue); color: #065f46; }
+.nol-quando--vicina { background: var(--ambra-tenue); color: #92400e; }
+.nol-quando--futura { background: var(--azzurro-tenue); color: #075985; }
+
+.nol-gruppo__numeri { display: flex; align-items: baseline; gap: 1.1rem; font-size: 0.84rem; color: var(--grigio-500); }
+.nol-gruppo__numeri strong { color: var(--grigio-900); font-weight: 650; }
+.nol-gruppo__importo { font-size: 1rem; font-weight: 700; color: var(--grigio-900); min-width: 5.5rem; text-align: right; }
+
+.nol-righe { border-top: 1px solid var(--grigio-100); }
+
+.nol-riga {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) 6rem 11rem 9rem;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.7rem 1.15rem 0.7rem 2.45rem;
+  border-bottom: 1px solid var(--grigio-100);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.nol-riga:last-child { border-bottom: 0; }
+.nol-riga:hover { background: var(--grigio-50); }
+.nol-riga:focus-visible { outline: 2px solid var(--azzurro-chiaro); outline-offset: -2px; }
+.nol-riga--rientrato, .nol-riga--annullato { color: var(--grigio-500); }
+.nol-riga--annullato strong { text-decoration: line-through; }
+
+.nol-riga__cliente, .nol-riga__apparecchio { display: flex; flex-direction: column; min-width: 0; }
+.nol-riga__cliente strong, .nol-riga__apparecchio strong {
+  font-weight: 600;
+  font-size: 0.92rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nol-riga__apparecchio strong { font-weight: 500; }
+.nol-riga__apparecchio em { font-style: normal; font-weight: 700; color: var(--azzurro); }
+.nol-riga__cliente span, .nol-riga__apparecchio span {
+  font-size: 0.78rem;
+  color: var(--grigio-500);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nol-riga__importo { font-weight: 650; text-align: right; font-variant-numeric: tabular-nums; }
+.nol-riga__stato { display: flex; flex-direction: column; align-items: flex-start; gap: 0.2rem; }
+.nol-riga__ritardo { font-size: 0.72rem; font-weight: 600; color: var(--rosso); }
+.nol-riga__azione { display: flex; justify-content: flex-end; }
+
+/* Eliminazione dentro il modale: a sinistra, lontana dal Salva. */
+.modale__pericolo { margin-right: auto; }
+.btn--armato { background: var(--rosso); border-color: var(--rosso); color: var(--bianco); }
+.btn--armato:hover { background: #b91c1c; border-color: #b91c1c; }
+
+@media (max-width: 900px) {
+  .nol-riga {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "cliente importo"
+      "apparecchio stato"
+      "azione azione";
+    gap: 0.35rem 0.75rem;
+    padding-left: 1.15rem;
+  }
+  .nol-riga__cliente { grid-area: cliente; }
+  .nol-riga__apparecchio { grid-area: apparecchio; }
+  .nol-riga__importo { grid-area: importo; }
+  .nol-riga__stato { grid-area: stato; align-items: flex-end; }
+  .nol-riga__azione { grid-area: azione; justify-content: flex-start; }
+  .nol-riga__azione:empty { display: none; }
+  .nol-gruppo__numeri { width: 100%; justify-content: space-between; padding-left: 1.3rem; }
+}

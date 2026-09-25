@@ -80,6 +80,16 @@ export function giorniTra(da, a) {
   return Math.round((new Date(`${a}T00:00:00Z`) - new Date(`${da}T00:00:00Z`)) / 86400000) + 1;
 }
 
+/**
+ * Nome breve di un apparecchio, per le liste dense: "Samsung 65"" invece di
+ * "SAMSUNG TV 65" LED ULTRA HD 4K 65U8072". Il nome completo resta nel title.
+ */
+export function nomeBreve({ nome, marca, pollici }) {
+  if (marca && pollici) return `${marca} ${pollici}"`;
+  const pulito = (nome || '').replace(/\s+\d{8,}\b/g, '').trim();
+  return pulito.length > 34 ? `${pulito.slice(0, 32).trim()}…` : pulito;
+}
+
 /** Toglie dalle note il marcatore tecnico usato dall'importatore Airtable. */
 export const notePulite = (testo) => (testo || '').replace(/\[airtable:[^\]]+\]/g, '').trim();
 
@@ -111,7 +121,9 @@ export function avviso(messaggio, tipo = 'ok') {
 }
 
 /** Finestra modale con form. `campi` è un array di definizioni. */
-export function modale({ titolo, sottotitolo, corpo, testoConferma = 'Salva', onConferma, larga = false }) {
+export function modale({
+  titolo, sottotitolo, corpo, testoConferma = 'Salva', onConferma, larga = false, azionePericolosa = null,
+}) {
   const host = document.getElementById('modale-host');
   let chiudi;
 
@@ -140,6 +152,7 @@ export function modale({ titolo, sottotitolo, corpo, testoConferma = 'Salva', on
   corpo,
   errore,
   h('div', { class: 'modale__azioni' },
+    azionePericolosa ? bottonePericoloso(azionePericolosa, () => chiudi(), errore) : null,
     h('button', { class: 'btn', type: 'button', onclick: () => chiudi() }, 'Annulla'),
     conferma));
 
@@ -164,6 +177,40 @@ export function modale({ titolo, sottotitolo, corpo, testoConferma = 'Salva', on
   const primo = form.querySelector('input, select, textarea');
   if (primo) primo.focus();
   return { chiudi };
+}
+
+function bottonePericoloso({ testo, testoConferma = 'Confermi?', onClick }, chiudi, errore) {
+  let armato = false;
+  let timer;
+  const bottone = h('button', {
+    class: 'btn btn--pericolo modale__pericolo',
+    type: 'button',
+    onclick: async () => {
+      if (!armato) {
+        armato = true;
+        bottone.textContent = testoConferma;
+        bottone.classList.add('btn--armato');
+        // Se non si conferma entro qualche secondo, si torna allo stato iniziale.
+        timer = setTimeout(() => {
+          armato = false;
+          bottone.textContent = testo;
+          bottone.classList.remove('btn--armato');
+        }, 4000);
+        return;
+      }
+      clearTimeout(timer);
+      bottone.disabled = true;
+      try {
+        await onClick();
+        chiudi();
+      } catch (err) {
+        errore.textContent = err.message || 'Operazione non riuscita.';
+        errore.hidden = false;
+        bottone.disabled = false;
+      }
+    },
+  }, testo);
+  return bottone;
 }
 
 export function conferma({ titolo, messaggio, testoConferma = 'Elimina', onConferma }) {

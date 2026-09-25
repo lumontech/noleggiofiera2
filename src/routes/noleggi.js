@@ -97,7 +97,9 @@ router.get('/', (req, res) => {
   }
   let sql = `
     SELECT n.*, p.nome AS prodotto_nome, p.categoria AS prodotto_categoria,
-           p.pollici AS prodotto_pollici, f.nome AS fiera_nome, f.citta AS fiera_citta
+           p.pollici AS prodotto_pollici, p.marca AS prodotto_marca, p.codice AS prodotto_codice,
+           f.nome AS fiera_nome, f.citta AS fiera_citta, f.stato AS fiera_stato,
+           f.data_inizio AS fiera_inizio, f.data_fine AS fiera_fine
       FROM noleggi n
       JOIN prodotti p ON p.id = n.prodotto_id
       JOIN fiere    f ON f.id = n.fiera_id`;

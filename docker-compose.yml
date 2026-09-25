@@ -1,0 +1,19 @@
+# Deploy autonomo: espone l'app su una porta alta dedicata, senza toccare
+# nulla di quanto gira già sulla VPS (né la 80 né la 443).
+services:
+  app:
+    build: .
+    image: noleggiofiera:1.0.0
+    container_name: noleggiofiera
+    restart: unless-stopped
+    ports:
+      - "${PORTA_HOST:-8099}:3000"
+    environment:
+      APP_PASSWORD: "${APP_PASSWORD:?imposta APP_PASSWORD nel file .env}"
+      SESSION_SECRET: "${SESSION_SECRET:?imposta SESSION_SECRET nel file .env}"
+      TZ: "${TZ:-Europe/Rome}"
+    volumes:
+      - dati:/dati
+
+volumes:
+  dati:

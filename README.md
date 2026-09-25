@@ -9,7 +9,7 @@ Tre aree, come richiesto:
 | Area | A cosa serve |
 |---|---|
 | **Prodotti** | Il catalogo di quello che noleggi: TV, monitor, videowall, totem, supporti, accessori. Ogni articolo ha un numero di pezzi in magazzino. |
-| **Fiere** | Gli eventi dove il materiale viene noleggiato, raccolti per **manifestazione**: Pharmexpo è una manifestazione, Pharmexpo 2025 e 2026 sono due sue edizioni. |
+| **Fiere** | Gli eventi dove il materiale viene noleggiato. Ogni fiera (Pharmexpo) raccoglie le sue **edizioni** (2025, 2026), e ogni edizione può avere una o più **planimetrie** allegate. |
 | **Noleggi** | Il collegamento tra i due: quale prodotto va a quale cliente, su quale fiera, in che stand, in quali date e per che importo. |
 
 A queste si aggiungono il **Cruscotto** (la situazione di oggi) e la
@@ -55,11 +55,27 @@ Conseguenze pratiche:
   fuori dal magazzino già prima dell'apertura e ancora dopo la chiusura. Quando
   assegni materiale a una fiera le date vengono precompilate tenendone conto.
 
+**"+ Nuova fiera"**, in alto, crea una fiera con la sua prima edizione.
+**"+ Nuova edizione"**, dentro ogni fiera, ne aggiunge un anno partendo
+dall'ultimo: sede e giorni di montaggio restano, le date slittano di un anno
+e vanno solo controllate.
+
 Una **manifestazione** si ripete negli anni; ogni anno è un'**edizione** con
 date, sede e noleggi propri. Aprendo un'edizione trovi il confronto con le
 altre — pezzi, clienti e fatturato — che è quello che serve quando prepari
 l'edizione nuova. Il campo Manifestazione suggerisce quelle già presenti, così
 un refuso non crea un doppione.
+
+### Planimetrie
+
+Dal bottone **Planimetria** di ogni edizione si allegano PDF o immagini (PNG,
+JPG, WEBP) fino a 30 MB, trascinandoli o scegliendoli; dal telefono si può
+fotografare una pianta cartacea. Se ne possono allegare più d'una, per
+esempio una per padiglione, e si aprono con un clic. Il tipo di file è
+verificato dal contenuto, non dall'estensione.
+
+I file stanno nella cartella dei dati, accanto al database (`/dati/allegati`
+nel container): sopravvivono ad aggiornamenti e riavvii.
 
 Cliente e stand stanno sul **noleggio**, non sulla fiera: a una stessa fiera
 partecipano decine di aziende, ognuna con il proprio stand e le proprie date.
@@ -221,10 +237,18 @@ docker compose down                     # ferma (i dati restano nel volume)
 
 ### Backup
 
-Tutto sta in un unico file SQLite dentro il volume `noleggiofiera_dati`:
+Database e planimetrie stanno nel volume `noleggiofiera_dati`. Per salvarli
+entrambi in un unico archivio:
 
 ```bash
-docker compose exec app sh -c 'cat /dati/noleggiofiera.sqlite' > backup-$(date +%F).sqlite
+docker compose exec app tar czf - -C /dati . > backup-$(date +%F).tar.gz
+```
+
+Per ripristinarlo su un'installazione nuova:
+
+```bash
+docker compose exec -T app tar xzf - -C /dati < backup-AAAA-MM-GG.tar.gz
+docker compose restart app
 ```
 
 ---
@@ -290,6 +314,8 @@ Tutte le rotte sotto `/api` richiedono il cookie di sessione, tranne
 | `POST` `PUT` `DELETE` | `/api/prodotti[/:id]` | Gestione catalogo. |
 | `GET` | `/api/fiere` | Elenco con pezzi impegnati e valore stimato. |
 | `GET` | `/api/fiere/:id/finestra` | Date suggerite considerando allestimento e smontaggio. |
+| `GET` `POST` | `/api/fiere/:id/allegati` | Elenco e caricamento planimetrie (file nel corpo, nome in `X-Nome-File`). |
+| `GET` `DELETE` | `/api/fiere/:id/allegati/:allegato` | Apertura ed eliminazione di una planimetria. |
 | `GET` `POST` `PUT` `DELETE` | `/api/noleggi[/:id]` | Righe di noleggio, con controllo di capienza. |
 | `PATCH` | `/api/noleggi/:id/stato` | Avanzamento stato. |
 | `GET` | `/api/disponibilita?from=&to=` | Prospetto *da noleggiare* / *noleggiati*. |

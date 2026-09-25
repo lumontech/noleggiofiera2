@@ -44,6 +44,9 @@ app.get('*', (_req, res) => res.sendFile(path.join(RADICE, '..', 'public', 'inde
 
 // eslint-disable-next-line no-unused-vars -- Express riconosce il gestore errori da 4 argomenti.
 app.use((errore, _req, res, _next) => {
+  if (errore.type === 'entity.too.large') {
+    return res.status(413).json({ errore: 'File troppo grande: il massimo è 30 MB.' });
+  }
   const status = errore.status || 500;
   if (status >= 500) console.error(errore);
   res.status(status).json({

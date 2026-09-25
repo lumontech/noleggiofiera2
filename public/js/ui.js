@@ -65,6 +65,12 @@ export const euro = (n) => new Intl.NumberFormat('it-IT', {
 
 export const numero = (n) => new Intl.NumberFormat('it-IT').format(Number(n) || 0);
 
+export function dimensioneFile(byte) {
+  if (byte < 1024) return `${byte} B`;
+  if (byte < 1024 * 1024) return `${Math.round(byte / 1024)} KB`;
+  return `${(byte / (1024 * 1024)).toFixed(1).replace('.', ',')} MB`;
+}
+
 export function oggiISO() {
   const d = new Date();
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
@@ -123,6 +129,7 @@ export function avviso(messaggio, tipo = 'ok') {
 /** Finestra modale con form. `campi` è un array di definizioni. */
 export function modale({
   titolo, sottotitolo, corpo, testoConferma = 'Salva', onConferma, larga = false, azionePericolosa = null,
+  soloChiudi = false,
 }) {
   const host = document.getElementById('modale-host');
   let chiudi;
@@ -153,7 +160,7 @@ export function modale({
   errore,
   h('div', { class: 'modale__azioni' },
     azionePericolosa ? bottonePericoloso(azionePericolosa, () => chiudi(), errore) : null,
-    h('button', { class: 'btn', type: 'button', onclick: () => chiudi() }, 'Annulla'),
+    soloChiudi ? null : h('button', { class: 'btn', type: 'button', onclick: () => chiudi() }, 'Annulla'),
     conferma));
 
   const pannello = h('div', { class: `modale ${larga ? 'modale--larga' : ''}`, role: 'dialog', 'aria-modal': 'true' },

@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import Database from 'better-sqlite3';
 
-const DATA_DIR = process.env.DATA_DIR || path.join(process.cwd(), 'data');
+export const DATA_DIR = process.env.DATA_DIR || path.join(process.cwd(), 'data');
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
 export const db = new Database(path.join(DATA_DIR, 'noleggiofiera.sqlite'));
@@ -62,6 +62,17 @@ CREATE TABLE IF NOT EXISTS noleggi (
   creato_il     TEXT    NOT NULL,
   aggiornato_il TEXT    NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS allegati (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  fiera_id       INTEGER NOT NULL REFERENCES fiere(id) ON DELETE CASCADE,
+  nome_originale TEXT    NOT NULL,
+  nome_file      TEXT    NOT NULL,
+  tipo           TEXT    NOT NULL,
+  dimensione     INTEGER NOT NULL,
+  creato_il      TEXT    NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_allegati_fiera ON allegati(fiera_id);
 
 CREATE INDEX IF NOT EXISTS idx_noleggi_prodotto ON noleggi(prodotto_id);
 CREATE INDEX IF NOT EXISTS idx_noleggi_fiera    ON noleggi(fiera_id);

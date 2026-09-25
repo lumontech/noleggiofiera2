@@ -1,5 +1,7 @@
-import { Router } from 'express';
+import express, { Router } from 'express';
+import fs from 'node:fs';
 import db from '../lib/db.js';
+import * as archivio from '../lib/allegati.js';
 import {
   STATI_FIERA, STATI_IMPEGNATIVI, HttpError,
   testo, intero, enumerato, periodo, addGiorni, giorniTra, oggi,
@@ -8,9 +10,13 @@ import { impegnoMassimo } from '../lib/disponibilita.js';
 
 const router = Router();
 
-function leggiCorpo(body) {
+function leggiCorpo(body, idCorrente = null) {
   const { inizio, fine } = periodo(body);
-  const manifestazione = testo(body.manifestazione, 'manifestazione', { obbligatorio: true, max: 120 });
+  const scritta = testo(body.manifestazione, 'manifestazione', { obbligatorio: true, max: 120 });
+  const esistente = db.prepare(`
+    SELECT manifestazione FROM fiere
+     WHERE lower(manifestazione) = lower(?) AND id IS NOT ? LIMIT 1`).get(scritta, idCorrente);
+  const manifestazione = esistente?.manifestazione || scritta;
   const anno = intero(body.anno, 'anno', { min: 2000, max: 2100, predefinito: Number(inizio.slice(0, 4)) });
   return {
     manifestazione,
@@ -30,6 +36,15 @@ function leggiCorpo(body) {
     note: testo(body.note, 'note', { max: 2000 }),
   };
 }
+
+const perElenco = (a, fieraId) => ({
+  id: a.id,
+  nome: a.nome_originale,
+  tipo: a.tipo,
+  dimensione: a.dimensione,
+  creato_il: a.creato_il,
+  url: `/api/fiere/${fieraId}/allegati/${a.id}`,
+});
 
 export function trovaFiera(id) {
   const fiera = db.prepare('SELECT * FROM fiere WHERE id = ?').get(id);
@@ -75,6 +90,7 @@ function riepilogo(fiera) {
     pezzi_totali: attivi.reduce((tot, r) => tot + r.quantita, 0),
     righe_noleggio: attivi.length,
     clienti: new Set(attivi.map((r) => r.cliente).filter(Boolean)).size,
+    num_allegati: db.prepare('SELECT COUNT(*) AS n FROM allegati WHERE fiera_id = ?').get(fiera.id).n,
     valore: Math.round(valore * 100) / 100,
   };
 }
@@ -115,7 +131,11 @@ router.get('/raggruppate', (_req, res) => {
     edizioni: righe,
     pezzi_totali: righe.reduce((t, e) => t + e.pezzi_totali, 0),
     valore_totale: Math.round(righe.reduce((t, e) => t + e.valore, 0) * 100) / 100,
-    prossima: righe.find((e) => e.stato !== 'conclusa' && e.stato !== 'annullata') || null,
+    // La prossima è la più vicina ancora da svolgere, non la più recente per anno:
+    // con 2026 e 2027 entrambe in programma, conta la 2026.
+    prossima: righe
+      .filter((e) => e.stato !== 'conclusa' && e.stato !== 'annullata' && e.data_fine >= oggi())
+      .sort((a, b) => a.data_inizio.localeCompare(b.data_inizio))[0] || null,
   }));
   // Prima le manifestazioni con un'edizione in arrivo, poi le altre per data.
   risultato.sort((a, b) => {
@@ -133,7 +153,9 @@ router.get('/:id', (req, res) => {
            p.pollici AS prodotto_pollici, p.quantita AS prodotto_quantita
       FROM noleggi n JOIN prodotti p ON p.id = n.prodotto_id
      WHERE n.fiera_id = ? ORDER BY p.categoria, p.nome`).all(fiera.id);
-  res.json({ ...riepilogo(fiera), noleggi });
+  const allegati = db.prepare('SELECT * FROM allegati WHERE fiera_id = ? ORDER BY creato_il DESC')
+    .all(fiera.id).map((a) => perElenco(a, fiera.id));
+  res.json({ ...riepilogo(fiera), noleggi, allegati });
 });
 
 router.post('/', (req, res) => {
@@ -152,7 +174,7 @@ router.post('/', (req, res) => {
 
 router.put('/:id', (req, res) => {
   const fiera = trovaFiera(req.params.id);
-  const dati = leggiCorpo(req.body);
+  const dati = leggiCorpo(req.body, fiera.id);
   const prima = finestraLogistica(fiera);
   const dopo = finestraLogistica(dati);
 
@@ -213,7 +235,64 @@ router.put('/:id', (req, res) => {
 router.delete('/:id', (req, res) => {
   const fiera = trovaFiera(req.params.id);
   db.prepare('DELETE FROM noleggi WHERE fiera_id = ?').run(fiera.id);
+  db.prepare('DELETE FROM allegati WHERE fiera_id = ?').run(fiera.id);
   db.prepare('DELETE FROM fiere WHERE id = ?').run(fiera.id);
+  archivio.eliminaTuttiDellaFiera(fiera.id);
+  res.json({ ok: true });
+});
+
+/* ---------- planimetrie e altri allegati ---------- */
+
+function trovaAllegato(fiera, id) {
+  const allegato = db.prepare('SELECT * FROM allegati WHERE id = ? AND fiera_id = ?').get(id, fiera.id);
+  if (!allegato) throw new HttpError(404, 'Allegato non trovato.');
+  return allegato;
+}
+
+
+router.get('/:id/allegati', (req, res) => {
+  const fiera = trovaFiera(req.params.id);
+  const righe = db.prepare('SELECT * FROM allegati WHERE fiera_id = ? ORDER BY creato_il DESC').all(fiera.id);
+  res.json(righe.map((a) => perElenco(a, fiera.id)));
+});
+
+// Il file arriva così com'è nel corpo della richiesta, il nome in un'intestazione:
+// niente moduli multipart da interpretare, e un file per richiesta.
+router.post('/:id/allegati',
+  express.raw({ type: () => true, limit: archivio.DIMENSIONE_MASSIMA }),
+  (req, res) => {
+    const fiera = trovaFiera(req.params.id);
+    let nome = '';
+    try { nome = decodeURIComponent(req.get('x-nome-file') || ''); } catch { nome = ''; }
+    const salvato = archivio.salva({ fieraId: fiera.id, buffer: req.body, nomeOriginale: nome });
+    const info = db.prepare(`
+      INSERT INTO allegati (fiera_id, nome_originale, nome_file, tipo, dimensione, creato_il)
+      VALUES (?, ?, ?, ?, ?, ?)`)
+      .run(fiera.id, salvato.nomeOriginale, salvato.nomeFile, salvato.mime, salvato.dimensione,
+        new Date().toISOString());
+    const allegato = db.prepare('SELECT * FROM allegati WHERE id = ?').get(info.lastInsertRowid);
+    res.status(201).json(perElenco(allegato, fiera.id));
+  });
+
+router.get('/:id/allegati/:allegato', (req, res) => {
+  const fiera = trovaFiera(req.params.id);
+  const allegato = trovaAllegato(fiera, req.params.allegato);
+  const file = archivio.percorso(fiera.id, allegato.nome_file);
+  if (!fs.existsSync(file)) throw new HttpError(404, 'Il file non è più presente sul server.');
+  // Si apre nel browser (PDF e immagini), col tipo deciso da noi e non dal client.
+  res.setHeader('Content-Type', allegato.tipo);
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Cache-Control', 'private, max-age=3600');
+  res.setHeader('Content-Disposition',
+    `inline; filename*=UTF-8''${encodeURIComponent(allegato.nome_originale)}`);
+  fs.createReadStream(file).pipe(res);
+});
+
+router.delete('/:id/allegati/:allegato', (req, res) => {
+  const fiera = trovaFiera(req.params.id);
+  const allegato = trovaAllegato(fiera, req.params.allegato);
+  db.prepare('DELETE FROM allegati WHERE id = ?').run(allegato.id);
+  archivio.elimina(fiera.id, allegato.nome_file);
   res.json({ ok: true });
 });
 

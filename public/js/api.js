@@ -47,6 +47,7 @@ export const api = {
   eliminaProdotto: (id) => richiesta('DELETE', `/api/prodotti/${id}`),
 
   fiere: (p) => richiesta('GET', `/api/fiere${qs(p)}`),
+  eliminaAllegato: (fieraId, id) => richiesta('DELETE', `/api/fiere/${fieraId}/allegati/${id}`),
   manifestazioni: () => richiesta('GET', '/api/fiere/raggruppate'),
   fiera: (id) => richiesta('GET', `/api/fiere/${id}`),
   finestraFiera: (id) => richiesta('GET', `/api/fiere/${id}/finestra`),
@@ -60,3 +61,31 @@ export const api = {
   statoNoleggio: (id, stato) => richiesta('PATCH', `/api/noleggi/${id}/stato`, { stato }),
   eliminaNoleggio: (id) => richiesta('DELETE', `/api/noleggi/${id}`),
 };
+
+/**
+ * Carica un file su una fiera. Usa XMLHttpRequest invece di fetch perché
+ * fetch non riporta l'avanzamento dell'invio, e una planimetria di 20 MB dal
+ * telefono in fiera richiede di vedere che sta andando.
+ */
+export function caricaAllegato(fieraId, file, suAvanzamento = () => {}) {
+  return new Promise((risolvi, rifiuta) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `/api/fiere/${fieraId}/allegati`);
+    xhr.setRequestHeader('X-Nome-File', encodeURIComponent(file.name));
+    xhr.upload.onprogress = (e) => { if (e.lengthComputable) suAvanzamento(e.loaded / e.total); };
+    xhr.onload = () => {
+      let dati = null;
+      try { dati = JSON.parse(xhr.responseText); } catch { dati = null; }
+      if (xhr.status === 401) {
+        alLogout();
+        rifiuta(new Error('Sessione scaduta: effettua di nuovo l\'accesso.'));
+      } else if (xhr.status >= 200 && xhr.status < 300) {
+        risolvi(dati);
+      } else {
+        rifiuta(new Error(dati?.errore || `Caricamento non riuscito (errore ${xhr.status}).`));
+      }
+    };
+    xhr.onerror = () => rifiuta(new Error('Connessione interrotta durante il caricamento.'));
+    xhr.send(file);
+  });
+}

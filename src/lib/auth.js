@@ -7,8 +7,8 @@
 //                    (/api/tecnico) che per costruzione non contiene prezzi;
 //                    il resto dell'API gli è chiuso dal server.
 //
-// Al primo avvio, se non ci sono utenti, si crea l'amministratore "admin" con
-// la password di APP_PASSWORD, così chi già entrava continua a farlo.
+// Al primo avvio, se non ci sono utenti, si crea l'amministratore "stefano"
+// con la password di APP_PASSWORD, così chi già entrava continua a farlo.
 
 import crypto from 'node:crypto';
 import db from './db.js';
@@ -48,10 +48,18 @@ if (db.prepare('SELECT COUNT(*) AS n FROM utenti').get().n === 0) {
   const adesso = new Date().toISOString();
   db.prepare(`
     INSERT INTO utenti (nome, accesso, password_hash, ruolo, creato_il, aggiornato_il)
-    VALUES ('Amministratore', 'admin', ?, 'amministratore', ?, ?)`)
+    VALUES ('Stefano', 'stefano', ?, 'amministratore', ?, ?)`)
     .run(hashPassword(process.env.APP_PASSWORD || 'noleggio2026'), adesso, adesso);
-  console.log('Creato l\'utente amministratore "admin" con la password di APP_PASSWORD.');
+  console.log('Creato l\'utente amministratore "stefano" con la password di APP_PASSWORD.');
 }
+
+// Chi ha installato la versione precedente ha l'amministratore creato in
+// automatico col nome "admin": diventa "stefano", password invariata. Solo se
+// è ancora quello creato in automatico e "stefano" non esiste già.
+db.prepare(`
+  UPDATE utenti SET accesso = 'stefano', nome = 'Stefano', aggiornato_il = ?
+   WHERE accesso = 'admin' AND nome = 'Amministratore'
+     AND NOT EXISTS (SELECT 1 FROM utenti WHERE accesso = 'stefano')`).run(new Date().toISOString());
 
 /* ---------- limite ai tentativi ---------- */
 
@@ -122,8 +130,9 @@ function utenteDelToken(token) {
 export const perSessione = (u) => ({ id: u.id, nome: u.nome, accesso: u.accesso, ruolo: u.ruolo });
 
 export function accedi(req, res) {
-  // Chi arriva dal vecchio modulo con la sola password entra come admin.
-  const nome = String(req.body?.utente ?? 'admin').trim();
+  // Chi arriva dal vecchio modulo con la sola password entra come il primo amministratore.
+  const nome = String(req.body?.utente ?? (db.prepare(`SELECT accesso FROM utenti
+    WHERE ruolo = 'amministratore' AND attivo = 1 ORDER BY id LIMIT 1`).get()?.accesso || '')).trim();
   const chiave = chiaveTentativi(req, nome);
   controllaBlocco(chiave);
 

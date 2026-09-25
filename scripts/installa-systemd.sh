@@ -87,6 +87,6 @@ systemctl --no-pager --lines=10 status $SERVIZIO || true
 IP="$(curl -fsS --max-time 5 https://api.ipify.org 2>/dev/null || hostname -I | awk '{print $1}')"
 echo
 echo "NoleggioFiera è attivo su:  http://noleggiofierafinale.$IP.nip.io:$PORTA"
-echo "Utente:                     admin"
+echo "Utente:                     stefano"
 echo "Password:                   $(grep '^APP_PASSWORD=' .env | cut -d= -f2-)"
 echo "Log:                        journalctl -u $SERVIZIO -f"

@@ -143,7 +143,7 @@ Altre regole:
   si blocca per 5 minuti (poi 10, 20… fino a un'ora).
 - Ognuno cambia la propria password dal bottone **Password** nella barra.
 
-**Primo avvio.** Se non ci sono utenti, viene creato l'amministratore `admin`
+**Primo avvio.** Se non ci sono utenti, viene creato l'amministratore `stefano`
 con la password di `APP_PASSWORD`. Da quel momento la password si cambia
 dall'app: modificare `APP_PASSWORD` nel `.env` non ha più effetto.
 
@@ -151,7 +151,7 @@ dall'app: modificare `APP_PASSWORD` nel `.env` non ha più effetto.
 
 ```bash
 cd /opt/noleggiofiera
-docker compose exec app node src/reimposta-password.js admin NuovaPassword
+docker compose exec app node src/reimposta-password.js stefano NuovaPassword
 ```
 
 Riattiva l'utente e chiude le sue sessioni; se il nome non esiste, lo crea come
@@ -219,13 +219,13 @@ npm run seed     # dati di esempio: 12 prodotti, 5 fiere, i relativi noleggi
 npm start
 ```
 
-L'app risponde su <http://localhost:3000>. Si entra con l'utente `admin` e la
+L'app risponde su <http://localhost:3000>. Si entra con l'utente `stefano` e la
 password `noleggio2026` (o quella di `APP_PASSWORD` al primo avvio).
 
 | Variabile | Predefinito | A cosa serve |
 |---|---|---|
 | `PORT` | `3000` | Porta di ascolto. |
-| `APP_PASSWORD` | `noleggio2026` | Password dell'utente `admin`, creato al primo avvio. Dopo si cambia dall'app. |
+| `APP_PASSWORD` | `noleggio2026` | Password dell'utente `stefano`, creato al primo avvio. Dopo si cambia dall'app. |
 | `SESSION_SECRET` | casuale a ogni avvio | Firma i cookie di sessione. Se non la imposti, a ogni riavvio tutti devono rifare il login. |
 | `DATA_DIR` | `./data` | Cartella del file SQLite. |
 | `TRUST_PROXY` | `loopback` | Da quali proxy accettare `X-Forwarded-For` (serve al blocco dei tentativi). Se metti l'app dietro un reverse proxy su un'altra macchina, indica il suo indirizzo. |
@@ -366,7 +366,7 @@ docker compose restart app
 Ogni persona ha il suo utente (vedi *Utenti e ruoli*); le password sono
 salvate con scrypt, mai in chiaro. Prima di usarla con dati veri:
 
-1. **Cambia la password di `admin`** dall'app (bottone **Password**) e crea un
+1. **Cambia la password di `stefano`** dall'app (bottone **Password**) e crea un
    utente per ciascuno invece di condividerla.
 2. **Imposta `SESSION_SECRET`** con una stringa lunga e casuale
    (`openssl rand -hex 32`). Se manca, viene rigenerata a ogni riavvio e le
@@ -418,7 +418,7 @@ Tutte le rotte sotto `/api` richiedono il cookie di sessione, tranne
 
 | Metodo | Rotta | Descrizione |
 |---|---|---|
-| `POST` | `/api/accesso` | Login con `{ utente, password }` (senza `utente` vale `admin`). |
+| `POST` | `/api/accesso` | Login con `{ utente, password }` (senza `utente` vale il primo amministratore). |
 | `POST` | `/api/profilo/password` | Cambio della propria password `{ attuale, nuova }`. Tutti i ruoli. |
 | `GET` `POST` `PUT` `DELETE` | `/api/utenti[/:id]` | Gestione utenti. Solo amministratori. |
 | `GET` | `/api/tecnico/installazioni` | Edizioni con cosa installare, stand e planimetrie. Senza prezzi. Tutti i ruoli. |

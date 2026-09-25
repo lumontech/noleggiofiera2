@@ -1,7 +1,7 @@
 // Recupero accesso: reimposta la password di un utente dalla riga di comando.
 //
-//   npm run reimposta-password -- admin nuovaPassword
-//   docker compose exec app node src/reimposta-password.js admin nuovaPassword
+//   npm run reimposta-password -- stefano nuovaPassword
+//   docker compose exec app node src/reimposta-password.js stefano nuovaPassword
 //
 // L'utente viene anche riattivato e le sue sessioni aperte si chiudono. Se il
 // nome non esiste, si crea come amministratore: serve quando nessuno riesce

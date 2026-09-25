@@ -1,0 +1,65 @@
+[
+  {
+    "nel_nome": [], "ean": "6942351406404",
+    "modello": "55A6N", "risoluzione": "4K UHD",
+    "larghezza_mm": 1233, "altezza_mm": 716, "profondita_mm": 86, "altezza_base_mm": 768,
+    "peso_kg": 10.9, "vesa": "200x400",
+    "scheda_url": "https://it.hisense.com/prodotti/tv/tv-uhd/TV-SET-55A6N-HSN/p/000000000020013850"
+  },
+  {
+    "nel_nome": [], "ean": "8806095478333",
+    "modello": "UE65DU7172U", "risoluzione": "4K UHD",
+    "larghezza_mm": 1452.9, "altezza_mm": 834, "profondita_mm": 60.6, "altezza_base_mm": 879.5,
+    "peso_kg": 15.9, "vesa": "400x300",
+    "scheda_url": "https://www.displayspecifications.com/en/model/2f6b3ad0"
+  },
+  {
+    "nel_nome": ["65UA73003"],
+    "modello": "65UA73003LA", "risoluzione": "4K UHD",
+    "larghezza_mm": 1446, "altezza_mm": 831, "profondita_mm": 59.8, "altezza_base_mm": 902,
+    "peso_kg": 15.6, "vesa": "400x400",
+    "scheda_url": "https://www.lg.com/hr/televizori/lg-65ua73003la"
+  },
+  {
+    "nel_nome": ["86UR781C"],
+    "modello": "86UR781C0LB", "risoluzione": "4K UHD",
+    "larghezza_mm": 1927, "altezza_mm": 1104, "profondita_mm": 59.9, "altezza_base_mm": 1164,
+    "peso_kg": 45.2, "vesa": "600x400",
+    "scheda_url": "https://www.lg.com/pl/business/information-display/commercial-tv/hotel-tv/86ur781c0lb/"
+  },
+  {
+    "nel_nome": ["65U8072"],
+    "modello": "UE65U8072FU", "risoluzione": "4K UHD",
+    "larghezza_mm": 1444.1, "altezza_mm": 831.2, "profondita_mm": 76.8, "altezza_base_mm": 882.2,
+    "peso_kg": 14.2, "vesa": "200x200",
+    "scheda_url": "https://www.samsung.com/rs/tvs/uhd-4k-tv/u8000f-65-inch-crystal-uhd-4k-smart-tv-ue65u8072fuxxh/"
+  },
+  {
+    "nel_nome": ["65T69C"], "ean": "5901292528584",
+    "modello": "65T69C", "risoluzione": "4K UHD QLED",
+    "larghezza_mm": 1445.4, "altezza_mm": 833, "profondita_mm": 72.5, "altezza_base_mm": 878,
+    "peso_kg": 12.3, "vesa": "200x200",
+    "scheda_url": "https://www.displayspecifications.com/en/model/17db4b47"
+  },
+  {
+    "nel_nome": ["55UR781"],
+    "modello": "55UR781C0LK", "risoluzione": "4K UHD",
+    "larghezza_mm": 1235, "altezza_mm": 715, "profondita_mm": 57.5, "altezza_base_mm": 780,
+    "peso_kg": 14.0, "vesa": "300x300",
+    "scheda_url": "https://www.lg.com/it/tv-soundbar/tv-uhd-4k/55ur78006lk/"
+  },
+  {
+    "nel_nome": ["55U7022"],
+    "modello": "UE55U7022FK", "risoluzione": "4K UHD",
+    "larghezza_mm": 1224.6, "altezza_mm": 707.8, "profondita_mm": 76.6, "altezza_base_mm": 759.1,
+    "peso_kg": 9.6, "vesa": "200x200",
+    "scheda_url": "https://www.samsung.com/rs/tvs/uhd-4k-tv/u7000f-55-inch-crystal-uhd-4k-smart-tv-ue55u7022fkxxh/"
+  },
+  {
+    "nel_nome": [], "ean": "5999860668947",
+    "modello": "SMT43F30UV2M1B1", "risoluzione": "4K UHD",
+    "larghezza_mm": 964.4, "altezza_mm": 560.9, "profondita_mm": 97.5, "altezza_base_mm": 613.1,
+    "peso_kg": 7.5, "vesa": "200x200",
+    "scheda_url": "https://www.smarttech-tv.com/it/index.php?route=product/product&product_id=63"
+  }
+]

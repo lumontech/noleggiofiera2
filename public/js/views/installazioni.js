@@ -53,6 +53,18 @@ function apriLaPianta(fiera, allegato, stand = '') {
   });
 }
 
+/** "123 × 72 cm · con base 77 cm · 11 kg · VESA 200x400": quello che serve per montarlo. */
+function misure(n) {
+  const cm = (mm) => String(Math.round(mm / 10));
+  return [
+    n.prodotto_larghezza_mm && n.prodotto_altezza_mm
+      ? `${cm(n.prodotto_larghezza_mm)} × ${cm(n.prodotto_altezza_mm)} cm` : null,
+    n.prodotto_altezza_base_mm ? `con base ${cm(n.prodotto_altezza_base_mm)} cm` : null,
+    n.prodotto_peso_kg ? `${String(n.prodotto_peso_kg).replace('.', ',')} kg` : null,
+    n.prodotto_vesa ? `VESA ${n.prodotto_vesa}` : null,
+  ].filter(Boolean).join(' · ');
+}
+
 function schedaStand(g, fiera) {
   const tv = g.righe.reduce((t, n) => t + n.quantita, 0);
   const planimetria = fiera.allegati[0];
@@ -74,7 +86,8 @@ function schedaStand(g, fiera) {
         h('span', { class: 'installa__apparecchio' },
           n.quantita > 1 ? h('strong', {}, `${n.quantita}× `) : null,
           nomeBreve({ nome: n.prodotto_nome, marca: n.prodotto_marca, pollici: n.prodotto_pollici }),
-          n.prodotto_codice ? h('span', { class: 'installa__codice' }, idProdotto(n.prodotto_codice)) : null),
+          n.prodotto_codice ? h('span', { class: 'installa__codice' }, idProdotto(n.prodotto_codice)) : null,
+          misure(n) ? h('span', { class: 'installa__misure' }, misure(n)) : null),
         h('span', { class: `installa__compito installa__compito--${c.classe}` }, c.testo));
     })));
 }

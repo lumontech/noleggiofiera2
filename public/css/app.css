@@ -1167,3 +1167,4 @@ body.pianta-aperta { overflow: hidden; }
   display: inline-block; margin-right: 0.4rem; padding: 0.05rem 0.45rem; border-radius: 6px;
   background: var(--inchiostro); color: var(--bianco); font-size: 0.8rem; vertical-align: 0.1em;
 }
+.installa__misure { display: block; margin-top: 0.1rem; font-size: 0.76rem; color: var(--grigio-500); }

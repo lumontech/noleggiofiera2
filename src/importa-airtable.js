@@ -8,12 +8,24 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import db from './lib/db.js';
 import { oggi, giorniTra } from './lib/domain.js';
 
 const SCRIVI = process.argv.includes('--scrivi');
-const CARTELLA = path.join(process.cwd(), 'dati');
-const leggi = (nome) => JSON.parse(fs.readFileSync(path.join(CARTELLA, nome), 'utf8'));
+// Relativa a questo file, non alla cartella da cui si lancia il comando:
+// così funziona uguale in locale e dentro il container.
+const CARTELLA = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'dati');
+
+function leggi(nome) {
+  const percorso = path.join(CARTELLA, nome);
+  if (!fs.existsSync(percorso)) {
+    console.error(`Non trovo ${percorso}.`);
+    console.error('Se usi Docker, ricostruisci l\'immagine: docker compose up -d --build');
+    process.exit(1);
+  }
+  return JSON.parse(fs.readFileSync(percorso, 'utf8'));
+}
 
 const prodottiAirtable = leggi('airtable-prodotti.json');
 const fiereAirtable = leggi('airtable-fiere.json');

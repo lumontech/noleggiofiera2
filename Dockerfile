@@ -17,6 +17,8 @@ COPY --from=dipendenze /app/node_modules ./node_modules
 COPY package.json ./
 COPY src ./src
 COPY public ./public
+# Esportazione di Airtable letta da `npm run importa`.
+COPY dati ./dati
 USER node
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \

@@ -57,11 +57,27 @@ set -a; . ./.env; set +a
 PORTA="${PORTA_HOST:-8099}"
 
 # --- 3. La porta scelta è libera? -------------------------------------------
-if command -v ss >/dev/null 2>&1 && ss -ltn "sport = :$PORTA" 2>/dev/null | grep -q LISTEN; then
-  if ! docker ps --format '{{.Names}} {{.Ports}}' | grep -q "noleggiofiera.*:$PORTA->"; then
-    rosso "La porta $PORTA è già usata da un altro servizio."
-    echo "Scegli una porta libera:  PORTA_HOST=8123 ./scripts/deploy.sh"
-    echo "(ricordati di aggiornare anche PORTA_HOST dentro .env)"
+# Non diamo per scontato che 'ss' o 'lsof' ci siano: proviamo ad aprire una
+# connessione sulla porta, cosa che bash sa fare da sé.
+porta_occupata() {
+  if command -v ss >/dev/null 2>&1; then
+    ss -ltn 2>/dev/null | grep -qE "[:.]$PORTA[[:space:]]" && return 0
+  elif command -v lsof >/dev/null 2>&1; then
+    lsof -iTCP:"$PORTA" -sTCP:LISTEN >/dev/null 2>&1 && return 0
+  fi
+  (exec 3<>"/dev/tcp/127.0.0.1/$PORTA") 2>/dev/null && { exec 3>&-; return 0; }
+  return 1
+}
+
+if porta_occupata; then
+  # Se a occuparla è già il nostro container, è solo un nuovo deploy: va bene.
+  if docker ps --format '{{.Names}} {{.Ports}}' 2>/dev/null | grep -q "noleggiofiera.*:$PORTA->"; then
+    info "La porta $PORTA è occupata da NoleggioFiera stesso: procedo con l'aggiornamento."
+  else
+    rosso "La porta $PORTA è già usata da un altro servizio su questa macchina."
+    echo "Non la tocco. Scegli una porta libera, per esempio:"
+    echo "  PORTA_HOST=$((PORTA + 1)) ./scripts/deploy.sh"
+    echo "(se il file .env esiste già, aggiorna anche PORTA_HOST al suo interno)"
     exit 1
   fi
 fi

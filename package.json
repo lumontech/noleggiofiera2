@@ -4,11 +4,14 @@
   "private": true,
   "description": "Piattaforma di gestione noleggio monitor e TV per fiere ed eventi",
   "type": "module",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "seed": "node src/seed.js"
+    "seed": "node src/seed.js",
+    "importa": "node src/importa-airtable.js"
   },
   "dependencies": {
     "better-sqlite3": "^11.7.0",

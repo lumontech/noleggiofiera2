@@ -10,7 +10,7 @@ Tre aree, come richiesto:
 |---|---|
 | **Prodotti** | Il catalogo di quello che noleggi: TV, monitor, videowall, totem, supporti, accessori. Ogni articolo ha un numero di pezzi in magazzino. |
 | **Fiere** | Gli eventi dove il materiale viene noleggiato: date, sede, padiglione, stand, cliente, giorni di allestimento e smontaggio. |
-| **Noleggi** | Il collegamento tra i due: quanti pezzi di quale prodotto sono impegnati su quale fiera, in quali date e in che stato. |
+| **Noleggi** | Il collegamento tra i due: quale prodotto va a quale cliente, su quale fiera, in che stand, in quali date e per che importo. |
 
 A queste si aggiungono il **Cruscotto** (la situazione di oggi) e la
 **Disponibilità**, la vista che separa in due elenchi *da noleggiare* e
@@ -45,6 +45,56 @@ Conseguenze pratiche:
 - Le fiere hanno **giorni di allestimento e smontaggio**: il materiale risulta
   fuori dal magazzino già prima dell'apertura e ancora dopo la chiusura. Quando
   assegni materiale a una fiera le date vengono precompilate tenendone conto.
+
+Cliente e stand stanno sul **noleggio**, non sulla fiera: a una stessa fiera
+partecipano decine di aziende, ognuna con il proprio stand e le proprie date.
+L'importo è quello **del lavoro**, non un prezzo al giorno: è così che vengono
+quotati i noleggi.
+
+---
+
+## Importare lo storico da Airtable
+
+I dati della base Airtable *Noleggio Breve Termine* sono già estratti in
+`dati/` e si caricano con un comando:
+
+```bash
+npm run importa              # prova: mostra cosa farebbe, senza scrivere
+npm run importa -- --scrivi  # esegue
+```
+
+Sulla VPS, con Docker:
+
+```bash
+cd /opt/noleggiofiera && docker compose exec app npm run importa -- --scrivi
+```
+
+L'importazione è **idempotente**: ogni riga porta il proprio ID Airtable, quindi
+rilanciarla non crea duplicati.
+
+### Come vengono tradotti i dati
+
+| Airtable | Piattaforma |
+|---|---|
+| `Inventario` (un record per apparecchio) | un prodotto con 1 pezzo, codice `INV-<numero>` |
+| `Stato`: Da noleggiare / Guasto / Regalata | attivo / in manutenzione / dismesso |
+| `Clienti` (campo *Fiera*) | una fiera |
+| `Richieste` | un noleggio per ogni apparecchio collegato |
+| `Azienda`, `Stand` | cliente e stand del noleggio |
+| `Costo` | importo del noleggio (diviso, se la richiesta copre più apparecchi) |
+| `Task`: Installato / Da Installare | rientrato o consegnato / prenotato |
+
+Tre scelte fatte in fase di importazione, che è bene conoscere:
+
+1. **Le date delle fiere sono dedotte** dal primo e dall'ultimo giorno dei
+   noleggi collegati, perché in Airtable la fiera non ha date proprie. Per le
+   fiere che non avevano date su nessuna richiesta (Siferr 2026, BMT 2026,
+   Pharmexpo 2026) è stata messa una **stima**, segnalata nelle note della
+   fiera: vanno corrette a mano.
+2. **I noleggi già conclusi entrano come "rientrato"**, così lo storico non
+   occupa il magazzino e non falsa il calcolo delle disponibilità future.
+3. **Le richieste senza materiale collegato vengono ignorate** (in Airtable ce
+   ne sono due, per 300 € complessivi) e così le fiere senza alcun noleggio.
 
 ---
 

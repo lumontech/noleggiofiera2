@@ -2,7 +2,7 @@
 // Uso: npm run seed  (non cancella nulla se ci sono già dei prodotti)
 
 import db from './lib/db.js';
-import { oggi, addGiorni } from './lib/domain.js';
+import { oggi, addGiorni, giorniTra } from './lib/domain.js';
 
 const esistenti = db.prepare('SELECT COUNT(*) AS n FROM prodotti').get().n;
 if (esistenti > 0 && !process.argv.includes('--forza')) {
@@ -47,29 +47,33 @@ const insFiera = db.prepare(`
   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?)`);
 
 const insNoleggio = db.prepare(`
-  INSERT INTO noleggi (prodotto_id, fiera_id, quantita, data_inizio, data_fine, stato,
-                       prezzo_giorno, note, creato_il, aggiornato_il)
-  VALUES (?, ?, ?, ?, ?, ?, ?, '', ?, ?)`);
+  INSERT INTO noleggi (prodotto_id, fiera_id, cliente, stand, quantita, data_inizio, data_fine,
+                       stato, importo, note, creato_il, aggiornato_il)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?)`);
 
 db.transaction(() => {
   const idProdotti = prodotti.map((p) => insProdotto.run(...p, adesso, adesso).lastInsertRowid);
   const idFiere = fiere.map((f) => insFiera.run(...f, adesso, adesso).lastInsertRowid);
 
   const righe = [
-    // [indice prodotto, indice fiera, quantità, stato]
-    [0, 0, 6, 'prenotato'], [1, 0, 3, 'prenotato'], [8, 0, 6, 'prenotato'], [10, 0, 4, 'prenotato'],
-    [3, 1, 2, 'prenotato'], [6, 1, 1, 'prenotato'], [4, 1, 4, 'prenotato'],
-    [0, 2, 4, 'consegnato'], [2, 2, 6, 'consegnato'], [7, 2, 3, 'consegnato'], [11, 2, 12, 'consegnato'],
-    [1, 3, 4, 'rientrato'], [5, 3, 2, 'rientrato'],
-    [3, 4, 2, 'prenotato'], [7, 4, 4, 'prenotato'],
+    // [indice prodotto, indice fiera, quantità, stato, cliente, stand]
+    [0, 0, 6, 'prenotato', 'Arredo Group Srl', 'C24'], [1, 0, 3, 'prenotato', 'Arredo Group Srl', 'C24'],
+    [8, 0, 6, 'prenotato', 'Poltrone Nord', 'C31'], [10, 0, 4, 'prenotato', 'Poltrone Nord', 'C31'],
+    [3, 1, 2, 'prenotato', 'TechLab Spa', 'A08'], [6, 1, 1, 'prenotato', 'TechLab Spa', 'A08'],
+    [4, 1, 4, 'prenotato', 'Datacloud Srl', 'A15'],
+    [0, 2, 4, 'consegnato', 'Food Italia Srl', 'B15'], [2, 2, 6, 'consegnato', 'Food Italia Srl', 'B15'],
+    [7, 2, 3, 'consegnato', 'Pastificio Sud', 'B22'], [11, 2, 12, 'consegnato', 'Pastificio Sud', 'B22'],
+    [1, 3, 4, 'rientrato', 'Cantine Riunite', 'D02'], [5, 3, 2, 'rientrato', 'Cantine Riunite', 'D02'],
+    [3, 4, 2, 'prenotato', 'Meccanica Nord Srl', 'E11'], [7, 4, 4, 'prenotato', 'Utensili Pro', 'E18'],
   ];
 
-  for (const [ip, iff, quantita, stato] of righe) {
+  for (const [ip, iff, quantita, stato, cliente, stand] of righe) {
     const fiera = fiere[iff];
     const inizio = addGiorni(fiera[6], -fiera[8]);
     const fine = addGiorni(fiera[7], fiera[9]);
-    insNoleggio.run(idProdotti[ip], idFiere[iff], quantita, inizio, fine, stato,
-      prodotti[ip][8], adesso, adesso);
+    const importo = prodotti[ip][8] * quantita * (giorniTra(inizio, fine));
+    insNoleggio.run(idProdotti[ip], idFiere[iff], cliente, stand, quantita, inizio, fine,
+      stato, importo, adesso, adesso);
   }
 })();
 

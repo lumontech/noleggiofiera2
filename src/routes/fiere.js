@@ -46,16 +46,14 @@ function riepilogo(fiera) {
       FROM noleggi n JOIN prodotti p ON p.id = n.prodotto_id
      WHERE n.fiera_id = ? ORDER BY p.categoria, p.nome`).all(fiera.id);
   const attivi = righe.filter((r) => r.stato !== 'annullato');
-  const valore = attivi.reduce(
-    (tot, r) => tot + (r.prezzo_giorno ?? 0) * r.quantita * giorniTra(r.data_inizio, r.data_fine), 0,
-  );
+  const valore = attivi.reduce((tot, r) => tot + (r.importo ?? 0), 0);
   return {
     ...fiera,
     ...finestraLogistica(fiera),
     durata_giorni: giorniTra(fiera.data_inizio, fiera.data_fine),
     pezzi_totali: attivi.reduce((tot, r) => tot + r.quantita, 0),
     righe_noleggio: attivi.length,
-    valore_stimato: Math.round(valore * 100) / 100,
+    valore: Math.round(valore * 100) / 100,
   };
 }
 

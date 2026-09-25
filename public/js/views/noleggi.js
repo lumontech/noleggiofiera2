@@ -19,13 +19,15 @@ function formNoleggio(n, prodotti, fiere) {
       campo('Fiera', select('fiera_id',
         fiere.map((f) => ({ valore: f.id, testo: `${f.nome} — ${intervalloDate(f.data_inizio, f.data_fine)}` })),
         n?.fiera_id), { largo: true }),
+      campo('Cliente', input('cliente', { value: n?.cliente || '', placeholder: 'Nome dell\'azienda espositrice' })),
+      campo('Stand', input('stand', { value: n?.stand || '', placeholder: 'PAD 5 - 5042' })),
       campo('Pezzi', input('quantita', { value: n?.quantita ?? 1, type: 'number', min: '1', required: true })),
       campo('Stato', select('stato', statiNoleggio, n?.stato || 'prenotato')),
       campo('Uscita dal magazzino', input('data_inizio', { value: n?.data_inizio || oggi, type: 'date', required: true })),
       campo('Rientro in magazzino', input('data_fine', { value: n?.data_fine || addGiorni(oggi, 5), type: 'date', required: true })),
-      campo('Prezzo al giorno (€)', input('prezzo_giorno', {
-        value: n?.prezzo_giorno ?? '', type: 'number', min: '0', step: '0.01', placeholder: 'listino prodotto',
-      })),
+      campo('Importo (€)', input('importo', {
+        value: n?.importo ?? '', type: 'number', min: '0', step: '0.01', placeholder: 'calcolato dal listino',
+      }), { aiuto: 'Totale del lavoro, non il prezzo al giorno.' }),
       campo('Note', areaTesto('note', { value: n?.note || '' }), { largo: true }),
     ),
   ];
@@ -60,13 +62,14 @@ export default async function vistaNoleggi({ corpo, azioni, ricarica }) {
     onclick: () => apriForm(null, prodotti, fiere, ricarica),
   }, '+ Nuovo noleggio'));
 
-  const filtri = { stato: '', fiera_id: '', prodotto_id: '' };
+  const filtri = { q: '', stato: '', fiera_id: '', prodotto_id: '' };
   const contenitore = h('div', {});
 
   const disegna = async () => {
     const elenco = await api.noleggi(filtri);
-    const pezzi = elenco.filter((n) => n.stato !== 'annullato').reduce((t, n) => t + n.quantita, 0);
-    const valore = elenco.filter((n) => n.stato !== 'annullato').reduce((t, n) => t + n.totale, 0);
+    const attivi = elenco.filter((n) => n.stato !== 'annullato');
+    const pezzi = attivi.reduce((t, n) => t + n.quantita, 0);
+    const valore = attivi.reduce((t, n) => t + n.importo, 0);
 
     monta(contenitore,
       h('p', { class: 'riepilogo-filtro' },
@@ -75,20 +78,24 @@ export default async function vistaNoleggi({ corpo, azioni, ricarica }) {
         ? h('div', { class: 'pannello pannello--tabella' },
             h('table', { class: 'tabella tabella--ampia' },
               h('thead', {}, h('tr', {},
-                h('th', {}, 'Prodotto'), h('th', {}, 'Fiera'), h('th', {}, 'Periodo'),
-                h('th', {}, 'Pezzi'), h('th', {}, 'Giorni'), h('th', {}, 'Totale'),
+                h('th', {}, 'Cliente'), h('th', {}, 'Prodotto'), h('th', {}, 'Fiera'),
+                h('th', {}, 'Periodo'), h('th', {}, 'Pezzi'), h('th', {}, 'Importo'),
                 h('th', {}, 'Stato'), h('th', {}, ''))),
               h('tbody', {}, elenco.map((n) => h('tr', { class: `riga--${n.stato}` },
                 h('td', {},
-                  h('strong', {}, n.prodotto_nome),
+                  h('strong', {}, n.cliente || '—'),
+                  n.stand ? h('div', { class: 'sottotesto' }, n.stand) : null),
+                h('td', {},
+                  n.prodotto_nome,
                   h('div', { class: 'sottotesto' }, n.prodotto_categoria)),
                 h('td', {},
                   n.fiera_nome,
                   n.fiera_citta ? h('div', { class: 'sottotesto' }, n.fiera_citta) : null),
-                h('td', {}, intervalloDate(n.data_inizio, n.data_fine)),
+                h('td', {},
+                  intervalloDate(n.data_inizio, n.data_fine),
+                  h('div', { class: 'sottotesto' }, `${n.giorni} gg`)),
                 h('td', {}, numero(n.quantita)),
-                h('td', {}, numero(n.giorni)),
-                h('td', {}, euro(n.totale)),
+                h('td', {}, euro(n.importo)),
                 h('td', {}, badge(n.stato)),
                 h('td', { class: 'tabella__azioni' },
                   PROSSIMO_STATO[n.stato] ? h('button', {
@@ -107,7 +114,8 @@ export default async function vistaNoleggi({ corpo, azioni, ricarica }) {
                     class: 'btn btn--mini btn--pericolo',
                     onclick: () => conferma({
                       titolo: 'Eliminare il noleggio?',
-                      messaggio: `${n.quantita}× ${n.prodotto_nome} su "${n.fiera_nome}" verrà rimosso.`,
+                      messaggio: `${n.quantita}× ${n.prodotto_nome} per ${n.cliente || 'cliente non indicato'} `
+                        + `su "${n.fiera_nome}" verrà rimosso.`,
                       onConferma: async () => {
                         await api.eliminaNoleggio(n.id);
                         avviso('Noleggio eliminato.');
@@ -123,6 +131,9 @@ export default async function vistaNoleggi({ corpo, azioni, ricarica }) {
             }, '+ Nuovo noleggio')));
   };
 
+  const cerca = input('q', { placeholder: 'Cerca per cliente, stand, prodotto o fiera…', type: 'search' });
+  cerca.addEventListener('input', () => { filtri.q = cerca.value.trim(); disegna(); });
+
   const selStato = select('stato',
     [{ valore: '', testo: 'Tutti gli stati' }, ...statiNoleggio.map((s) => ({ valore: s, testo: etichetta(s) }))], '');
   selStato.addEventListener('change', () => { filtri.stato = selStato.value; disegna(); });
@@ -135,6 +146,6 @@ export default async function vistaNoleggi({ corpo, azioni, ricarica }) {
     [{ valore: '', testo: 'Tutti i prodotti' }, ...prodotti.map((p) => ({ valore: p.id, testo: p.nome }))], '');
   selProdotto.addEventListener('change', () => { filtri.prodotto_id = selProdotto.value; disegna(); });
 
-  monta(corpo, h('div', { class: 'filtri' }, selStato, selFiera, selProdotto), contenitore);
+  monta(corpo, h('div', { class: 'filtri' }, cerca, selStato, selFiera, selProdotto), contenitore);
   await disegna();
 }

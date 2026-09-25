@@ -49,11 +49,13 @@ CREATE TABLE IF NOT EXISTS noleggi (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   prodotto_id   INTEGER NOT NULL REFERENCES prodotti(id) ON DELETE CASCADE,
   fiera_id      INTEGER NOT NULL REFERENCES fiere(id)    ON DELETE CASCADE,
+  cliente       TEXT    DEFAULT '',
+  stand         TEXT    DEFAULT '',
   quantita      INTEGER NOT NULL DEFAULT 1,
   data_inizio   TEXT    NOT NULL,
   data_fine     TEXT    NOT NULL,
   stato         TEXT    NOT NULL DEFAULT 'prenotato',
-  prezzo_giorno REAL,
+  importo       REAL    NOT NULL DEFAULT 0,
   note          TEXT    DEFAULT '',
   creato_il     TEXT    NOT NULL,
   aggiornato_il TEXT    NOT NULL
@@ -63,5 +65,33 @@ CREATE INDEX IF NOT EXISTS idx_noleggi_prodotto ON noleggi(prodotto_id);
 CREATE INDEX IF NOT EXISTS idx_noleggi_fiera    ON noleggi(fiera_id);
 CREATE INDEX IF NOT EXISTS idx_noleggi_periodo  ON noleggi(data_inizio, data_fine);
 `);
+
+/**
+ * Allinea un database creato con una versione precedente dello schema.
+ * SQLite non ha "ADD COLUMN IF NOT EXISTS", quindi si controlla prima.
+ */
+function aggiungiColonna(tabella, colonna, definizione) {
+  const presenti = db.prepare(`PRAGMA table_info(${tabella})`).all().map((c) => c.name);
+  if (!presenti.includes(colonna)) {
+    db.exec(`ALTER TABLE ${tabella} ADD COLUMN ${colonna} ${definizione}`);
+    return true;
+  }
+  return false;
+}
+
+aggiungiColonna('noleggi', 'cliente', "TEXT DEFAULT ''");
+aggiungiColonna('noleggi', 'stand', "TEXT DEFAULT ''");
+if (aggiungiColonna('noleggi', 'importo', 'REAL NOT NULL DEFAULT 0')) {
+  // Le righe del vecchio schema avevano un prezzo al giorno: lo si converte
+  // nell'importo complessivo moltiplicandolo per i giorni di noleggio.
+  const colonne = db.prepare('PRAGMA table_info(noleggi)').all().map((c) => c.name);
+  if (colonne.includes('prezzo_giorno')) {
+    db.exec(`
+      UPDATE noleggi
+         SET importo = COALESCE(prezzo_giorno, 0) * quantita *
+             (CAST(julianday(data_fine) - julianday(data_inizio) AS INTEGER) + 1)
+       WHERE importo = 0`);
+  }
+}
 
 export default db;

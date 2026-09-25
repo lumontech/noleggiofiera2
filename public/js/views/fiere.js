@@ -2,7 +2,7 @@ import { api } from '../api.js';
 import { stato as statoApp } from '../app.js';
 import {
   h, monta, badge, modale, conferma, avviso, campo, input, select, areaTesto,
-  griglia, numero, euro, vuoto, intervalloDate, dataLunga, etichetta, oggiISO, addGiorni,
+  griglia, numero, euro, vuoto, intervalloDate, etichetta, oggiISO, addGiorni, notePulite,
 } from '../ui.js';
 
 function formFiera(f = {}) {
@@ -63,13 +63,16 @@ async function apriAssegna(fiera, prodotti, ricarica) {
     corpo: [
       griglia(
         campo('Prodotto', selProdotto, { largo: true }),
+        campo('Cliente', input('cliente', { placeholder: 'Nome dell\'azienda espositrice' })),
+        campo('Stand', input('stand', { placeholder: 'PAD 5 - 5042' })),
         campo('Pezzi', input('quantita', { value: 1, type: 'number', min: '1', required: true })),
         campo('Stato', select('stato', statoApp.costanti.stati_noleggio, 'prenotato')),
         campo('Uscita dal magazzino', input('data_inizio', { value: finestra.data_inizio, type: 'date', required: true }),
           { aiuto: 'Precompilata con i giorni di allestimento.' }),
         campo('Rientro in magazzino', input('data_fine', { value: finestra.data_fine, type: 'date', required: true }),
           { aiuto: 'Precompilata con i giorni di smontaggio.' }),
-        campo('Prezzo al giorno (€)', input('prezzo_giorno', { type: 'number', min: '0', step: '0.01', placeholder: 'listino prodotto' })),
+        campo('Importo (€)', input('importo', { type: 'number', min: '0', step: '0.01', placeholder: 'calcolato dal listino' }),
+          { aiuto: 'Totale del lavoro, non il prezzo al giorno.' }),
         campo('Note', areaTesto('note', {}), { largo: true }),
       ),
     ],
@@ -88,13 +91,16 @@ async function apriDettaglio(id, prodotti, ricarica) {
   const tabella = attivi.length
     ? h('table', { class: 'tabella' },
         h('thead', {}, h('tr', {},
-          h('th', {}, 'Prodotto'), h('th', {}, 'Pezzi'), h('th', {}, 'Periodo'),
-          h('th', {}, 'Stato'), h('th', {}, ''))),
+          h('th', {}, 'Cliente'), h('th', {}, 'Prodotto'), h('th', {}, 'Pezzi'),
+          h('th', {}, 'Periodo'), h('th', {}, 'Importo'), h('th', {}, 'Stato'), h('th', {}, ''))),
         h('tbody', {}, attivi.map((n) => h('tr', {},
+          h('td', {}, h('strong', {}, n.cliente || '—'),
+            n.stand ? h('div', { class: 'sottotesto' }, n.stand) : null),
           h('td', {}, n.prodotto_nome,
-            h('span', { class: 'sottotesto' }, ` ${n.prodotto_categoria}${n.prodotto_pollici ? ` ${n.prodotto_pollici}"` : ''}`)),
+            h('div', { class: 'sottotesto' }, `${n.prodotto_categoria}${n.prodotto_pollici ? ` ${n.prodotto_pollici}"` : ''}`)),
           h('td', {}, numero(n.quantita)),
           h('td', {}, intervalloDate(n.data_inizio, n.data_fine)),
+          h('td', {}, euro(n.importo)),
           h('td', {}, badge(n.stato)),
           h('td', { class: 'tabella__azioni' },
             h('button', {
@@ -122,8 +128,8 @@ async function apriDettaglio(id, prodotti, ricarica) {
         h('div', {}, h('span', {}, 'Apertura'), h('strong', {}, intervalloDate(fiera.data_inizio, fiera.data_fine))),
         h('div', {}, h('span', {}, 'Materiale fuori'), h('strong', {}, intervalloDate(fiera.from, fiera.to))),
         h('div', {}, h('span', {}, 'Pezzi'), h('strong', {}, numero(fiera.pezzi_totali))),
-        h('div', {}, h('span', {}, 'Valore stimato'), h('strong', {}, euro(fiera.valore_stimato)))),
-      fiera.note ? h('p', { class: 'dettaglio-note' }, fiera.note) : null,
+        h('div', {}, h('span', {}, 'Valore'), h('strong', {}, euro(fiera.valore)))),
+      notePulite(fiera.note) ? h('p', { class: 'dettaglio-note' }, notePulite(fiera.note)) : null,
       tabella,
     ],
     onConferma: async () => {},
@@ -154,8 +160,8 @@ function schedaFiera(f, prodotti, ricarica) {
 
     h('div', { class: 'fiera__numeri' },
       h('div', {}, h('span', { class: 'fiera__cifra' }, numero(f.pezzi_totali)), h('span', {}, 'pezzi')),
-      h('div', {}, h('span', { class: 'fiera__cifra' }, numero(f.righe_noleggio)), h('span', {}, 'righe')),
-      h('div', {}, h('span', { class: 'fiera__cifra' }, euro(f.valore_stimato)), h('span', {}, 'stimati')),
+      h('div', {}, h('span', { class: 'fiera__cifra' }, numero(f.righe_noleggio)), h('span', {}, 'noleggi')),
+      h('div', {}, h('span', { class: 'fiera__cifra' }, euro(f.valore)), h('span', {}, 'fatturato')),
       f.cliente ? h('div', { class: 'fiera__cliente' }, h('span', {}, 'Cliente'), h('strong', {}, f.cliente)) : null),
 
     h('footer', { class: 'fiera__azioni' },

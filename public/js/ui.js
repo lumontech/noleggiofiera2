@@ -80,6 +80,9 @@ export function giorniTra(da, a) {
   return Math.round((new Date(`${a}T00:00:00Z`) - new Date(`${da}T00:00:00Z`)) / 86400000) + 1;
 }
 
+/** Toglie dalle note il marcatore tecnico usato dall'importatore Airtable. */
+export const notePulite = (testo) => (testo || '').replace(/\[airtable:[^\]]+\]/g, '').trim();
+
 export const etichetta = (chiave) => ({
   attivo: 'Attivo', manutenzione: 'In manutenzione', dismesso: 'Dismesso',
   pianificata: 'Pianificata', in_corso: 'In corso', conclusa: 'Conclusa', annullata: 'Annullata',

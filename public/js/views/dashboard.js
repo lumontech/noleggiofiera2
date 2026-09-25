@@ -43,7 +43,9 @@ export default async function vistaDashboard({ corpo, vai }) {
     ? h('ul', { class: 'lista' }, d.consegne_imminenti.map((n) => h('li', { class: 'lista__riga' },
         h('div', {},
           h('p', { class: 'lista__titolo' }, `${n.quantita}× ${n.prodotto_nome}`),
-          h('p', { class: 'lista__testo' }, n.fiera_nome, n.fiera_citta ? ` · ${n.fiera_citta}` : '')),
+          h('p', { class: 'lista__testo' },
+            [n.cliente, n.stand].filter(Boolean).join(' · ') || n.fiera_nome,
+            n.cliente ? ` — ${n.fiera_nome}` : '')),
         h('span', { class: 'lista__nota' }, dataLunga(n.data_inizio)))))
     : vuoto('Nessuna consegna nei prossimi 14 giorni');
 

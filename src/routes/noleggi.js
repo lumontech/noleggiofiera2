@@ -17,11 +17,12 @@ function trovaNoleggio(id) {
 }
 
 function arricchisci(noleggio) {
+  const giorni = giorniTra(noleggio.data_inizio, noleggio.data_fine);
   return {
     ...noleggio,
-    giorni: giorniTra(noleggio.data_inizio, noleggio.data_fine),
-    totale: Math.round((noleggio.prezzo_giorno ?? 0) * noleggio.quantita
-      * giorniTra(noleggio.data_inizio, noleggio.data_fine) * 100) / 100,
+    giorni,
+    // Utile per confrontare noleggi di durata diversa a colpo d'occhio.
+    importo_giorno: Math.round((noleggio.importo / giorni) * 100) / 100,
   };
 }
 
@@ -38,13 +39,18 @@ function leggiCorpo(body) {
     dati: {
       prodotto_id: prodotto.id,
       fiera_id: fiera.id,
+      cliente: testo(body.cliente, 'cliente', { max: 120 }),
+      stand: testo(body.stand, 'stand', { max: 120 }),
       quantita: intero(body.quantita, 'quantita', { min: 1, max: 9999, predefinito: 1 }),
       data_inizio: inizio,
       data_fine: fine,
       stato: enumerato(body.stato, 'stato', STATI_NOLEGGIO, 'prenotato'),
-      prezzo_giorno: body.prezzo_giorno === '' || body.prezzo_giorno == null
-        ? prodotto.prezzo_giorno
-        : decimale(body.prezzo_giorno, 'prezzo_giorno', { min: 0 }),
+      // Importo a forfait del lavoro: è così che vengono quotati i noleggi.
+      // Se non indicato si propone il listino del prodotto per i giorni scelti.
+      importo: body.importo === '' || body.importo == null
+        ? Math.round(prodotto.prezzo_giorno * giorniTra(inizio, fine)
+            * intero(body.quantita, 'quantita', { min: 1, max: 9999, predefinito: 1 }) * 100) / 100
+        : decimale(body.importo, 'importo', { min: 0 }),
       note: testo(body.note, 'note', { max: 2000 }),
     },
   };
@@ -84,6 +90,11 @@ router.get('/', (req, res) => {
     condizioni.push('n.data_inizio <= ? AND n.data_fine >= ?');
     parametri.push(to, from);
   }
+  if (req.query.q) {
+    condizioni.push('(n.cliente LIKE ? OR n.stand LIKE ? OR p.nome LIKE ? OR f.nome LIKE ?)');
+    const like = `%${req.query.q}%`;
+    parametri.push(like, like, like, like);
+  }
   let sql = `
     SELECT n.*, p.nome AS prodotto_nome, p.categoria AS prodotto_categoria,
            p.pollici AS prodotto_pollici, f.nome AS fiera_nome, f.citta AS fiera_citta
@@ -100,10 +111,10 @@ router.post('/', (req, res) => {
   controllaDisponibilita({ prodotto, dati });
   const adesso = new Date().toISOString();
   const info = db.prepare(`
-    INSERT INTO noleggi (prodotto_id, fiera_id, quantita, data_inizio, data_fine, stato,
-                         prezzo_giorno, note, creato_il, aggiornato_il)
-    VALUES (@prodotto_id, @fiera_id, @quantita, @data_inizio, @data_fine, @stato,
-            @prezzo_giorno, @note, @creato_il, @aggiornato_il)`)
+    INSERT INTO noleggi (prodotto_id, fiera_id, cliente, stand, quantita, data_inizio,
+                         data_fine, stato, importo, note, creato_il, aggiornato_il)
+    VALUES (@prodotto_id, @fiera_id, @cliente, @stand, @quantita, @data_inizio,
+            @data_fine, @stato, @importo, @note, @creato_il, @aggiornato_il)`)
     .run({ ...dati, creato_il: adesso, aggiornato_il: adesso });
   res.status(201).json(arricchisci(trovaNoleggio(info.lastInsertRowid)));
 });
@@ -113,9 +124,10 @@ router.put('/:id', (req, res) => {
   const { prodotto, dati } = leggiCorpo(req.body);
   controllaDisponibilita({ prodotto, dati, escludiNoleggio: noleggio.id });
   db.prepare(`
-    UPDATE noleggi SET prodotto_id=@prodotto_id, fiera_id=@fiera_id, quantita=@quantita,
-                       data_inizio=@data_inizio, data_fine=@data_fine, stato=@stato,
-                       prezzo_giorno=@prezzo_giorno, note=@note, aggiornato_il=@aggiornato_il
+    UPDATE noleggi SET prodotto_id=@prodotto_id, fiera_id=@fiera_id, cliente=@cliente,
+                       stand=@stand, quantita=@quantita, data_inizio=@data_inizio,
+                       data_fine=@data_fine, stato=@stato, importo=@importo,
+                       note=@note, aggiornato_il=@aggiornato_il
      WHERE id=@id`)
     .run({ ...dati, id: noleggio.id, aggiornato_il: new Date().toISOString() });
   res.json(arricchisci(trovaNoleggio(noleggio.id)));

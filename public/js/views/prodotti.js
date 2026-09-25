@@ -91,19 +91,18 @@ function schedaProdotto(p, ricarica) {
       badge(p.stato)),
 
     h('div', { class: 'prodotto__numeri' },
-      h('div', {}, h('span', { class: 'prodotto__cifra' }, numero(liberi)), h('span', {}, 'liberi oggi')),
-      h('div', {}, h('span', { class: 'prodotto__cifra' }, numero(p.impegnati_oggi)), h('span', {}, 'noleggiati')),
-      h('div', {}, h('span', { class: 'prodotto__cifra' }, numero(p.quantita)), h('span', {}, 'totali')),
-      h('div', {}, h('span', { class: 'prodotto__cifra' }, euro(p.costo_acquisto)), h('span', {}, 'costo'))),
+      statoOggi(p),
+      h('div', {}, h('span', { class: 'prodotto__cifra' }, numero(p.noleggi_totali)),
+        h('span', {}, p.noleggi_totali === 1 ? 'noleggio in tutto' : 'noleggi in tutto')),
+      h('div', {}, h('span', { class: 'prodotto__cifra' }, euro(p.ricavi)), h('span', {}, 'guadagnato')),
+      h('div', {}, h('span', { class: 'prodotto__cifra' }, euro(p.costo_acquisto * p.quantita)), h('span', {}, 'costo'))),
 
-    h('div', { class: 'barra-occupazione barra-occupazione--sottile' },
-      h('div', { class: 'barra-occupazione__riempimento', style: { width: `${perc}%` } })),
+    // Con più pezzi uguali, la barra dice quanti sono fuori oggi.
+    p.quantita > 1 ? h('div', { class: 'barra-occupazione barra-occupazione--sottile' },
+      h('div', { class: 'barra-occupazione__riempimento', style: { width: `${perc}%` } })) : null,
     resa(p),
     schedaTecnica(p),
-    h('p', { class: 'prodotto__nota' },
-      p.impegno_max_30gg > 0
-        ? `Picco di ${p.impegno_max_30gg} pezzi impegnati nei prossimi 30 giorni.`
-        : 'Nessun impegno nei prossimi 30 giorni.'),
+    h('p', { class: 'prodotto__nota' }, notaProssimi(p)),
 
     h('footer', { class: 'prodotto__azioni' },
       h('button', { class: 'btn btn--mini', onclick: () => apriStorico(p) }, 'Storico'),
@@ -122,17 +121,38 @@ function schedaProdotto(p, ricarica) {
       }, 'Elimina')));
 }
 
-/** Quanto ha reso l'apparecchio rispetto a quanto è costato. */
+/**
+ * Com'è l'apparecchio oggi. Con un pezzo solo (il caso normale: una riga per
+ * apparecchio fisico) si dice a parole; con più pezzi uguali, quanti sono liberi.
+ */
+function statoOggi(p) {
+  if (p.quantita === 1) {
+    const [testo, classe] = p.stato === 'manutenzione' ? ['Guasto', 'fermo']
+      : p.stato === 'dismesso' ? ['Dismesso', 'fermo']
+        : p.impegnati_oggi > 0 ? ['In fiera', 'fuori'] : ['Libero', 'libero'];
+    return h('div', {}, h('span', { class: `prodotto__cifra prodotto__oggi--${classe}` }, testo), h('span', {}, 'oggi'));
+  }
+  return h('div', {}, h('span', { class: 'prodotto__cifra' }, `${numero(p.disponibili_oggi)}/${numero(p.quantita)}`),
+    h('span', {}, 'liberi oggi'));
+}
+
+function notaProssimi(p) {
+  if (p.stato === 'manutenzione') return 'Segnato come guasto / in manutenzione: non viene proposto nei noleggi.';
+  if (p.stato === 'dismesso') return 'Dismesso: non viene proposto nei noleggi.';
+  if (!p.impegno_max_30gg) return 'Libero nei prossimi 30 giorni.';
+  return p.quantita === 1 ? 'Già prenotato nei prossimi 30 giorni.'
+    : `Fino a ${numero(p.impegno_max_30gg)} pezzi prenotati nei prossimi 30 giorni.`;
+}
+
+/** Quanto ha già ripagato l'apparecchio del suo costo. */
 function resa(p) {
-  if (!p.costo_acquisto && !p.ricavi) return null;
   const costo = p.costo_acquisto * p.quantita;
-  const perc = costo ? Math.round((p.ricavi / costo) * 100) : null;
-  return h('p', { class: `prodotto__resa ${perc !== null && perc >= 100 ? 'prodotto__resa--ok' : ''}` },
-    h('strong', {}, euro(p.ricavi)), ` guadagnati in ${numero(p.noleggi_totali)} `,
-    p.noleggi_totali === 1 ? 'noleggio' : 'noleggi',
-    perc === null ? null : perc >= 100
-      ? ` · ripagato (${perc}%)`
-      : ` · ripagato al ${perc}%`);
+  if (!costo) return null;
+  const perc = Math.round((p.ricavi / costo) * 100);
+  return h('p', { class: `prodotto__resa ${perc >= 100 ? 'prodotto__resa--ok' : ''}` },
+    perc >= 100
+      ? h('strong', {}, `Ripagato: ha reso il ${perc}% del costo`)
+      : [h('strong', {}, `Ripagato al ${perc}%`), ` · mancano ${euro(costo - p.ricavi)}`]);
 }
 
 function schedaTecnica(p) {
@@ -142,7 +162,8 @@ function schedaTecnica(p) {
     misure ? h('p', {}, misure) : h('p', { class: 'prodotto__scheda-vuota' }, 'Misure non ancora inserite'),
     h('p', { class: 'prodotto__ean' },
       p.ean ? `EAN ${p.ean}` : null,
-      p.scheda_url ? h('a', { href: p.scheda_url, target: '_blank', rel: 'noopener' }, p.ean ? ' · Scheda tecnica' : 'Scheda tecnica') : null));
+      p.ean && p.scheda_url ? ' · ' : null,
+      p.scheda_url ? h('a', { href: p.scheda_url, target: '_blank', rel: 'noopener' }, 'Scheda tecnica') : null));
 }
 
 async function apriStorico(p) {

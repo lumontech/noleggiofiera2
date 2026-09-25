@@ -1168,3 +1168,6 @@ body.pianta-aperta { overflow: hidden; }
   background: var(--inchiostro); color: var(--bianco); font-size: 0.8rem; vertical-align: 0.1em;
 }
 .installa__misure { display: block; margin-top: 0.1rem; font-size: 0.76rem; color: var(--grigio-500); }
+.prodotto__oggi--libero { color: var(--verde); }
+.prodotto__oggi--fuori { color: var(--ambra); }
+.prodotto__oggi--fermo { color: var(--rosso); }

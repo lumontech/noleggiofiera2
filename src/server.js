@@ -4,6 +4,7 @@ import express from 'express';
 import cookieParser from 'cookie-parser';
 
 import './lib/db.js';
+import { applicaSchede } from './lib/schede.js';
 import { HttpError } from './lib/domain.js';
 import {
   accedi, esci, sessione, richiediAutenticazione, soloAmministratore,
@@ -17,6 +18,8 @@ import tecnico from './routes/tecnico.js';
 
 const RADICE = path.dirname(fileURLToPath(import.meta.url));
 const PORTA = Number(process.env.PORT || 3000);
+
+applicaSchede();
 
 const app = express();
 app.disable('x-powered-by');

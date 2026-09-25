@@ -94,7 +94,8 @@ function unAnnoDopo(iso) {
  * dell'ultima edizione, spostati di un anno. Si correggono le date e basta.
  */
 function propostaNuovaEdizione(g) {
-  const ultima = g.edizioni[0];
+  // L'edizione più avanti nel tempo, qualunque sia l'ordine in cui sono mostrate.
+  const ultima = g.edizioni.reduce((u, e) => (e.data_inizio > u.data_inizio ? e : u));
   const annoUltima = ultima.anno || Number(ultima.data_inizio.slice(0, 4));
   return {
     manifestazione: g.manifestazione,

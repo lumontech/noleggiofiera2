@@ -113,9 +113,17 @@ router.get('/', (req, res) => {
 });
 
 /**
- * Le manifestazioni con tutte le loro edizioni, dalla più recente.
+ * Le manifestazioni con tutte le loro edizioni, dalla più vicina.
  * È la vista naturale: "Pharmexpo" con dentro 2025 e 2026.
  */
+function inOrdineDiData(a, b) {
+  const oggiIso = oggi();
+  const futuraA = a.data_fine >= oggiIso;
+  const futuraB = b.data_fine >= oggiIso;
+  if (futuraA !== futuraB) return futuraA ? -1 : 1;
+  return futuraA ? a.data_inizio.localeCompare(b.data_inizio) : b.data_inizio.localeCompare(a.data_inizio);
+}
+
 router.get('/raggruppate', (_req, res) => {
   const edizioni = db.prepare('SELECT * FROM fiere ORDER BY anno DESC, data_inizio DESC')
     .all().map(riepilogo);
@@ -127,7 +135,9 @@ router.get('/raggruppate', (_req, res) => {
   }
   const risultato = [...gruppi.entries()].map(([manifestazione, righe]) => ({
     manifestazione,
-    edizioni: righe,
+    // Prima le edizioni ancora da svolgere, dalla più vicina; poi quelle
+    // passate, dalla più recente.
+    edizioni: [...righe].sort(inOrdineDiData),
     pezzi_totali: righe.reduce((t, e) => t + e.pezzi_totali, 0),
     valore_totale: Math.round(righe.reduce((t, e) => t + e.valore, 0) * 100) / 100,
     // La prossima è la più vicina ancora da svolgere, non la più recente per anno:

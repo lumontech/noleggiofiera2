@@ -9,11 +9,16 @@ export const MINIMO_PASSWORD = 4;
 
 const router = Router();
 
+const manifestazioniDi = (id) => db.prepare(
+  'SELECT manifestazione FROM accessi_fiera WHERE utente_id = ? ORDER BY manifestazione').all(id)
+  .map((r) => r.manifestazione);
+
 const perElenco = (u) => ({
   id: u.id,
   nome: u.nome,
   accesso: u.accesso,
   ruolo: u.ruolo,
+  manifestazioni: manifestazioniDi(u.id),
   attivo: Boolean(u.attivo),
   ultimo_accesso: u.ultimo_accesso,
   creato_il: u.creato_il,
@@ -42,6 +47,27 @@ function nomeAccesso(valore) {
   return v;
 }
 
+/**
+ * Le fiere di un organizzatore: almeno una, e devono esistere. Si salvano col
+ * nome scritto come nelle fiere, così "pharmexpo" diventa "Pharmexpo".
+ */
+function leggiManifestazioni(valore, ruolo) {
+  if (ruolo !== 'organizzatore') return [];
+  const nomi = [...new Set((Array.isArray(valore) ? valore : []).map((v) => String(v).trim()).filter(Boolean))];
+  if (!nomi.length) throw new HttpError(400, 'Scegli almeno una fiera per l\'organizzatore.');
+  return nomi.map((nome) => {
+    const esistente = db.prepare('SELECT manifestazione FROM fiere WHERE manifestazione = ? COLLATE NOCASE LIMIT 1').get(nome);
+    if (!esistente) throw new HttpError(400, `La fiera "${nome}" non esiste.`);
+    return esistente.manifestazione;
+  });
+}
+
+function salvaManifestazioni(utenteId, nomi) {
+  db.prepare('DELETE FROM accessi_fiera WHERE utente_id = ?').run(utenteId);
+  const inserisci = db.prepare('INSERT OR IGNORE INTO accessi_fiera (utente_id, manifestazione) VALUES (?, ?)');
+  for (const nome of nomi) inserisci.run(utenteId, nome);
+}
+
 // Deve restare sempre almeno un amministratore attivo, o nessuno potrebbe più gestire l'app.
 function amministratoriAttiviEscluso(id) {
   return db.prepare(`SELECT COUNT(*) AS n FROM utenti
@@ -63,10 +89,15 @@ router.post('/', (req, res) => {
   if (db.prepare('SELECT 1 FROM utenti WHERE accesso = ?').get(dati.accesso)) {
     throw new HttpError(409, `Il nome utente "${dati.accesso}" è già usato.`);
   }
+  const manifestazioni = leggiManifestazioni(req.body.manifestazioni, dati.ruolo);
   const adesso = new Date().toISOString();
-  const info = db.prepare(`
-    INSERT INTO utenti (nome, accesso, password_hash, ruolo, creato_il, aggiornato_il)
-    VALUES (@nome, @accesso, @password_hash, @ruolo, @adesso, @adesso)`).run({ ...dati, adesso });
+  const info = db.transaction(() => {
+    const esito = db.prepare(`
+      INSERT INTO utenti (nome, accesso, password_hash, ruolo, creato_il, aggiornato_il)
+      VALUES (@nome, @accesso, @password_hash, @ruolo, @adesso, @adesso)`).run({ ...dati, adesso });
+    salvaManifestazioni(esito.lastInsertRowid, manifestazioni);
+    return esito;
+  })();
   res.status(201).json(perElenco(trovaUtente(info.lastInsertRowid)));
 });
 
@@ -83,6 +114,10 @@ router.put('/:id', (req, res) => {
       : corpo.attivo === true || corpo.attivo === 'true' || corpo.attivo === 'on',
   };
   const nuovaPassword = corpo.password ? password(corpo.password) : null;
+  // Le fiere si riscrivono se arrivano, o se cambia il ruolo.
+  const manifestazioni = corpo.manifestazioni !== undefined || dati.ruolo !== utente.ruolo
+    ? leggiManifestazioni(corpo.manifestazioni ?? manifestazioniDi(utente.id), dati.ruolo)
+    : null;
 
   if (io && !dati.attivo) throw new HttpError(409, 'Non puoi disattivare il tuo stesso utente.');
   if (io && dati.ruolo !== 'amministratore') throw new HttpError(409, 'Non puoi togliere a te stesso il ruolo di amministratore.');
@@ -100,6 +135,7 @@ router.put('/:id', (req, res) => {
   if (nuovaPassword) {
     db.prepare('UPDATE utenti SET password_hash = ? WHERE id = ?').run(hashPassword(nuovaPassword), utente.id);
   }
+  if (manifestazioni) salvaManifestazioni(utente.id, manifestazioni);
   // Nuova password, ruolo cambiato o utente disattivato: le sessioni aperte
   // su altri dispositivi non devono restare valide con i vecchi permessi.
   if (nuovaPassword || dati.ruolo !== utente.ruolo || !dati.attivo) {

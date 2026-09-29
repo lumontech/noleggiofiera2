@@ -89,6 +89,10 @@ export default async function vistaDashboard({ corpo, vai }) {
     : vuoto('Nessun rientro in ritardo', 'Tutto il materiale consegnato è nei tempi.');
 
   monta(corpo,
+    d.richieste_nuove ? h('div', { class: 'allerta allerta--richieste' },
+      h('p', { class: 'allerta__titolo' },
+        `✉ ${numero(d.richieste_nuove)} ${d.richieste_nuove === 1 ? 'richiesta' : 'richieste'} di monitor da gestire`),
+      h('button', { class: 'btn btn--primario', onclick: () => vai('richieste') }, 'Vai alle richieste')) : null,
     d.criticita.length ? h('div', { class: 'allerta' },
       h('p', { class: 'allerta__titolo' }, '⚠ Sovra-impegno rilevato nei prossimi 30 giorni'),
       h('ul', {}, d.criticita.map((c) => h('li', {},

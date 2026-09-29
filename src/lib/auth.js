@@ -1,11 +1,13 @@
 // Utenti, ruoli e sessioni.
 //
-// Due ruoli:
+// Tre ruoli:
 //   amministratore → tutta l'app, prezzi e utenti compresi
 //   tecnico        → solo cosa installare, dove e quando, con la pianta;
 //                    nessun prezzo. Il tecnico ha un canale dati suo
 //                    (/api/tecnico) che per costruzione non contiene prezzi;
 //                    il resto dell'API gli è chiuso dal server.
+//   organizzatore  → chi organizza una fiera: vede solo le sue fiere e manda
+//                    le richieste di monitor (/api/organizzatore). Nessun prezzo.
 //
 // Al primo avvio, se non ci sono utenti, si crea l'amministratore "stefano"
 // con la password di APP_PASSWORD, così chi già entrava continua a farlo.
@@ -14,7 +16,7 @@ import crypto from 'node:crypto';
 import db from './db.js';
 import { HttpError } from './domain.js';
 
-export const RUOLI = ['amministratore', 'tecnico'];
+export const RUOLI = ['amministratore', 'tecnico', 'organizzatore'];
 
 const SEGRETO = process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex');
 const COOKIE = 'nf_sessione';
@@ -183,6 +185,13 @@ export function soloAmministratore(req, _res, next) {
     return next(new HttpError(403, 'Questa parte è riservata agli amministratori.'));
   }
   return next();
+}
+
+/** Apre una parte dell'API solo ad alcuni ruoli. */
+export function soloRuoli(...ruoli) {
+  return (req, _res, next) => (ruoli.includes(req.utente?.ruolo)
+    ? next()
+    : next(new HttpError(403, 'Questa parte non è disponibile per il tuo utente.')));
 }
 
 /** Per revocare le sessioni aperte di un utente (cambio password, ruolo, disattivazione). */

@@ -1171,3 +1171,76 @@ body.pianta-aperta { overflow: hidden; }
 .prodotto__oggi--libero { color: var(--verde); }
 .prodotto__oggi--fuori { color: var(--ambra); }
 .prodotto__oggi--fermo { color: var(--rosso); }
+
+/* ---------- richieste degli organizzatori ---------- */
+
+.allerta--richieste { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;
+  background: var(--azzurro-tenue); border-color: #7dd3fc; color: #075985; }
+.allerta--richieste .allerta__titolo { margin: 0; }
+.badge--ruolo-organizzatore { background: var(--verde-tenue); color: #065f46; }
+
+.org-stato { flex-shrink: 0; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.76rem; font-weight: 650; white-space: nowrap; }
+.org-stato--attesa { background: var(--ambra-tenue); color: #92400e; }
+.org-stato--ok { background: var(--verde-tenue); color: #065f46; }
+.org-stato--no { background: var(--rosso-tenue); color: #991b1b; }
+
+.org-fiere { display: flex; flex-direction: column; gap: 1.25rem; }
+.org-fiera { padding: 1.1rem 1.15rem 1.2rem; border-radius: var(--raggio); background: var(--bianco); box-shadow: var(--ombra); }
+.org-fiera__testa { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem; flex-wrap: wrap; }
+.org-fiera__testa h2 { font-size: 1.25rem; }
+.org-fiera__quando { margin: 0.2rem 0 0; font-weight: 600; color: var(--grigio-700); }
+.org-fiera__dove { margin: 0.1rem 0 0; font-size: 0.87rem; color: var(--grigio-500); }
+.org-fiera__nuova { padding: 0.65rem 1.1rem; font-size: 0.95rem; }
+.org-richieste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.6rem; }
+.org-richiesta { border: 1px solid var(--grigio-200); border-radius: var(--raggio-s); padding: 0.7rem 0.85rem; }
+.org-richiesta__testa { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
+.org-richiesta__stand { color: var(--grigio-500); }
+.org-richiesta__righe { margin: 0.35rem 0 0; font-weight: 600; color: var(--grigio-700); }
+.org-richiesta__nota { margin: 0.25rem 0 0; font-size: 0.85rem; color: var(--grigio-500); }
+.org-richiesta__risposta { margin: 0.45rem 0 0; padding: 0.45rem 0.6rem; border-radius: var(--raggio-s); font-size: 0.85rem; }
+.org-richiesta__risposta--ok { background: var(--verde-tenue); color: #065f46; }
+.org-richiesta__risposta--no { background: var(--rosso-tenue); color: #991b1b; }
+.org-richiesta__risposta--attesa { background: var(--grigio-50); }
+.org-richiesta__piede { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; margin-top: 0.45rem; font-size: 0.78rem; color: var(--grigio-500); }
+.org-vuoto { margin: 0; font-size: 0.88rem; color: var(--grigio-500); }
+.org-confermati { margin-top: 1rem; font-size: 0.87rem; }
+.org-confermati summary { cursor: pointer; font-weight: 600; color: var(--grigio-700); }
+.org-confermati ul { margin: 0.5rem 0 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: 0.25rem; }
+.org-confermati li span { color: var(--grigio-500); }
+
+.richiesta-voci { display: flex; flex-direction: column; gap: 0.45rem; margin-bottom: 1rem; }
+.richiesta-voce { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem;
+  padding: 0.55rem 0.7rem; border: 1px solid var(--grigio-200); border-radius: var(--raggio-s); }
+.richiesta-voce--scelta { border-color: var(--azzurro); background: var(--azzurro-tenue); }
+.richiesta-voce--esaurita { opacity: 0.55; }
+.richiesta-voce__nome { display: flex; flex-direction: column; }
+.richiesta-voce__nome span { font-size: 0.78rem; color: var(--grigio-500); }
+.contatore { display: flex; align-items: center; gap: 0.3rem; }
+.contatore__bottone { width: 40px; height: 40px; padding: 0; font-size: 1.2rem; line-height: 1; }
+.contatore__valore { width: 3.2rem; height: 40px; text-align: center; font-size: 1.05rem; font-weight: 700;
+  border: 1px solid var(--grigio-300); border-radius: var(--raggio-s); -moz-appearance: textfield; }
+.contatore__valore::-webkit-outer-spin-button, .contatore__valore::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+.caselle { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; padding: 0.35rem 0; }
+.casella { display: flex; align-items: center; gap: 0.35rem; font-size: 0.9rem; cursor: pointer; }
+
+.richieste { display: flex; flex-direction: column; gap: 0.75rem; }
+.richiesta { padding: 0.9rem 1.05rem; border-radius: var(--raggio); background: var(--bianco); box-shadow: var(--ombra); border-left: 3px solid var(--grigio-300); }
+.richiesta--nuova { border-left-color: var(--ambra); }
+.richiesta--confermata { border-left-color: var(--verde); }
+.richiesta--rifiutata, .richiesta--annullata { border-left-color: var(--rosso); opacity: 0.85; }
+.richiesta__testa { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem; }
+.richiesta__testa h3 { font-size: 1.02rem; }
+.richiesta__testa p { margin: 0.15rem 0 0; font-size: 0.84rem; color: var(--grigio-500); }
+.richiesta__stand { font-weight: 400; color: var(--grigio-500); }
+.richiesta__righe { margin: 0.5rem 0 0; font-weight: 650; }
+.richiesta__dettaglio { margin: 0.2rem 0 0; font-size: 0.86rem; color: var(--grigio-700); }
+.richiesta__piede { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+  margin-top: 0.6rem; font-size: 0.78rem; color: var(--grigio-500); }
+.richiesta__azioni { display: flex; gap: 0.4rem; }
+.conferma-riga { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.9rem; }
+.conferma-riga__titolo { margin: 0; }
+.conferma-riga__manca { color: var(--rosso); font-size: 0.85rem; }
+@media (max-width: 520px) {
+  .org-fiera__nuova { width: 100%; }
+}

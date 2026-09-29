@@ -8,7 +8,7 @@ import { applicaSchede } from './lib/schede.js';
 import { correggiDateStimate } from './lib/correzioni.js';
 import { HttpError } from './lib/domain.js';
 import {
-  accedi, esci, sessione, richiediAutenticazione, soloAmministratore,
+  accedi, esci, sessione, richiediAutenticazione, soloAmministratore, soloRuoli,
 } from './lib/auth.js';
 import prodotti from './routes/prodotti.js';
 import fiere from './routes/fiere.js';
@@ -16,6 +16,8 @@ import noleggi from './routes/noleggi.js';
 import disponibilita from './routes/disponibilita.js';
 import utenti, { profilo } from './routes/utenti.js';
 import tecnico from './routes/tecnico.js';
+import organizzatore from './routes/organizzatore.js';
+import richieste from './routes/richieste.js';
 
 const RADICE = path.dirname(fileURLToPath(import.meta.url));
 const PORTA = Number(process.env.PORT || 3000);
@@ -47,13 +49,16 @@ app.get('/api/sessione', (req, res) => res.json(sessione(req)));
 
 app.use('/api', richiediAutenticazione);
 
-// Aperto a ogni ruolo: il canale del tecnico (senza prezzi) e la propria password.
-app.use('/api/tecnico', tecnico);
+// Canali senza prezzi, ognuno aperto solo al suo ruolo (e all'amministratore).
+app.use('/api/tecnico', soloRuoli('tecnico', 'amministratore'), tecnico);
+app.use('/api/organizzatore', soloRuoli('organizzatore', 'amministratore'), organizzatore);
+// La propria password: ogni ruolo.
 app.use('/api/profilo', profilo);
 
 // Da qui in poi solo amministratori: prezzi, magazzino, fiere, utenti.
 app.use('/api', soloAmministratore);
 app.use('/api/utenti', utenti);
+app.use('/api/richieste', richieste);
 app.use('/api/prodotti', prodotti);
 app.use('/api/fiere', fiere);
 app.use('/api/noleggi', noleggi);

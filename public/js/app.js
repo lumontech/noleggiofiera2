@@ -9,6 +9,8 @@ import vistaNoleggi from './views/noleggi.js';
 import vistaDisponibilita from './views/disponibilita.js';
 import vistaUtenti from './views/utenti.js';
 import vistaInstallazioni from './views/installazioni.js';
+import vistaRichieste from './views/richieste.js';
+import vistaOrganizzatore from './views/organizzatore.js';
 
 const app = document.getElementById('app');
 
@@ -25,6 +27,8 @@ const SEZIONI_AMMINISTRATORE = [
     descrizione: 'Gli eventi dove il materiale viene noleggiato.' },
   { id: 'noleggi', titolo: 'Noleggi', icona: '⇄', vista: vistaNoleggi,
     descrizione: 'Chi ha cosa, fiera per fiera. Clicca un noleggio per modificarlo.' },
+  { id: 'richieste', titolo: 'Richieste', icona: '✉', vista: vistaRichieste,
+    descrizione: 'Le richieste di monitor mandate dagli organizzatori di fiera: confermale o rifiutale.' },
   { id: 'utenti', titolo: 'Utenti', icona: '◉', vista: vistaUtenti,
     descrizione: 'Chi può entrare e cosa vede. Il tecnico vede solo le installazioni, senza prezzi.' },
 ];
@@ -35,7 +39,18 @@ const SEZIONI_TECNICO = [
     descrizione: 'Cosa montare e in quale stand. Apri la pianta per vedere dove.' },
 ];
 
-const sezioniDelRuolo = () => (stato.utente?.ruolo === 'amministratore' ? SEZIONI_AMMINISTRATORE : SEZIONI_TECNICO);
+// L'organizzatore di fiera: le sue fiere e le richieste di monitor.
+const SEZIONI_ORGANIZZATORE = [
+  { id: 'le-mie-fiere', titolo: 'Le mie fiere', icona: '◈', vista: vistaOrganizzatore,
+    descrizione: 'Richiedi i monitor per gli espositori: ti confermiamo appena possibile.' },
+];
+
+const sezioniDelRuolo = () => ({
+  amministratore: SEZIONI_AMMINISTRATORE,
+  organizzatore: SEZIONI_ORGANIZZATORE,
+}[stato.utente?.ruolo] || SEZIONI_TECNICO);
+
+const NOMI_RUOLO = { amministratore: 'Amministratore', tecnico: 'Tecnico', organizzatore: 'Organizzatore fiera' };
 
 // Il nome utente si ricorda sul dispositivo, la password no.
 const ULTIMO_UTENTE = 'nf_ultimo_utente';
@@ -163,7 +178,7 @@ function shell() {
       nav,
       h('div', { class: 'barra__utente' },
         h('p', { class: 'barra__nome' }, stato.utente.nome,
-          h('span', {}, stato.utente.ruolo === 'amministratore' ? 'Amministratore' : 'Tecnico')),
+          h('span', {}, NOMI_RUOLO[stato.utente.ruolo] || stato.utente.ruolo)),
         h('div', { class: 'barra__bottoni' },
           h('button', { class: 'btn btn--fantasma', onclick: cambiaPassword }, 'Password'),
           h('button', {

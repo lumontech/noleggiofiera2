@@ -176,6 +176,7 @@ router.get('/dashboard', (_req, res) => {
   res.json({
     oggi: giorno,
     economia,
+    richieste_nuove: db.prepare("SELECT COUNT(*) AS n FROM richieste WHERE stato = 'nuova'").get().n,
     totali: { ...totali, manutenzione: inManutenzione },
     prodotti_totali: prospettoOggi.length,
     fiere_in_corso: inCorso,

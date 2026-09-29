@@ -169,6 +169,36 @@ if (nuovoCosto) {
   }
 }
 
+// Organizzatori di fiera: ognuno vede solo le manifestazioni che gli sono
+// assegnate (es. Progecta → LTS e Pharmexpo) e da lì manda le richieste.
+db.exec(`
+CREATE TABLE IF NOT EXISTS accessi_fiera (
+  utente_id      INTEGER NOT NULL REFERENCES utenti(id) ON DELETE CASCADE,
+  manifestazione TEXT    NOT NULL COLLATE NOCASE,
+  PRIMARY KEY (utente_id, manifestazione)
+);
+
+CREATE TABLE IF NOT EXISTS richieste (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  fiera_id      INTEGER NOT NULL REFERENCES fiere(id) ON DELETE CASCADE,
+  utente_id     INTEGER REFERENCES utenti(id) ON DELETE SET NULL,
+  espositore    TEXT    NOT NULL,
+  stand         TEXT    DEFAULT '',
+  referente     TEXT    DEFAULT '',
+  righe         TEXT    NOT NULL,          -- JSON: [{ "tipo": "tv", "pollici": 65, "quantita": 2 }, …]
+  note          TEXT    DEFAULT '',
+  stato         TEXT    NOT NULL DEFAULT 'nuova', -- nuova | confermata | rifiutata | annullata
+  risposta      TEXT    DEFAULT '',        -- motivo del rifiuto o nota di conferma
+  noleggi       TEXT    DEFAULT '[]',      -- JSON: id dei noleggi creati alla conferma
+  creato_il     TEXT    NOT NULL,
+  aggiornato_il TEXT    NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_richieste_fiera ON richieste(fiera_id, stato);
+`);
+
+// In Airtable i TV da 86" erano segnati con 85 pollici.
+db.exec(`UPDATE prodotti SET pollici = 86 WHERE pollici = 85 AND nome LIKE '%86"%'`);
+
 // Gli ID dei prodotti tornano quelli di Airtable (1, 2, 3…), senza "INV-".
 db.exec("UPDATE prodotti SET codice = substr(codice, 5) WHERE codice GLOB 'INV-[0-9]*'");
 

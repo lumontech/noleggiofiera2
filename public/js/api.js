@@ -40,6 +40,17 @@ export const api = {
   modificaUtente: (id, d) => richiesta('PUT', `/api/utenti/${id}`, d),
   eliminaUtente: (id) => richiesta('DELETE', `/api/utenti/${id}`),
 
+  // Organizzatore di fiera: le sue fiere e le richieste di monitor, senza prezzi.
+  fiereOrganizzatore: () => richiesta('GET', '/api/organizzatore/fiere'),
+  inviaRichiesta: (d) => richiesta('POST', '/api/organizzatore/richieste', d),
+  ritiraRichiesta: (id) => richiesta('DELETE', `/api/organizzatore/richieste/${id}`),
+
+  // Richieste lato amministratore.
+  richieste: () => richiesta('GET', '/api/richieste'),
+  propostaRichiesta: (id) => richiesta('GET', `/api/richieste/${id}/proposta`),
+  confermaRichiesta: (id, d) => richiesta('POST', `/api/richieste/${id}/conferma`, d),
+  rifiutaRichiesta: (id, d) => richiesta('POST', `/api/richieste/${id}/rifiuta`, d),
+
   // Canale del tecnico: cosa installare e dove, senza prezzi.
   installazioni: () => richiesta('GET', '/api/tecnico/installazioni'),
   installazioniFiera: (id) => richiesta('GET', `/api/tecnico/fiere/${id}`),

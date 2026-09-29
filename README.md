@@ -121,6 +121,7 @@ disattiva, elimina.
 |---|---|
 | **Amministratore** | Tutto: prodotti, fiere, noleggi, importi, utenti. |
 | **Tecnico** | Solo la sezione **Installazioni**: fiera per fiera, quali apparecchi montare (con il codice INV), in quale stand e per quale cliente, e la **Pianta con TV** in sola lettura. **Nessun prezzo.** |
+| **Organizzatore fiera** | Solo **Le mie fiere**: le edizioni in programma delle fiere che gli assegni (es. Progecta → LTS e Pharmexpo). Da lì manda le **richieste di monitor** per gli espositori e vede se sono confermate. **Nessun prezzo.** |
 
 Il tecnico vede le edizioni in cui c'è materiale prenotato ("Da installare")
 o consegnato ("Installato", oppure "Da ritirare" a fiera finita); quando tutto
@@ -144,6 +145,22 @@ Altre regole:
 - Dopo 5 password sbagliate sullo stesso nome utente, l'accesso da quell'indirizzo
   si blocca per 5 minuti (poi 10, 20… fino a un'ora).
 - Ognuno cambia la propria password dal bottone **Password** nella barra.
+
+### Richieste dagli organizzatori
+
+L'organizzatore compila una richiesta semplice: espositore, stand, referente,
+quante TV per misura (43", 55", 65", 75", 86") e quante piantane, note. Per
+ogni misura vede quante sono ancora libere nelle date della fiera, mai prezzi
+né quali apparecchi. Finché non è gestita la può ritirare.
+
+L'amministratore la trova in **Richieste** (e un avviso nel Cruscotto):
+
+- **Conferma**: gli apparecchi liberi sono proposti in automatico e si possono
+  cambiare; si mette l'importo totale (diviso tra gli apparecchi) e un
+  messaggio per l'organizzatore. La richiesta diventa noleggi "prenotati" per
+  le date della fiera, con gli stessi controlli di disponibilità di sempre, e
+  compare al tecnico tra le installazioni.
+- **Rifiuta**: con un motivo, che l'organizzatore legge.
 
 **Primo avvio.** Se non ci sono utenti, viene creato l'amministratore `stefano`
 con la password di `APP_PASSWORD`. Da quel momento la password si cambia
@@ -416,13 +433,19 @@ ripristinarlo basta spostare quel file.
 
 Tutte le rotte sotto `/api` richiedono il cookie di sessione, tranne
 `/api/salute`, `/api/accesso` e `/api/sessione`. Al tecnico sono aperte solo
-`/api/tecnico/*` e `/api/profilo/*`; il resto risponde 403.
+`/api/tecnico/*` e `/api/profilo/*`, all'organizzatore solo `/api/organizzatore/*`
+e `/api/profilo/*`; il resto risponde 403.
 
 | Metodo | Rotta | Descrizione |
 |---|---|---|
 | `POST` | `/api/accesso` | Login con `{ utente, password }` (senza `utente` vale il primo amministratore). |
 | `POST` | `/api/profilo/password` | Cambio della propria password `{ attuale, nuova }`. Tutti i ruoli. |
 | `GET` `POST` `PUT` `DELETE` | `/api/utenti[/:id]` | Gestione utenti. Solo amministratori. |
+| `GET` | `/api/organizzatore/fiere` | Le fiere dell'organizzatore, cosa può chiedere e le sue richieste. Senza prezzi. |
+| `POST` `DELETE` | `/api/organizzatore/richieste[/:id]` | Invio e ritiro di una richiesta. |
+| `GET` | `/api/richieste` | Tutte le richieste. Solo amministratori. |
+| `GET` | `/api/richieste/:id/proposta` | Apparecchi liberi proposti per confermarla. |
+| `POST` | `/api/richieste/:id/conferma` `/rifiuta` | Conferma (crea i noleggi) o rifiuto. |
 | `GET` | `/api/tecnico/installazioni` | Edizioni con cosa installare, stand e planimetrie. Senza prezzi. Tutti i ruoli. |
 | `GET` | `/api/tecnico/fiere/:id[/allegati/:allegato[/posizioni]]` | Dettaglio, file e posizioni della pianta per il tecnico. |
 | `GET` | `/api/prodotti` | Elenco con disponibilità di oggi e picco a 30 giorni. |

@@ -7,7 +7,7 @@ import { api } from '../api.js';
 import {
   h, monta, modale, avviso, campo, input, areaTesto, vuoto, numero, intervalloDate, dataLunga,
   nomeBreve, idProdotto,
-  MONTAGGI, badgeMontaggio,
+  MONTAGGI, badgeMontaggio, avvisoPiantane,
 } from '../ui.js';
 
 const riassunto = (righe) => righe.map((r) => `${r.quantita}× ${r.tipo === 'tv' ? `TV ${r.pollici}"` : 'Piantana'}`).join(' · ');
@@ -37,7 +37,7 @@ async function conferma(r, ricarica) {
 
   modale({
     titolo: `Conferma per ${r.espositore}`,
-    sottotitolo: `${r.fiera_nome}${r.stand ? ` · stand ${r.stand}` : ''} · ${riassunto(r.righe)}`,
+    sottotitolo: `${r.fiera_nome}${posto(r) ? ` · ${posto(r)}` : ''} · ${riassunto(r.righe)}`,
     testoConferma: 'Conferma e crea i noleggi',
     larga: true,
     corpo: [
@@ -58,14 +58,18 @@ async function conferma(r, ricarica) {
       const ids = apparecchi.map((a) => a.id);
       if (!ids.length) throw new Error('Scegli almeno un apparecchio.');
       if (new Set(ids).size !== ids.length) throw new Error('Lo stesso apparecchio è scelto due volte.');
-      await api.confermaRichiesta(r.id, {
+      const confermata = await api.confermaRichiesta(r.id, {
         apparecchi, importo: dati.importo, nota: dati.nota, note_tecnico: dati.note_tecnico,
       });
       avviso(`Richiesta di ${r.espositore} confermata: ${ids.length} noleggi creati.`);
+      avvisoPiantane(confermata);
       await ricarica();
     },
   });
 }
+
+/** "pad. 5 · stand 5042": padiglione e stand, quelli che ci sono. */
+const posto = (r) => [r.padiglione && `pad. ${r.padiglione}`, r.stand && `stand ${r.stand}`].filter(Boolean).join(' · ');
 
 function rifiuta(r, ricarica) {
   modale({
@@ -87,7 +91,7 @@ function schedaRichiesta(r, ricarica) {
   return h('article', { class: `richiesta richiesta--${r.stato}` },
     h('header', { class: 'richiesta__testa' },
       h('div', {},
-        h('h3', {}, r.espositore, r.stand ? h('span', { class: 'richiesta__stand' }, ` · stand ${r.stand}`) : null),
+        h('h3', {}, r.espositore, posto(r) ? h('span', { class: 'richiesta__stand' }, ` · ${posto(r)}`) : null),
         h('p', {}, `${r.fiera_nome} · ${intervalloDate(r.fiera_inizio, r.fiera_fine)}`)),
       h('span', { class: `org-stato org-stato--${r.stato === 'nuova' ? 'attesa' : r.stato === 'confermata' ? 'ok' : 'no'}` },
         ETICHETTE[r.stato] || r.stato)),

@@ -17,6 +17,9 @@ const STATI = {
 const chiaveVoce = (v) => (v.tipo === 'tv' ? `tv_${v.pollici}` : v.tipo);
 const riassunto = (righe) => righe.map((r) => `${r.quantita}× ${r.tipo === 'tv' ? `TV ${r.pollici}"` : 'Piantana'}`).join(' · ');
 
+/** "pad. 5 · stand 5042": padiglione e stand, quelli che ci sono. */
+const posto = (r) => [r.padiglione && `pad. ${r.padiglione}`, r.stand && `stand ${r.stand}`].filter(Boolean).join(' · ');
+
 /** Un contatore − n + per una voce del catalogo. */
 function contatore(voce) {
   const valore = h('input', {
@@ -49,7 +52,9 @@ function nuovaRichiesta(fiera, ricarica) {
     corpo: [
       griglia(
         campo('Espositore', input('espositore', { required: true, maxlength: 120, placeholder: 'Nome dell\'azienda' }), { largo: true }),
-        campo('Stand', input('stand', { maxlength: 120, placeholder: 'es. 512 o PAD 5 - 5042' })),
+        h('div', { class: 'campi-posto' },
+          campo('Padiglione', input('padiglione', { maxlength: 40, placeholder: 'es. 5' })),
+          campo('Stand', input('stand', { maxlength: 120, placeholder: 'es. 5042' }))),
         campo('Referente', input('referente', { maxlength: 160, placeholder: 'Nome e telefono' })),
       ),
       h('h3', { class: 'form-sezione' }, 'Cosa serve'),
@@ -71,6 +76,7 @@ function nuovaRichiesta(fiera, ricarica) {
         fiera_id: fiera.id,
         espositore: dati.espositore,
         stand: dati.stand,
+        padiglione: dati.padiglione,
         referente: dati.referente,
         note: dati.note,
         montaggio: dati.montaggio,
@@ -88,7 +94,7 @@ function voceRichiesta(r, ricarica) {
     h('div', { class: 'org-richiesta__testa' },
       h('div', {},
         h('strong', {}, r.espositore),
-        r.stand ? h('span', { class: 'org-richiesta__stand' }, ` · stand ${r.stand}`) : null),
+        posto(r) ? h('span', { class: 'org-richiesta__stand' }, ` · ${posto(r)}`) : null),
       h('span', { class: `org-stato org-stato--${stato.classe}` }, stato.testo)),
     h('p', { class: 'org-richiesta__righe' }, riassunto(r.righe),
       r.montaggio ? h('span', { class: 'org-richiesta__montaggio' }, ` · ${etichettaMontaggio(r.montaggio).toLowerCase()}`) : null),
@@ -127,7 +133,7 @@ function schedaFiera(f, ricarica) {
     f.confermati.length ? h('details', { class: 'org-confermati' },
       h('summary', {}, `Già confermati alla fiera (${numero(f.confermati.length)} espositori)`),
       h('ul', {}, f.confermati.map((c) => h('li', {},
-        h('strong', {}, c.espositore || 'Espositore'), c.stand ? ` · stand ${c.stand}` : '',
+        h('strong', {}, c.espositore || 'Espositore'), posto(c) ? ` · ${posto(c)}` : '',
         h('span', {}, ` — ${c.apparecchi.map((a) => `${a.quantita}× ${a.nome}`).join(' · ')}`))))) : null);
 }
 

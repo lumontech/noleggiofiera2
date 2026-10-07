@@ -59,14 +59,14 @@ function richiesteDella(fieraId) {
 /** Cosa è già confermato sulla fiera, per espositore e stand: senza importi. */
 function confermatiDella(fieraId) {
   const righe = db.prepare(`
-    SELECT n.cliente, n.stand, n.quantita, n.stato, p.categoria, p.pollici, p.nome
+    SELECT n.cliente, n.stand, n.padiglione, n.quantita, n.stato, p.categoria, p.pollici, p.nome
       FROM noleggi n JOIN prodotti p ON p.id = n.prodotto_id
      WHERE n.fiera_id = ? AND n.stato IN ('prenotato', 'consegnato')
      ORDER BY n.cliente, n.stand`).all(fieraId);
   const gruppi = new Map();
   for (const r of righe) {
-    const chiave = `${r.cliente}|${r.stand}`;
-    if (!gruppi.has(chiave)) gruppi.set(chiave, { espositore: r.cliente, stand: r.stand, apparecchi: {} });
+    const chiave = `${r.cliente}|${r.padiglione || ''}|${r.stand}`;
+    if (!gruppi.has(chiave)) gruppi.set(chiave, { espositore: r.cliente, stand: r.stand, padiglione: r.padiglione || '', apparecchi: {} });
     const tipo = tipoDi(r);
     const nome = tipo ? etichettaRiga(tipo) : r.categoria;
     const g = gruppi.get(chiave);
@@ -95,10 +95,10 @@ router.post('/richieste', (req, res) => {
   const dati = leggiRichiesta(req.body || {});
   const adesso = new Date().toISOString();
   const info = db.prepare(`
-    INSERT INTO richieste (fiera_id, utente_id, espositore, stand, referente, righe, note, montaggio,
+    INSERT INTO richieste (fiera_id, utente_id, espositore, stand, padiglione, referente, righe, note, montaggio,
                            creato_il, aggiornato_il)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-    .run(fiera.id, req.utente.id, dati.espositore, dati.stand, dati.referente,
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    .run(fiera.id, req.utente.id, dati.espositore, dati.stand, dati.padiglione, dati.referente,
       JSON.stringify(dati.righe), dati.note, dati.montaggio, adesso, adesso);
   res.status(201).json(perOrganizzatore(trovaRichiesta(info.lastInsertRowid)));
 });

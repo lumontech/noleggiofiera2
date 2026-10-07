@@ -7,6 +7,7 @@ import {
 import { verificaCapienza } from '../lib/disponibilita.js';
 import { trovaProdotto } from './prodotti.js';
 import { trovaFiera } from './fiere.js';
+import { sincronizzaPiantane, sganciaPiantane, avvisoPiantane } from '../lib/piantane.js';
 
 const router = Router();
 
@@ -41,6 +42,7 @@ function leggiCorpo(body) {
       fiera_id: fiera.id,
       cliente: testo(body.cliente, 'cliente', { max: 120 }),
       stand: testo(body.stand, 'stand', { max: 120 }),
+      padiglione: testo(body.padiglione, 'padiglione', { max: 40 }),
       quantita: intero(body.quantita, 'quantita', { min: 1, max: 9999, predefinito: 1 }),
       data_inizio: inizio,
       data_fine: fine,
@@ -104,6 +106,7 @@ router.get('/', (req, res) => {
     SELECT n.*, p.nome AS prodotto_nome, p.categoria AS prodotto_categoria,
            p.pollici AS prodotto_pollici, p.marca AS prodotto_marca, p.codice AS prodotto_codice,
            f.nome AS fiera_nome, f.citta AS fiera_citta, f.stato AS fiera_stato, f.padiglione AS fiera_padiglione,
+           (SELECT tp.codice FROM noleggi t JOIN prodotti tp ON tp.id = t.prodotto_id WHERE t.id = n.abbinato_a) AS abbinato_codice,
            f.data_inizio AS fiera_inizio, f.data_fine AS fiera_fine
       FROM noleggi n
       JOIN prodotti p ON p.id = n.prodotto_id
@@ -118,12 +121,13 @@ router.post('/', (req, res) => {
   controllaDisponibilita({ prodotto, dati });
   const adesso = new Date().toISOString();
   const info = db.prepare(`
-    INSERT INTO noleggi (prodotto_id, fiera_id, cliente, stand, quantita, data_inizio,
+    INSERT INTO noleggi (prodotto_id, fiera_id, cliente, stand, padiglione, quantita, data_inizio,
                          data_fine, stato, importo, note, montaggio, note_tecnico, creato_il, aggiornato_il)
-    VALUES (@prodotto_id, @fiera_id, @cliente, @stand, @quantita, @data_inizio,
+    VALUES (@prodotto_id, @fiera_id, @cliente, @stand, @padiglione, @quantita, @data_inizio,
             @data_fine, @stato, @importo, @note, @montaggio, @note_tecnico, @creato_il, @aggiornato_il)`)
     .run({ ...dati, creato_il: adesso, aggiornato_il: adesso });
-  res.status(201).json(arricchisci(trovaNoleggio(info.lastInsertRowid)));
+  const piantane = sincronizzaPiantane(info.lastInsertRowid);
+  res.status(201).json({ ...arricchisci(trovaNoleggio(info.lastInsertRowid)), avviso: avvisoPiantane(piantane) });
 });
 
 router.put('/:id', (req, res) => {
@@ -132,13 +136,14 @@ router.put('/:id', (req, res) => {
   controllaDisponibilita({ prodotto, dati, escludiNoleggio: noleggio.id });
   db.prepare(`
     UPDATE noleggi SET prodotto_id=@prodotto_id, fiera_id=@fiera_id, cliente=@cliente,
-                       stand=@stand, quantita=@quantita, data_inizio=@data_inizio,
+                       stand=@stand, padiglione=@padiglione, quantita=@quantita, data_inizio=@data_inizio,
                        data_fine=@data_fine, stato=@stato, importo=@importo,
                        note=@note, montaggio=@montaggio, note_tecnico=@note_tecnico,
                        aggiornato_il=@aggiornato_il
      WHERE id=@id`)
     .run({ ...dati, id: noleggio.id, aggiornato_il: new Date().toISOString() });
-  res.json(arricchisci(trovaNoleggio(noleggio.id)));
+  const piantane = sincronizzaPiantane(noleggio.id);
+  res.json({ ...arricchisci(trovaNoleggio(noleggio.id)), avviso: avvisoPiantane(piantane) });
 });
 
 // Cambio di stato rapido dalla lista (prenotato → consegnato → rientrato).
@@ -157,11 +162,14 @@ router.patch('/:id/stato', (req, res) => {
   }
   db.prepare('UPDATE noleggi SET stato = ?, aggiornato_il = ? WHERE id = ?')
     .run(stato, new Date().toISOString(), noleggio.id);
-  res.json(arricchisci(trovaNoleggio(noleggio.id)));
+  // La piantana di un TV segue il suo stato (consegnata, rientrata…).
+  const piantane = sincronizzaPiantane(noleggio.id);
+  res.json({ ...arricchisci(trovaNoleggio(noleggio.id)), avviso: avvisoPiantane(piantane) });
 });
 
 router.delete('/:id', (req, res) => {
   const noleggio = trovaNoleggio(req.params.id);
+  sganciaPiantane(noleggio.id);
   db.prepare('DELETE FROM noleggi WHERE id = ?').run(noleggio.id);
   res.json({ ok: true });
 });

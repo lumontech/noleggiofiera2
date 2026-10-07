@@ -11,7 +11,7 @@ import {
   h, monta, badge, modale, avviso, campo, input, select, areaTesto,
   griglia, numero, euro, vuoto, intervalloDate, dataLunga, etichetta, oggiISO, nomeBreve,
   idProdotto,
-  campiMontaggio, badgeMontaggio, eSchermo,
+  campiMontaggio, badgeMontaggio, eSchermo, avvisoPiantane,
   noteInBreve,
 } from '../ui.js';
 
@@ -66,7 +66,9 @@ function apriForm(n, fiere, ricarica) {
     corpo: [
       griglia(
         campo('Cliente', input('cliente', { value: n?.cliente || '', placeholder: 'Nome dell\'azienda espositrice' })),
-        campo('Stand', input('stand', { value: n?.stand || '', placeholder: 'PAD 5 - 5042' })),
+        h('div', { class: 'campi-posto' },
+          campo('Padiglione', input('padiglione', { value: n?.padiglione || '', placeholder: '5', maxlength: 40 })),
+          campo('Stand', input('stand', { value: n?.stand || '', placeholder: '5042' }))),
         campo('Fiera', selFiera, { largo: true }),
         campo('Uscita dal magazzino', daInizio),
         campo('Rientro in magazzino', aFine),
@@ -96,9 +98,9 @@ function apriForm(n, fiere, ricarica) {
       },
     } : null,
     onConferma: async (dati) => {
-      if (modifica) await api.modificaNoleggio(n.id, dati);
-      else await api.creaNoleggio(dati);
+      const salvato = modifica ? await api.modificaNoleggio(n.id, dati) : await api.creaNoleggio(dati);
       avviso(modifica ? 'Noleggio aggiornato.' : 'Noleggio creato.');
+      avvisoPiantane(salvato);
       await ricarica();
     },
   });
@@ -150,7 +152,7 @@ function riga(n, azioni) {
   const dateProprie = n.data_inizio !== n.fiera_inizio || n.data_fine !== n.fiera_fine;
   const inRitardo = n.stato === 'consegnato' && n.data_fine < oggi;
   const apparecchio = { nome: n.prodotto_nome, marca: n.prodotto_marca, pollici: n.prodotto_pollici };
-  const posto = standInColonne(n.stand, n.fiera_padiglione);
+  const posto = standInColonne(n.stand, n.fiera_padiglione, n.padiglione);
 
   return h('li', {
     class: `nol-riga nol-riga--${n.stato}`,
@@ -170,7 +172,9 @@ function riga(n, azioni) {
     posto.stand ? h('strong', {}, posto.stand) : h('span', { class: 'nol-riga__vuoto' }, '—')),
   h('div', { class: 'nol-riga__apparecchio', title: n.prodotto_nome },
     h('strong', {}, nomeBreve(apparecchio), n.quantita > 1 ? h('em', {}, ` ×${n.quantita}`) : null),
-    h('span', {}, idProdotto(n.prodotto_codice) || n.prodotto_categoria)),
+    h('span', {}, idProdotto(n.prodotto_codice) || n.prodotto_categoria,
+      // La piantana abbinata in automatico dice a quale TV appartiene.
+      n.abbinato_a ? h('em', { class: 'nol-riga__abbinata' }, ` · per il TV ${idProdotto(n.abbinato_codice) || ''}`) : null)),
   h('div', { class: 'nol-riga__montaggio' },
     eSchermo(n.prodotto_categoria) ? badgeMontaggio(n.montaggio, { breve: true }) : h('span', { class: 'nol-riga__vuoto' }, '—')),
   h('div', { class: 'nol-riga__note' }, noteInBreve(n)),
@@ -243,8 +247,9 @@ export default async function vistaNoleggi({ corpo, azioni, ricarica }) {
     apri: (n) => apriForm(n, fiereOrdinate, ricarica),
     avanza: async (n) => {
       const nuovo = PROSSIMO_STATO[n.stato];
-      await api.statoNoleggio(n.id, nuovo);
+      const salvato = await api.statoNoleggio(n.id, nuovo);
       avviso(`${n.cliente || 'Noleggio'}: segnato come ${etichetta(nuovo).toLowerCase()}.`);
+      avvisoPiantane(salvato);
       await carica();
     },
   };

@@ -44,7 +44,7 @@ function gruppiDaNoleggi(noleggi) {
       gruppi.set(chiaveGruppo, {
         cliente: n.cliente || 'Cliente non indicato',
         stand: n.stand || '',
-        padiglione: padiglione(n.stand),
+        padiglione: n.padiglione || padiglione(n.stand),
         codici,
         // Chiave con cui si salva la posizione messa a mano.
         chiave: codici[0] || `cliente:${(n.cliente || n.stand || n.id).toString().toLowerCase()}`,

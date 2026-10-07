@@ -4,7 +4,7 @@
 
 import { api } from '../api.js';
 import { apriPianta } from '../pianta/visore.js';
-import { codiciStand } from '../pianta/stand.js';
+import { codiciStand, standInColonne } from '../pianta/stand.js';
 import {
   h, monta, vuoto, numero, nomeBreve, intervalloDate, dataLunga, addGiorni, oggiISO,
   idProdotto,
@@ -22,11 +22,15 @@ function compito(n, fiera) {
 function perStand(installazioni) {
   const gruppi = new Map();
   for (const n of installazioni) {
-    const chiave = `${(n.stand || '').toLowerCase()}|${(n.cliente || '').toLowerCase()}`;
-    if (!gruppi.has(chiave)) gruppi.set(chiave, { stand: n.stand, cliente: n.cliente, righe: [] });
+    const chiave = `${(n.padiglione || '').toLowerCase()}|${(n.stand || '').toLowerCase()}|${(n.cliente || '').toLowerCase()}`;
+    if (!gruppi.has(chiave)) gruppi.set(chiave, { stand: n.stand, padiglione: n.padiglione, cliente: n.cliente, righe: [] });
     gruppi.get(chiave).righe.push(n);
   }
+  // Un padiglione alla volta, poi stand per stand.
+  const pad = (g) => standInColonne(g.stand, '', g.padiglione).padiglione || '~';
   return [...gruppi.values()].sort((a, b) => {
+    const pa = pad(a).localeCompare(pad(b), 'it', { numeric: true });
+    if (pa) return pa;
     const ca = codiciStand(a.stand)[0] || '~';
     const cb = codiciStand(b.stand)[0] || '~';
     return ca.localeCompare(cb, 'it', { numeric: true }) || (a.cliente || '').localeCompare(b.cliente || '', 'it');
@@ -34,7 +38,7 @@ function perStand(installazioni) {
 }
 
 const testoRicerca = (fiera, g) => [
-  fiera.nome, fiera.citta, fiera.luogo, g.stand, g.cliente,
+  fiera.nome, fiera.citta, fiera.luogo, g.stand, g.padiglione && `pad ${g.padiglione}`, g.cliente,
   ...g.righe.flatMap((n) => [n.prodotto_nome, n.prodotto_marca, idProdotto(n.prodotto_codice)]),
 ].filter(Boolean).join(' ').toLowerCase();
 
@@ -72,10 +76,11 @@ function schedaStand(g, fiera) {
   const note = [...new Set(g.righe.map((n) => n.note_tecnico || ''))];
   const notaComune = note.length === 1 && note[0] ? note[0] : null;
   const planimetria = fiera.allegati[0];
+  const posto = standInColonne(g.stand, fiera.padiglione, g.padiglione);
   return h('li', { class: 'installa__stand' },
     h('div', { class: 'installa__stand-testa' },
       h('div', { class: 'installa__numero' },
-        h('span', { class: 'installa__etichetta' }, 'Stand'),
+        h('span', { class: 'installa__etichetta' }, posto.padiglione ? `Pad. ${posto.padiglione} · Stand` : 'Stand'),
         h('strong', {}, g.stand || '—')),
       h('div', { class: 'installa__cliente' },
         h('strong', {}, g.cliente || 'Cliente non indicato'),
@@ -94,7 +99,8 @@ function schedaStand(g, fiera) {
           n.prodotto_codice ? h('span', { class: 'installa__codice' }, idProdotto(n.prodotto_codice)) : null,
           eSchermo(n.prodotto_categoria) ? h('span', { class: 'installa__montaggio' }, badgeMontaggio(n.montaggio)) : null,
           misure(n) ? h('span', { class: 'installa__misure' }, misure(n)) : null,
-          n.note_tecnico && !notaComune ? h('span', { class: 'installa__nota' }, n.note_tecnico) : null),
+          n.note_tecnico && !notaComune ? h('span', { class: 'installa__nota' }, n.note_tecnico) : null,
+          n.note_altre ? h('span', { class: 'installa__nota' }, n.note_altre) : null),
         h('span', { class: `installa__compito installa__compito--${c.classe}` }, c.testo));
     })));
 }

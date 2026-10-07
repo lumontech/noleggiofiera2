@@ -197,6 +197,7 @@ CREATE INDEX IF NOT EXISTS idx_richieste_fiera ON richieste(fiera_id, stato);
 `);
 // Come l'organizzatore vuole i monitor: parete, piantana, tavolo o misto.
 aggiungiColonna('richieste', 'montaggio', "TEXT DEFAULT ''");
+aggiungiColonna('richieste', 'padiglione', "TEXT DEFAULT ''");
 
 // Come si monta un apparecchio (a parete, su piantana, da tavolo) e le note
 // per chi lo installa: le vede il tecnico, a differenza delle note normali.
@@ -251,6 +252,12 @@ CREATE TABLE IF NOT EXISTS impostazioni (
   valore        TEXT NOT NULL,
   aggiornato_il TEXT NOT NULL
 );`);
+
+// Piantana abbinata a un TV "su piantana" (id del noleggio del TV), e
+// padiglione scritto a parte dallo stand.
+aggiungiColonna('noleggi', 'abbinato_a', 'INTEGER');
+aggiungiColonna('noleggi', 'padiglione', "TEXT DEFAULT ''");
+db.exec('CREATE INDEX IF NOT EXISTS idx_noleggi_abbinato ON noleggi(abbinato_a)');
 
 // In Airtable i TV da 86" erano segnati con 85 pollici.
 db.exec(`UPDATE prodotti SET pollici = 86 WHERE pollici = 85 AND nome LIKE '%86"%'`);

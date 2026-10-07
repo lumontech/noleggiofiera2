@@ -212,6 +212,8 @@ textarea.controllo { resize: vertical; }
 .campo__aiuto { font-size: 0.78rem; color: var(--grigio-500); }
 
 .form-griglia { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem; }
+/* Padiglione e stand nella stessa cella: il padiglione è un numero corto. */
+.campi-posto { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 0.6rem; }
 
 .filtri { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
 .filtri .controllo { width: auto; min-width: 180px; }
@@ -1308,3 +1310,5 @@ body.pianta-aperta { overflow: hidden; }
 .nol-riga__pad-telefono { display: none; color: var(--grigio-500); }
 .nol-riga__avanza { margin-top: 0.3rem; white-space: nowrap; }
 .tabella__centro { text-align: center; }
+
+.nol-riga__abbinata { font-style: normal; color: var(--grigio-500); }

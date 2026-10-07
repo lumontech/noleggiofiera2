@@ -8,6 +8,7 @@ import { verificaCapienza } from '../lib/disponibilita.js';
 import { trovaRichiesta, proposta } from '../lib/richieste.js';
 import { trovaFiera, finestraLogistica } from './fiere.js';
 import { trovaProdotto } from './prodotti.js';
+import { sincronizzaPiantane, avvisoPiantane, portataPiantana } from '../lib/piantane.js';
 
 const router = Router();
 
@@ -70,23 +71,51 @@ router.post('/:id/conferma', (req, res) => {
     richiesta.note,
   ].filter(Boolean).join('\n');
 
-  const creati = db.transaction(() => scelti.map(({ id, montaggio }, i) => {
-    const prodotto = trovaProdotto(id);
-    if (prodotto.stato !== 'attivo') throw new HttpError(409, `"${prodotto.nome}" non è disponibile (${prodotto.stato}).`);
-    const esito = verificaCapienza({ prodotto, quantita: 1, from, to });
-    if (!esito.ok) throw new HttpError(409, `"${prodotto.nome}" è già impegnato in quelle date: scegline un altro.`);
-    const importo = (quota + (i === 0 ? centesimi - quota * ids.length : 0)) / 100;
-    return db.prepare(`
-      INSERT INTO noleggi (prodotto_id, fiera_id, cliente, stand, quantita, data_inizio, data_fine,
-                           stato, importo, note, montaggio, note_tecnico, creato_il, aggiornato_il)
-      VALUES (?, ?, ?, ?, 1, ?, ?, 'prenotato', ?, ?, ?, ?, ?, ?)`)
-      .run(prodotto.id, fiera.id, richiesta.espositore, richiesta.stand, from, to, importo,
-        noteNoleggio, montaggio, noteTecnico, adesso, adesso).lastInsertRowid;
-  }))();
+  const SCHERMI = ['TV', 'Monitor', 'Videowall', 'Totem'];
+  const esitoPiantane = { create: 0, mancanti: 0 };
+  const creati = db.transaction(() => {
+    const righe = scelti.map(({ id, montaggio }, i) => {
+      const prodotto = trovaProdotto(id);
+      if (prodotto.stato !== 'attivo') throw new HttpError(409, `"${prodotto.nome}" non è disponibile (${prodotto.stato}).`);
+      const esito = verificaCapienza({ prodotto, quantita: 1, from, to });
+      if (!esito.ok) throw new HttpError(409, `"${prodotto.nome}" è già impegnato in quelle date: scegline un altro.`);
+      const importo = (quota + (i === 0 ? centesimi - quota * ids.length : 0)) / 100;
+      const nuovo = db.prepare(`
+        INSERT INTO noleggi (prodotto_id, fiera_id, cliente, stand, padiglione, quantita, data_inizio, data_fine,
+                             stato, importo, note, montaggio, note_tecnico, creato_il, aggiornato_il)
+        VALUES (?, ?, ?, ?, ?, 1, ?, ?, 'prenotato', ?, ?, ?, ?, ?, ?)`)
+        .run(prodotto.id, fiera.id, richiesta.espositore, richiesta.stand, richiesta.padiglione || '', from, to, importo,
+          noteNoleggio, montaggio, noteTecnico, adesso, adesso).lastInsertRowid;
+      return { id: nuovo, prodotto, montaggio };
+    });
+
+    // Le piantane scelte insieme ai TV "su piantana" diventano le loro: così
+    // non se ne aggiungono altre. Ai TV che restano senza se ne abbina una libera.
+    const piantane = righe.filter((r) => r.prodotto.categoria === 'Supporto' && /piantana/i.test(r.prodotto.nome));
+    const tv = righe.filter((r) => SCHERMI.includes(r.prodotto.categoria) && r.montaggio === 'piantana');
+    for (const t of tv) {
+      const adatta = (p) => {
+        const portata = portataPiantana(p.prodotto.nome);
+        return !portata || !t.prodotto.pollici
+          || (t.prodotto.pollici >= portata[0] - 1 && t.prodotto.pollici <= portata[1] + 1);
+      };
+      const i = piantane.findIndex(adatta);
+      if (i >= 0) {
+        db.prepare('UPDATE noleggi SET abbinato_a = ? WHERE id = ?').run(t.id, piantane[i].id);
+        piantane.splice(i, 1);
+      }
+    }
+    for (const t of tv) {
+      const r = sincronizzaPiantane(t.id);
+      esitoPiantane.create += r.create;
+      esitoPiantane.mancanti += r.mancanti;
+    }
+    return righe.map((r) => r.id);
+  })();
 
   db.prepare(`UPDATE richieste SET stato = 'confermata', risposta = ?, noleggi = ?, aggiornato_il = ?
                WHERE id = ?`).run(nota, JSON.stringify(creati), adesso, richiesta.id);
-  res.json(perElenco(trovaRichiesta(richiesta.id)));
+  res.json({ ...perElenco(trovaRichiesta(richiesta.id)), avviso: avvisoPiantane(esitoPiantane) });
 });
 
 router.post('/:id/rifiuta', (req, res) => {

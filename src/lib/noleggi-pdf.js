@@ -3,6 +3,7 @@
 // Con gli importi per l'ufficio, senza per chi installa o per l'organizzatore.
 
 import db from './db.js';
+import { noteDelNoleggio } from './note.js';
 // La stessa regola della pianta con TV per leggere il numero dello stand.
 import { codiciStand, standInColonne } from '../../public/js/pianta/stand.js';
 import { titoloModello, modelliDaNoleggiare, scriviMateriale } from './catalogo-pdf.js';
@@ -11,17 +12,19 @@ import {
 } from './pdf.js';
 
 const MONTAGGIO = { parete: 'A parete', piantana: 'Su piantana', tavolo: 'Da tavolo' };
+
 const SCHERMI = ['TV', 'Monitor', 'Videowall', 'Totem'];
 
 function noleggiDella(fiera, { soloAttivi }) {
   const righe = db.prepare(`
-    SELECT n.*, p.nome, p.marca, p.modello, p.pollici, p.categoria, p.codice
+    SELECT n.*, p.nome, p.marca, p.modello, p.pollici, p.categoria, p.codice,
+           (SELECT tp.codice FROM noleggi t JOIN prodotti tp ON tp.id = t.prodotto_id WHERE t.id = n.abbinato_a) AS abbinato_codice
       FROM noleggi n JOIN prodotti p ON p.id = n.prodotto_id
      WHERE n.fiera_id = ? AND n.stato ${soloAttivi ? "IN ('prenotato', 'consegnato')" : "!= 'annullato'"}`).all(fiera.id);
   // In ordine di padiglione, poi di stand (5017 prima di 5100), poi di espositore:
   // chi installa gira la fiera un padiglione alla volta. Senza stand in fondo.
   const chiave = (n) => codiciStand(n.stand)[0] || '';
-  const pad = (n) => standInColonne(n.stand, fiera.padiglione).padiglione;
+  const pad = (n) => standInColonne(n.stand, fiera.padiglione, n.padiglione).padiglione;
   return righe.sort((a, b) => (!chiave(a) && !pad(a)) - (!chiave(b) && !pad(b))
     || pad(a).localeCompare(pad(b), 'it', { numeric: true })
     || (!chiave(a)) - (!chiave(b))
@@ -66,7 +69,7 @@ export function scriviNoleggi(stream, { prezzi, fiera = null, disponibile = fals
     { titolo: 'Stand', peso: 11 },
     { titolo: 'Apparecchio', peso: 19 },
     { titolo: 'Montaggio', peso: 12 },
-    { titolo: 'Note tecnico', peso: prezzi ? 18 : 30 },
+    { titolo: 'Note', peso: prezzi ? 18 : 30 },
     ...(prezzi ? [{ titolo: 'Importo', peso: 12, allinea: 'right' }] : []),
   ];
 
@@ -90,14 +93,20 @@ export function scriviNoleggi(stream, { prezzi, fiera = null, disponibile = fals
     for (const n of righe) {
       totale += n.importo || 0;
       const schermo = SCHERMI.includes(n.categoria);
-      const posto = standInColonne(n.stand, f.padiglione);
+      const posto = standInColonne(n.stand, f.padiglione, n.padiglione);
       t.riga([
         { testo: n.cliente || '—', grassetto: true },
         { testo: posto.padiglione || '—', colore: posto.padiglione ? COLORE.testo : COLORE.tenue },
         { testo: posto.stand || '—', grassetto: Boolean(posto.stand), colore: posto.stand ? COLORE.testo : COLORE.tenue },
-        { testo: `${n.quantita > 1 ? `${n.quantita}× ` : ''}${titoloModello(n)}`, sotto: /^\d+$/.test(n.codice || '') ? `ID ${n.codice}` : n.codice },
+        { testo: `${n.quantita > 1 ? `${n.quantita}× ` : ''}${titoloModello(n)}`, sotto: [/^\d+$/.test(n.codice || '') ? `ID ${n.codice}` : n.codice,
+          n.abbinato_a ? `per il TV ${/^\d+$/.test(n.abbinato_codice || '') ? `ID ${n.abbinato_codice}` : ''}`.trim() : ''].filter(Boolean).join(' · ') },
         { testo: schermo ? (MONTAGGIO[n.montaggio] || 'Da definire') : '—', corpo: 8.5, colore: schermo && n.montaggio ? COLORE.testo : COLORE.tenue },
-        { testo: n.note_tecnico || '', corpo: 8 },
+        (() => {
+          const note = noteDelNoleggio(n, { prezzi });
+          return note.tecnico
+            ? { testo: note.tecnico, corpo: 8, sotto: note.altre }
+            : { testo: note.altre, corpo: 8 };
+        })(),
         ...(prezzi ? [{ testo: euro(n.importo || 0), grassetto: true }] : []),
       ]);
     }

@@ -14,6 +14,7 @@ import { Router } from 'express';
 import db from '../lib/db.js';
 import { HttpError, STATI_IMPEGNATIVI, giorniTra } from '../lib/domain.js';
 import * as archivio from '../lib/allegati.js';
+import { noteDelNoleggio } from '../lib/note.js';
 
 const router = Router();
 const SEGNAPOSTO = STATI_IMPEGNATIVI.map(() => '?').join(',');
@@ -37,6 +38,7 @@ const installazionePerTecnico = (n) => ({
   id: n.id,
   cliente: n.cliente,
   stand: n.stand,
+  padiglione: n.padiglione,
   quantita: n.quantita,
   data_inizio: n.data_inizio,
   data_fine: n.data_fine,
@@ -44,6 +46,8 @@ const installazionePerTecnico = (n) => ({
   // Come montarlo e cosa sapere: scritto apposta per chi installa.
   montaggio: n.montaggio,
   note_tecnico: n.note_tecnico,
+  // Le altre note (es. "montaggio verticale"), senza riferimenti a soldi.
+  note_altre: noteDelNoleggio(n).altre,
   prodotto_nome: n.prodotto_nome,
   prodotto_marca: n.prodotto_marca,
   prodotto_pollici: n.prodotto_pollici,
@@ -66,8 +70,8 @@ const allegatoPerTecnico = (a, fieraId) => ({
 
 function installazioniDella(fieraId) {
   return db.prepare(`
-    SELECT n.id, n.cliente, n.stand, n.quantita, n.data_inizio, n.data_fine, n.stato,
-           n.montaggio, n.note_tecnico,
+    SELECT n.id, n.cliente, n.stand, n.padiglione, n.quantita, n.data_inizio, n.data_fine, n.stato,
+           n.montaggio, n.note_tecnico, n.note,
            p.nome AS prodotto_nome, p.marca AS prodotto_marca, p.pollici AS prodotto_pollici,
            p.codice AS prodotto_codice, p.categoria AS prodotto_categoria,
            p.larghezza_mm AS prodotto_larghezza_mm, p.altezza_mm AS prodotto_altezza_mm,

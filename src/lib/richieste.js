@@ -67,6 +67,7 @@ export function leggiRichiesta(body) {
   return {
     espositore: testo(body.espositore, 'espositore', { obbligatorio: true, max: 120 }),
     stand: testo(body.stand, 'stand', { max: 120 }),
+    padiglione: testo(body.padiglione, 'padiglione', { max: 40 }),
     referente: testo(body.referente, 'referente', { max: 160 }),
     note: testo(body.note, 'note', { max: 1000 }),
     // "misto" = alcuni a parete e altri su piantana: il dettaglio va nelle note.
@@ -82,6 +83,7 @@ export function perOrganizzatore(r) {
     fiera_id: r.fiera_id,
     espositore: r.espositore,
     stand: r.stand,
+    padiglione: r.padiglione || '',
     referente: r.referente,
     righe: JSON.parse(r.righe),
     note: r.note,

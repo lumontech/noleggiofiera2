@@ -12,7 +12,7 @@ import {
   griglia, numero, euro, vuoto, intervalloDate, dataLunga, etichetta, oggiISO, addGiorni,
   notePulite, dimensioneFile,
   campiMontaggio,
-  badgeMontaggio, eSchermo,
+  badgeMontaggio, eSchermo, avvisoPiantane,
   noteInBreve,
 } from '../ui.js';
 
@@ -178,7 +178,9 @@ async function apriAssegna(fiera, _prodotti, ricarica) {
     corpo: [
       griglia(
         campo('Cliente', input('cliente', { placeholder: 'Nome dell\'azienda espositrice' })),
-        campo('Stand', input('stand', { placeholder: 'PAD 5 - 5042' })),
+        h('div', { class: 'campi-posto' },
+          campo('Padiglione', input('padiglione', { placeholder: '5', maxlength: 40 })),
+          campo('Stand', input('stand', { placeholder: '5042' }))),
         campo('Uscita dal magazzino', daInizio, { aiuto: 'Precompilata con i giorni di allestimento.' }),
         campo('Rientro in magazzino', aFine, { aiuto: 'Precompilata con i giorni di smontaggio.' }),
         h('label', { class: 'campo campo--largo' },
@@ -194,8 +196,9 @@ async function apriAssegna(fiera, _prodotti, ricarica) {
       ),
     ],
     onConferma: async (dati) => {
-      await api.creaNoleggio({ ...dati, fiera_id: fiera.id });
+      const salvato = await api.creaNoleggio({ ...dati, fiera_id: fiera.id });
       avviso('Materiale assegnato alla fiera.');
+      avvisoPiantane(salvato);
       await ricarica();
     },
   });
@@ -341,7 +344,7 @@ async function apriDettaglio(id, prodotti, ricarica) {
           h('th', {}, 'Cliente'), h('th', {}, 'Pad.'), h('th', {}, 'Stand'), h('th', {}, 'Prodotto'), h('th', {}, 'Pezzi'),
           h('th', {}, 'Montaggio'), h('th', {}, 'Note'), h('th', {}, 'Importo'), h('th', {}, 'Stato'))),
         h('tbody', {}, attivi.map((n) => {
-          const posto = standInColonne(n.stand, fiera.padiglione);
+          const posto = standInColonne(n.stand, fiera.padiglione, n.padiglione);
           // Le date si scrivono solo se non sono quelle della fiera.
           const dateProprie = n.data_inizio !== fiera.data_inizio || n.data_fine !== fiera.data_fine;
           return h('tr', {},

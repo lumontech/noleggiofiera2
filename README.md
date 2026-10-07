@@ -174,7 +174,20 @@ prezzo compaiono come "su richiesta".
 Ogni noleggio di uno schermo dice **come si monta**: a parete, su piantana, da
 tavolo, o da definire. Accanto c'è il campo **Note per il tecnico** (es.
 "altezza 1,40 da terra"). Il tecnico vede entrambi accanto all'apparecchio da
-installare; le **note interne** del noleggio restano solo all'ufficio.
+installare. Nel PDF e nell'app del tecnico compaiono anche le altre note del
+noleggio (es. "montaggio verticale"), tolte le righe che parlano di soldi
+(prezzi, €, fatture…) quando il documento è senza prezzi.
+
+**Piantane abbinate.** Un TV "su piantana" occupa davvero una piantana: il
+programma gliene abbina una libera e adatta alla misura (43-55 fino a 55",
+43-85 per i più grandi), nello stesso stand e nelle stesse date, e la segue
+in stato, date e stand. Se il TV cambia montaggio, viene annullato o
+eliminato, la piantana si libera. Se non ce n'è una libera, l'app lo avvisa.
+Nella lista la piantana dice "per il TV ID x".
+
+**Padiglione.** Ogni noleggio (e ogni richiesta dell'organizzatore) ha il
+suo campo Padiglione accanto allo Stand; se è vuoto si usa quello scritto
+nello stand ("PAD 5 - 5042") o quello della fiera.
 
 L'organizzatore indica il montaggio nella richiesta (anche "misto", spiegato
 nelle note); alla conferma lo si sceglie apparecchio per apparecchio.

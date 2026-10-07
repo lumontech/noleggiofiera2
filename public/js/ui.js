@@ -130,6 +130,11 @@ export function avviso(messaggio, tipo = 'ok') {
   }, 4200);
 }
 
+/** Dopo un salvataggio: cosa è successo alle piantane dei TV "su piantana". */
+export function avvisoPiantane(salvato) {
+  if (salvato?.avviso) avviso(salvato.avviso, /^Nessuna/.test(salvato.avviso) ? 'attenzione' : 'ok');
+}
+
 /** Finestra modale con form. `campi` è un array di definizioni. */
 export function modale({
   titolo, sottotitolo, corpo, testoConferma = 'Salva', onConferma, larga = false, azionePericolosa = null,

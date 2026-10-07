@@ -41,15 +41,21 @@ export function codiciStand(testo) {
 
 /**
  * Padiglione e stand separati, per le colonne: "PAD 5 - 5042" → { padiglione:
- * "5", stand: "5042" }. Se lo stand non dice il padiglione si usa quello
- * della fiera; se non ci sono codici si tiene il testo com'è ("Stand Airone").
+ * "5", stand: "5042" }. Il padiglione scritto nel suo campo vince; poi
+ * quello dentro lo stand, e in mancanza quello della fiera. Se non ci sono
+ * codici si tiene il testo com'è ("Stand Airone").
  */
-export function standInColonne(testo, padiglioneFiera = '') {
+export function standInColonne(testo, padiglioneFiera = '', padiglioneProprio = '') {
   const codici = codiciStand(testo);
   // Senza codici si tiene il testo, tolto il padiglione: "PAD 4" da solo non è uno stand.
   const resto = String(testo || '').replace(/\bPAD(?:IGLIONE)?\s*\.?\s*\d{1,2}\b/gi, '').replace(/^[\s\-–·,]+|[\s\-–·,]+$/g, '');
   return {
-    padiglione: padiglione(testo) || String(padiglioneFiera || '').replace(/^pad(iglione)?\.?\s*/i, '') || '',
+    padiglione: pulisciPadiglione(padiglioneProprio) || padiglione(testo) || pulisciPadiglione(padiglioneFiera),
     stand: codici.length ? codici.join(' / ') : resto,
   };
+}
+
+/** "Pad. 5" → "5": il campo si può scrivere in tanti modi. */
+function pulisciPadiglione(valore) {
+  return String(valore || '').trim().replace(/^pad(iglione)?\.?\s*/i, '');
 }

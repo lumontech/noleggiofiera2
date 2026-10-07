@@ -146,6 +146,19 @@ Altre regole:
   si blocca per 5 minuti (poi 10, 20… fino a un'ora).
 - Ognuno cambia la propria password dal bottone **Password** nella barra.
 
+### Montaggio e note per il tecnico
+
+Ogni noleggio di uno schermo dice **come si monta**: a parete, su piantana, da
+tavolo, o da definire. Accanto c'è il campo **Note per il tecnico** (es.
+"altezza 1,40 da terra"). Il tecnico vede entrambi accanto all'apparecchio da
+installare; le **note interne** del noleggio restano solo all'ufficio.
+
+L'organizzatore indica il montaggio nella richiesta (anche "misto", spiegato
+nelle note); alla conferma lo si sceglie apparecchio per apparecchio.
+
+Per lo storico importato: un TV in uno stand dove è noleggiata anche una
+piantana risulta "su piantana", gli altri "da definire".
+
 ### Richieste dagli organizzatori
 
 L'organizzatore compila una richiesta semplice: espositore, stand, referente,

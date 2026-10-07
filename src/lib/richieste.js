@@ -6,7 +6,7 @@
 // diventa noleggi normali, con tutti i controlli di disponibilità.
 
 import db from './db.js';
-import { HttpError, testo, intero } from './domain.js';
+import { HttpError, testo, intero, enumerato, MONTAGGI } from './domain.js';
 import { apparecchiPerPeriodo } from './disponibilita.js';
 import { finestraLogistica } from '../routes/fiere.js';
 
@@ -69,6 +69,8 @@ export function leggiRichiesta(body) {
     stand: testo(body.stand, 'stand', { max: 120 }),
     referente: testo(body.referente, 'referente', { max: 160 }),
     note: testo(body.note, 'note', { max: 1000 }),
+    // "misto" = alcuni a parete e altri su piantana: il dettaglio va nelle note.
+    montaggio: enumerato(body.montaggio, 'montaggio', [...MONTAGGI, 'misto'], ''),
     righe: leggiRighe(body.righe),
   };
 }
@@ -83,6 +85,7 @@ export function perOrganizzatore(r) {
     referente: r.referente,
     righe: JSON.parse(r.righe),
     note: r.note,
+    montaggio: r.montaggio || '',
     stato: r.stato,
     risposta: r.risposta,
     inviata_da: r.autore_nome || '',

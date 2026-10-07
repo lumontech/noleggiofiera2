@@ -5,6 +5,7 @@
 import { api } from '../api.js';
 import {
   h, monta, modale, avviso, campo, input, areaTesto, griglia, vuoto, numero, intervalloDate, dataLunga,
+  select, etichettaMontaggio,
 } from '../ui.js';
 
 const STATI = {
@@ -53,6 +54,13 @@ function nuovaRichiesta(fiera, ricarica) {
       ),
       h('h3', { class: 'form-sezione' }, 'Cosa serve'),
       h('div', { class: 'richiesta-voci' }, fiera.catalogo.map(contatore)),
+      campo('Come vanno montati i monitor?', select('montaggio', [
+        { valore: '', testo: 'Da definire' },
+        { valore: 'parete', testo: 'A parete' },
+        { valore: 'piantana', testo: 'Su piantana' },
+        { valore: 'tavolo', testo: 'Da tavolo' },
+        { valore: 'misto', testo: 'Misto: lo spiego nelle note' },
+      ], ''), { largo: true }),
       campo('Note', areaTesto('note', { maxlength: 1000, placeholder: 'es. a parete, altezza da terra, orari di consegna…' }), { largo: true }),
     ],
     onConferma: async (dati) => {
@@ -65,6 +73,7 @@ function nuovaRichiesta(fiera, ricarica) {
         stand: dati.stand,
         referente: dati.referente,
         note: dati.note,
+        montaggio: dati.montaggio,
         righe,
       });
       avviso('Richiesta inviata.');
@@ -81,7 +90,8 @@ function voceRichiesta(r, ricarica) {
         h('strong', {}, r.espositore),
         r.stand ? h('span', { class: 'org-richiesta__stand' }, ` · stand ${r.stand}`) : null),
       h('span', { class: `org-stato org-stato--${stato.classe}` }, stato.testo)),
-    h('p', { class: 'org-richiesta__righe' }, riassunto(r.righe)),
+    h('p', { class: 'org-richiesta__righe' }, riassunto(r.righe),
+      r.montaggio ? h('span', { class: 'org-richiesta__montaggio' }, ` · ${etichettaMontaggio(r.montaggio).toLowerCase()}`) : null),
     r.note ? h('p', { class: 'org-richiesta__nota' }, r.note) : null,
     r.risposta ? h('p', { class: `org-richiesta__risposta org-richiesta__risposta--${stato.classe}` }, r.risposta) : null,
     h('div', { class: 'org-richiesta__piede' },

@@ -41,6 +41,9 @@ const installazionePerTecnico = (n) => ({
   data_inizio: n.data_inizio,
   data_fine: n.data_fine,
   stato: n.stato,
+  // Come montarlo e cosa sapere: scritto apposta per chi installa.
+  montaggio: n.montaggio,
+  note_tecnico: n.note_tecnico,
   prodotto_nome: n.prodotto_nome,
   prodotto_marca: n.prodotto_marca,
   prodotto_pollici: n.prodotto_pollici,
@@ -64,6 +67,7 @@ const allegatoPerTecnico = (a, fieraId) => ({
 function installazioniDella(fieraId) {
   return db.prepare(`
     SELECT n.id, n.cliente, n.stand, n.quantita, n.data_inizio, n.data_fine, n.stato,
+           n.montaggio, n.note_tecnico,
            p.nome AS prodotto_nome, p.marca AS prodotto_marca, p.pollici AS prodotto_pollici,
            p.codice AS prodotto_codice, p.categoria AS prodotto_categoria,
            p.larghezza_mm AS prodotto_larghezza_mm, p.altezza_mm AS prodotto_altezza_mm,

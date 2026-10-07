@@ -255,3 +255,33 @@ export const griglia = (...figli) => h('div', { class: 'form-griglia' }, ...figl
 
 /** Come si mostra il codice di un prodotto: "ID 7" se è un numero. */
 export const idProdotto = (codice) => (/^\d+$/.test(String(codice ?? '')) ? `ID ${codice}` : codice || '');
+
+/* ---------- montaggio ---------- */
+
+/** Come si monta un apparecchio; vuoto = da definire. */
+export const MONTAGGI = [
+  { valore: '', testo: 'Da definire' },
+  { valore: 'parete', testo: 'A parete' },
+  { valore: 'piantana', testo: 'Su piantana' },
+  { valore: 'tavolo', testo: 'Da tavolo' },
+];
+export const etichettaMontaggio = (m) => (MONTAGGI.find((x) => x.valore === (m || ''))?.testo
+  || (m === 'misto' ? 'Misto (vedi note)' : m));
+
+/** Il montaggio ha senso per gli schermi, non per piantane e accessori. */
+export const eSchermo = (categoria) => categoria === 'TV' || categoria === 'Monitor'
+  || categoria === 'Videowall' || categoria === 'Totem';
+
+export const badgeMontaggio = (m) => h('span', { class: `montaggio montaggio--${m || 'da-definire'}` },
+  m ? etichettaMontaggio(m) : 'Montaggio da definire');
+
+/** I due campi del modulo noleggio: come si monta e cosa deve sapere il tecnico. */
+export function campiMontaggio(n = {}) {
+  return [
+    campo('Montaggio', select('montaggio', MONTAGGI, n.montaggio || ''),
+      { aiuto: 'Il tecnico lo vede accanto all\'apparecchio.' }),
+    campo('Note per il tecnico', areaTesto('note_tecnico', {
+      value: n.note_tecnico || '', rows: 2, maxlength: 500, placeholder: 'es. altezza 1,40 da terra, staffa inclinabile',
+    }), { aiuto: 'Le vede chi installa. Niente prezzi qui.' }),
+  ];
+}

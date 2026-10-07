@@ -95,10 +95,11 @@ router.post('/richieste', (req, res) => {
   const dati = leggiRichiesta(req.body || {});
   const adesso = new Date().toISOString();
   const info = db.prepare(`
-    INSERT INTO richieste (fiera_id, utente_id, espositore, stand, referente, righe, note, creato_il, aggiornato_il)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    INSERT INTO richieste (fiera_id, utente_id, espositore, stand, referente, righe, note, montaggio,
+                           creato_il, aggiornato_il)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
     .run(fiera.id, req.utente.id, dati.espositore, dati.stand, dati.referente,
-      JSON.stringify(dati.righe), dati.note, adesso, adesso);
+      JSON.stringify(dati.righe), dati.note, dati.montaggio, adesso, adesso);
   res.status(201).json(perOrganizzatore(trovaRichiesta(info.lastInsertRowid)));
 });
 

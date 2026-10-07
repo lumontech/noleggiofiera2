@@ -10,6 +10,7 @@ import {
   h, monta, badge, modale, avviso, campo, input, select, areaTesto,
   griglia, numero, euro, vuoto, intervalloDate, dataLunga, etichetta, oggiISO, addGiorni,
   notePulite, dimensioneFile,
+  campiMontaggio,
 } from '../ui.js';
 
 const DIMENSIONE_MASSIMA = 30 * 1024 * 1024;
@@ -185,7 +186,8 @@ async function apriAssegna(fiera, _prodotti, ricarica) {
           { aiuto: 'Totale del lavoro, non il prezzo al giorno.' }),
         campo('Pezzi', input('quantita', { value: 1, type: 'number', min: '1', required: true })),
         campo('Stato', select('stato', statoApp.costanti.stati_noleggio, 'prenotato')),
-        campo('Note', areaTesto('note', {}), { largo: true }),
+        ...campiMontaggio(),
+        campo('Note interne', areaTesto('note', {}), { largo: true, aiuto: 'Solo per l\'ufficio: il tecnico non le vede.' }),
       ),
     ],
     onConferma: async (dati) => {

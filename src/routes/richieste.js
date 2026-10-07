@@ -3,7 +3,7 @@
 
 import { Router } from 'express';
 import db from '../lib/db.js';
-import { HttpError, testo, decimale, intero } from '../lib/domain.js';
+import { HttpError, testo, decimale, intero, enumerato, MONTAGGI } from '../lib/domain.js';
 import { verificaCapienza } from '../lib/disponibilita.js';
 import { trovaRichiesta, proposta } from '../lib/richieste.js';
 import { trovaFiera, finestraLogistica } from './fiere.js';
@@ -47,9 +47,15 @@ function daGestire(id) {
 router.post('/:id/conferma', (req, res) => {
   const richiesta = daGestire(req.params.id);
   const fiera = trovaFiera(richiesta.fiera_id);
-  const ids = [...new Set((Array.isArray(req.body?.apparecchi) ? req.body.apparecchi : [])
-    .map((v) => intero(v, 'apparecchio', { min: 1 })))];
+  // Ogni apparecchio con il suo montaggio: [{ id, montaggio }] (o solo l'id).
+  const scelti = (Array.isArray(req.body?.apparecchi) ? req.body.apparecchi : []).map((v) => (
+    typeof v === 'object' && v !== null
+      ? { id: intero(v.id, 'apparecchio', { min: 1 }), montaggio: enumerato(v.montaggio, 'montaggio', MONTAGGI, '') }
+      : { id: intero(v, 'apparecchio', { min: 1 }), montaggio: '' }));
+  const ids = scelti.map((s) => s.id);
   if (!ids.length) throw new HttpError(400, 'Scegli almeno un apparecchio.');
+  if (new Set(ids).size !== ids.length) throw new HttpError(400, 'Lo stesso apparecchio è scelto due volte.');
+  const noteTecnico = testo(req.body?.note_tecnico, 'note per il tecnico', { max: 500 });
   const totale = decimale(req.body?.importo, 'importo', { min: 0, predefinito: 0 });
   const nota = testo(req.body?.nota, 'nota', { max: 500 });
   const { from, to } = finestraLogistica(fiera);
@@ -64,7 +70,7 @@ router.post('/:id/conferma', (req, res) => {
     richiesta.note,
   ].filter(Boolean).join('\n');
 
-  const creati = db.transaction(() => ids.map((id, i) => {
+  const creati = db.transaction(() => scelti.map(({ id, montaggio }, i) => {
     const prodotto = trovaProdotto(id);
     if (prodotto.stato !== 'attivo') throw new HttpError(409, `"${prodotto.nome}" non è disponibile (${prodotto.stato}).`);
     const esito = verificaCapienza({ prodotto, quantita: 1, from, to });
@@ -72,10 +78,10 @@ router.post('/:id/conferma', (req, res) => {
     const importo = (quota + (i === 0 ? centesimi - quota * ids.length : 0)) / 100;
     return db.prepare(`
       INSERT INTO noleggi (prodotto_id, fiera_id, cliente, stand, quantita, data_inizio, data_fine,
-                           stato, importo, note, creato_il, aggiornato_il)
-      VALUES (?, ?, ?, ?, 1, ?, ?, 'prenotato', ?, ?, ?, ?)`)
+                           stato, importo, note, montaggio, note_tecnico, creato_il, aggiornato_il)
+      VALUES (?, ?, ?, ?, 1, ?, ?, 'prenotato', ?, ?, ?, ?, ?, ?)`)
       .run(prodotto.id, fiera.id, richiesta.espositore, richiesta.stand, from, to, importo,
-        noteNoleggio, adesso, adesso).lastInsertRowid;
+        noteNoleggio, montaggio, noteTecnico, adesso, adesso).lastInsertRowid;
   }))();
 
   db.prepare(`UPDATE richieste SET stato = 'confermata', risposta = ?, noleggi = ?, aggiornato_il = ?

@@ -8,6 +8,7 @@ import { codiciStand } from '../pianta/stand.js';
 import {
   h, monta, vuoto, numero, nomeBreve, intervalloDate, dataLunga, addGiorni, oggiISO,
   idProdotto,
+  badgeMontaggio, eSchermo,
 } from '../ui.js';
 
 /** Cosa deve fare il tecnico con un noleggio, detto con le sue parole. */
@@ -67,6 +68,9 @@ function misure(n) {
 
 function schedaStand(g, fiera) {
   const tv = g.righe.reduce((t, n) => t + n.quantita, 0);
+  // Se la nota è la stessa per tutto lo stand, si scrive una volta sola.
+  const note = [...new Set(g.righe.map((n) => n.note_tecnico || ''))];
+  const notaComune = note.length === 1 && note[0] ? note[0] : null;
   const planimetria = fiera.allegati[0];
   return h('li', { class: 'installa__stand' },
     h('div', { class: 'installa__stand-testa' },
@@ -80,6 +84,7 @@ function schedaStand(g, fiera) {
         class: 'btn btn--mini',
         onclick: () => apriLaPianta(fiera, planimetria, g.stand),
       }, 'Dov\'è?') : null),
+    notaComune ? h('p', { class: 'installa__nota installa__nota--stand' }, notaComune) : null,
     h('ul', { class: 'installa__apparecchi' }, g.righe.map((n) => {
       const c = compito(n, fiera);
       return h('li', {},
@@ -87,7 +92,9 @@ function schedaStand(g, fiera) {
           n.quantita > 1 ? h('strong', {}, `${n.quantita}× `) : null,
           nomeBreve({ nome: n.prodotto_nome, marca: n.prodotto_marca, pollici: n.prodotto_pollici }),
           n.prodotto_codice ? h('span', { class: 'installa__codice' }, idProdotto(n.prodotto_codice)) : null,
-          misure(n) ? h('span', { class: 'installa__misure' }, misure(n)) : null),
+          eSchermo(n.prodotto_categoria) ? h('span', { class: 'installa__montaggio' }, badgeMontaggio(n.montaggio)) : null,
+          misure(n) ? h('span', { class: 'installa__misure' }, misure(n)) : null,
+          n.note_tecnico && !notaComune ? h('span', { class: 'installa__nota' }, n.note_tecnico) : null),
         h('span', { class: `installa__compito installa__compito--${c.classe}` }, c.testo));
     })));
 }

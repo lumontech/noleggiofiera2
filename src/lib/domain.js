@@ -107,3 +107,6 @@ export const ORDINE_PER_ID = `(codice GLOB '[0-9]*') DESC, CAST(codice AS INTEGE
 
 /** Come si mostra il codice di un prodotto: "ID 7" se è un numero. */
 export const idProdotto = (codice) => (/^\d+$/.test(codice || '') ? `ID ${codice}` : codice || '');
+
+/** Come si monta un apparecchio. Vuoto = da definire. */
+export const MONTAGGI = ['parete', 'piantana', 'tavolo'];

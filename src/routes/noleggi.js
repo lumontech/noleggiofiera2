@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import db from '../lib/db.js';
 import {
-  STATI_NOLEGGIO, HttpError,
+  STATI_NOLEGGIO, MONTAGGI, HttpError,
   testo, intero, decimale, enumerato, periodo, giorniTra, isData,
 } from '../lib/domain.js';
 import { verificaCapienza } from '../lib/disponibilita.js';
@@ -52,6 +52,8 @@ function leggiCorpo(body) {
             * intero(body.quantita, 'quantita', { min: 1, max: 9999, predefinito: 1 }) * 100) / 100
         : decimale(body.importo, 'importo', { min: 0 }),
       note: testo(body.note, 'note', { max: 2000 }),
+      montaggio: enumerato(body.montaggio, 'montaggio', MONTAGGI, ''),
+      note_tecnico: testo(body.note_tecnico, 'note per il tecnico', { max: 500 }),
     },
   };
 }
@@ -114,9 +116,9 @@ router.post('/', (req, res) => {
   const adesso = new Date().toISOString();
   const info = db.prepare(`
     INSERT INTO noleggi (prodotto_id, fiera_id, cliente, stand, quantita, data_inizio,
-                         data_fine, stato, importo, note, creato_il, aggiornato_il)
+                         data_fine, stato, importo, note, montaggio, note_tecnico, creato_il, aggiornato_il)
     VALUES (@prodotto_id, @fiera_id, @cliente, @stand, @quantita, @data_inizio,
-            @data_fine, @stato, @importo, @note, @creato_il, @aggiornato_il)`)
+            @data_fine, @stato, @importo, @note, @montaggio, @note_tecnico, @creato_il, @aggiornato_il)`)
     .run({ ...dati, creato_il: adesso, aggiornato_il: adesso });
   res.status(201).json(arricchisci(trovaNoleggio(info.lastInsertRowid)));
 });
@@ -129,7 +131,8 @@ router.put('/:id', (req, res) => {
     UPDATE noleggi SET prodotto_id=@prodotto_id, fiera_id=@fiera_id, cliente=@cliente,
                        stand=@stand, quantita=@quantita, data_inizio=@data_inizio,
                        data_fine=@data_fine, stato=@stato, importo=@importo,
-                       note=@note, aggiornato_il=@aggiornato_il
+                       note=@note, montaggio=@montaggio, note_tecnico=@note_tecnico,
+                       aggiornato_il=@aggiornato_il
      WHERE id=@id`)
     .run({ ...dati, id: noleggio.id, aggiornato_il: new Date().toISOString() });
   res.json(arricchisci(trovaNoleggio(noleggio.id)));

@@ -9,6 +9,7 @@ import {
   h, monta, badge, modale, avviso, campo, input, select, areaTesto,
   griglia, numero, euro, vuoto, intervalloDate, dataLunga, etichetta, oggiISO, nomeBreve,
   idProdotto,
+  campiMontaggio, badgeMontaggio, eSchermo,
 } from '../ui.js';
 
 const PROSSIMO_STATO = { prenotato: 'consegnato', consegnato: 'rientrato' };
@@ -75,7 +76,9 @@ function apriForm(n, fiere, ricarica) {
         }), { aiuto: 'Totale del lavoro, non il prezzo al giorno.' }),
         campo('Pezzi', input('quantita', { value: n?.quantita ?? 1, type: 'number', min: '1', required: true })),
         campo('Stato', select('stato', statiNoleggio, n?.stato || 'prenotato')),
-        campo('Note', areaTesto('note', { value: (n?.note || '').replace(/\[airtable:[^\]]+\]/g, '').trim() }), { largo: true }),
+        ...campiMontaggio(n || {}),
+        campo('Note interne', areaTesto('note', { value: (n?.note || '').replace(/\[airtable:[^\]]+\]/g, '').trim() }),
+          { largo: true, aiuto: 'Solo per l\'ufficio: il tecnico non le vede.' }),
       ),
     ],
     testoConferma: modifica ? 'Salva modifiche' : 'Crea noleggio',
@@ -159,7 +162,8 @@ function riga(n, azioni) {
       .filter(Boolean).join(' · ') || ' ')),
   h('div', { class: 'nol-riga__apparecchio', title: n.prodotto_nome },
     h('strong', {}, nomeBreve(apparecchio), n.quantita > 1 ? h('em', {}, ` ×${n.quantita}`) : null),
-    h('span', {}, idProdotto(n.prodotto_codice) || n.prodotto_categoria)),
+    h('span', {}, idProdotto(n.prodotto_codice) || n.prodotto_categoria,
+      eSchermo(n.prodotto_categoria) ? [' · ', badgeMontaggio(n.montaggio)] : null)),
   h('div', { class: 'nol-riga__importo' }, euro(n.importo)),
   h('div', { class: 'nol-riga__stato' },
     badge(n.stato),

@@ -11,7 +11,7 @@ import {
   MONTAGGI, badgeMontaggio, avvisoPiantane,
 } from '../ui.js';
 
-const riassunto = (righe) => righe.map((r) => `${r.quantita}× ${r.tipo === 'tv' ? `TV ${r.pollici}"` : 'Piantana'}`).join(' · ');
+const riassunto = (righe) => righe.map((r) => `${r.quantita}× ${r.etichetta}`).join(' · ');
 const ETICHETTE = { nuova: 'Da gestire', confermata: 'Confermata', rifiutata: 'Rifiutata', annullata: 'Ritirata' };
 
 async function conferma(r, ricarica) {
@@ -29,8 +29,8 @@ async function conferma(r, ricarica) {
         h('option', { value: '' }, '— nessuno —'),
         riga.alternative.map((a) => h('option', { value: a.id, selected: riga.proposti[i]?.id === a.id },
           `${idProdotto(a.codice)} · ${nomeBreve(a)}`)));
-      // Le piantane non hanno un montaggio: solo gli schermi.
-      const montaggio = riga.tipo === 'tv' ? h('select', { class: 'controllo', 'aria-label': 'Montaggio' },
+      // Piantane, casse e accessori non hanno un montaggio: solo gli schermi.
+      const montaggio = riga.schermo ? h('select', { class: 'controllo', 'aria-label': 'Montaggio' },
         MONTAGGI.map((m) => h('option', { value: m.valore, selected: m.valore === montaggioChiesto }, m.testo))) : null;
       scelte.push({ apparecchio, montaggio });
       return h('div', { class: `conferma-unita ${montaggio ? '' : 'conferma-unita--sola'}` }, apparecchio, montaggio);

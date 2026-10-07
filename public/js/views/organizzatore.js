@@ -15,8 +15,7 @@ const STATI = {
   rifiutata: { testo: 'Non disponibile', classe: 'no' },
 };
 
-const chiaveVoce = (v) => (v.tipo === 'tv' ? `tv_${v.pollici}` : v.tipo);
-const riassunto = (righe) => righe.map((r) => `${r.quantita}× ${r.tipo === 'tv' ? `TV ${r.pollici}"` : 'Piantana'}`).join(' · ');
+const riassunto = (righe) => righe.map((r) => `${r.quantita}× ${r.etichetta}`).join(' · ');
 
 /** "pad. 5 · stand 5042": sempre padiglione e poi stand, anche se lo stand è scritto "PAD 5 - 5042". */
 const posto = (r) => testoPosto(r.stand, '', r.padiglione);
@@ -24,7 +23,7 @@ const posto = (r) => testoPosto(r.stand, '', r.padiglione);
 /** Un contatore − n + per una voce del catalogo. */
 function contatore(voce) {
   const valore = h('input', {
-    class: 'contatore__valore', type: 'number', name: `q_${chiaveVoce(voce)}`, value: 0, min: 0,
+    class: 'contatore__valore', type: 'number', name: `q_${voce.chiave}`, value: 0, min: 0,
     max: voce.liberi, inputmode: 'numeric', 'aria-label': `Quante ${voce.etichetta}`,
   });
   const cambia = (delta) => {
@@ -59,7 +58,12 @@ function nuovaRichiesta(fiera, ricarica) {
         campo('Referente', input('referente', { maxlength: 160, placeholder: 'Nome e telefono' })),
       ),
       h('h3', { class: 'form-sezione' }, 'Cosa serve'),
-      h('div', { class: 'richiesta-voci' }, fiera.catalogo.map(contatore)),
+      // Prima gli schermi, poi piantane, casse e il resto.
+      ...[['Schermi', true], ['Piantane e accessori', false]].map(([titolo, schermo]) => {
+        const voci = fiera.catalogo.filter((v) => Boolean(v.schermo) === schermo);
+        return voci.length ? h('div', { class: 'richiesta-voci' },
+          h('p', { class: 'richiesta-voci__titolo' }, titolo), voci.map(contatore)) : null;
+      }),
       campo('Come vanno montati i monitor?', select('montaggio', [
         { valore: '', testo: 'Da definire' },
         { valore: 'parete', testo: 'A parete' },
@@ -71,7 +75,7 @@ function nuovaRichiesta(fiera, ricarica) {
     ],
     onConferma: async (dati) => {
       const righe = fiera.catalogo.map((v) => ({
-        tipo: v.tipo, pollici: v.pollici, quantita: Number(dati[`q_${chiaveVoce(v)}`]) || 0,
+        chiave: v.chiave, quantita: Number(dati[`q_${v.chiave}`]) || 0,
       }));
       await api.inviaRichiesta({
         fiera_id: fiera.id,

@@ -4,12 +4,12 @@
 
 import { Router } from 'express';
 import db from '../lib/db.js';
-import { HttpError, intero, oggi, ORDINE_PER_ID } from '../lib/domain.js';
+import { HttpError, intero, oggi, ORDINE_PER_ID, nomeSenzaCodici } from '../lib/domain.js';
 import { apparecchiPerPeriodo } from '../lib/disponibilita.js';
 import { finestraLogistica } from './fiere.js';
 import { standInColonne, confrontaPosti } from '../../public/js/pianta/stand.js';
 import {
-  catalogo, leggiRichiesta, perOrganizzatore, trovaRichiesta, tipoDi, etichettaRiga,
+  catalogo, leggiRichiesta, perOrganizzatore, trovaRichiesta, voceDi,
 } from '../lib/richieste.js';
 
 const router = Router();
@@ -73,8 +73,7 @@ function confermatiDella(fiera) {
     const posto = standInColonne(r.stand, fiera.padiglione, r.padiglione);
     const chiave = `${(r.cliente || '').toLowerCase()}|${posto.padiglione}|${posto.stand.toLowerCase()}`;
     if (!gruppi.has(chiave)) gruppi.set(chiave, { espositore: r.cliente, ...posto, apparecchi: {} });
-    const tipo = tipoDi(r);
-    const nome = tipo ? etichettaRiga(tipo) : r.categoria;
+    const nome = voceDi(r).etichetta;
     const g = gruppi.get(chiave);
     g.apparecchi[nome] = (g.apparecchi[nome] || 0) + r.quantita;
   }
@@ -97,17 +96,6 @@ router.get('/fiere', (req, res) => {
     })),
   });
 });
-
-/**
- * Il nome senza EAN e senza sigle di modello ("65UA73003", "86UR781C"):
- * si tolgono le parole di almeno 5 caratteri fatte di lettere e cifre insieme.
- */
-const nomeSenzaCodici = (nome) => String(nome || '')
-  .split(/\s+/)
-  .filter((parola) => !/^\d{8,}$/.test(parola)
-    && !(parola.length >= 5 && /^[A-Z0-9-]+$/i.test(parola) && /\d/.test(parola) && /[A-Z]/i.test(parola)))
-  .join(' ')
-  .trim();
 
 /**
  * Un prodotto come lo vede l'organizzatore: il nostro ID, cos'è e le misure.
@@ -144,7 +132,7 @@ router.get('/prodotti', (req, res) => {
 
 router.post('/richieste', (req, res) => {
   const fiera = fieraConsentita(req.utente, intero(req.body?.fiera_id, 'fiera', { min: 1 }));
-  const dati = leggiRichiesta(req.body || {});
+  const dati = leggiRichiesta(req.body || {}, fiera);
   const adesso = new Date().toISOString();
   const info = db.prepare(`
     INSERT INTO richieste (fiera_id, utente_id, espositore, stand, padiglione, referente, righe, note, montaggio,

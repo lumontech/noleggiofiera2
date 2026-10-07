@@ -110,3 +110,15 @@ export const idProdotto = (codice) => (/^\d+$/.test(codice || '') ? `ID ${codice
 
 /** Come si monta un apparecchio. Vuoto = da definire. */
 export const MONTAGGI = ['parete', 'piantana', 'tavolo'];
+
+/**
+ * Il nome di un prodotto senza EAN e senza sigle di modello ("65UA73003",
+ * "86UR781C"): si tolgono le parole di almeno 5 caratteri fatte di lettere e
+ * cifre insieme. Per quello che vede chi non è dell'ufficio.
+ */
+export const nomeSenzaCodici = (nome) => String(nome || '')
+  .split(/\s+/)
+  .filter((parola) => !/^\d{8,}$/.test(parola)
+    && !(parola.length >= 5 && /^[A-Z0-9-]+$/i.test(parola) && /\d/.test(parola) && /[A-Z]/i.test(parola)))
+  .join(' ')
+  .trim();

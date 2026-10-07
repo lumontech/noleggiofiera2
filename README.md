@@ -183,7 +183,9 @@ programma gliene abbina una libera e adatta alla misura (43-55 fino a 55",
 43-85 per i più grandi), nello stesso stand e nelle stesse date, e la segue
 in stato, date e stand. Se il TV cambia montaggio, viene annullato o
 eliminato, la piantana si libera. Se non ce n'è una libera, l'app lo avvisa.
-Nella lista la piantana dice "per il TV ID x".
+La piantana non fa una riga a sé (sembrerebbe un secondo noleggio dello
+stesso espositore): nella lista Noleggi, nella scheda della fiera e nel PDF
+compare nella riga del suo TV, sotto il montaggio ("Piantana ID 12").
 
 **Padiglione.** Ogni noleggio (e ogni richiesta dell'organizzatore) ha il
 suo campo Padiglione accanto allo Stand; se è vuoto si usa quello scritto
@@ -197,10 +199,12 @@ piantana risulta "su piantana", gli altri "da definire".
 
 ### Richieste dagli organizzatori
 
-L'organizzatore compila una richiesta semplice: espositore, stand, referente,
-quante TV per misura (43", 55", 65", 75", 86") e quante piantane, note. Per
-ogni misura vede quante sono ancora libere nelle date della fiera, mai prezzi
-né quali apparecchi. Finché non è gestita la può ritirare.
+L'organizzatore compila una richiesta semplice: espositore, padiglione,
+stand, referente, note e quanti apparecchi per voce. Le voci sono tutto il
+parco: gli schermi per tipo e misura (TV 65", Monitor 65" touch, Totem…),
+le piantane, e il resto per nome (casse, segreterie…). Per ogni voce vede
+quanti sono ancora liberi nelle date della fiera, mai prezzi né quali
+apparecchi. Finché non è gestita la può ritirare.
 
 Nella sezione **Prodotti** l'organizzatore vede tutto il parco (tranne il
 dismesso) con il nostro ID e le misure: pollici, larghezza × altezza,

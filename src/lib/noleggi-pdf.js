@@ -90,8 +90,13 @@ export function scriviNoleggi(stream, { prezzi, fiera = null, disponibile = fals
     const t = tabella(ctx, colonne);
     t.intestazione();
     let totale = 0;
-    for (const n of righe) {
-      totale += n.importo || 0;
+    // La piantana abbinata a un TV sta nella riga del TV, sotto il montaggio.
+    const ids = new Set(righe.map((n) => n.id));
+    const abbinata = (n) => n.abbinato_a && ids.has(n.abbinato_a);
+    for (const n of righe) totale += n.importo || 0;
+    for (const n of righe.filter((r) => !abbinata(r))) {
+      const piantane = righe.filter((p) => p.abbinato_a === n.id)
+        .map((p) => (/^\d+$/.test(p.codice || '') ? `ID ${p.codice}` : titoloModello(p)));
       const schermo = SCHERMI.includes(n.categoria);
       const posto = standInColonne(n.stand, f.padiglione, n.padiglione);
       t.riga([
@@ -100,7 +105,8 @@ export function scriviNoleggi(stream, { prezzi, fiera = null, disponibile = fals
         { testo: posto.stand || '—', grassetto: Boolean(posto.stand), colore: posto.stand ? COLORE.testo : COLORE.tenue },
         { testo: `${n.quantita > 1 ? `${n.quantita}× ` : ''}${titoloModello(n)}`, sotto: [/^\d+$/.test(n.codice || '') ? `ID ${n.codice}` : n.codice,
           n.abbinato_a ? `per il TV ${/^\d+$/.test(n.abbinato_codice || '') ? `ID ${n.abbinato_codice}` : ''}`.trim() : ''].filter(Boolean).join(' · ') },
-        { testo: schermo ? (MONTAGGIO[n.montaggio] || 'Da definire') : '—', corpo: 8.5, colore: schermo && n.montaggio ? COLORE.testo : COLORE.tenue },
+        { testo: schermo ? (MONTAGGIO[n.montaggio] || 'Da definire') : '—', corpo: 8.5, colore: schermo && n.montaggio ? COLORE.testo : COLORE.tenue,
+          sotto: piantane.length ? `${piantane.length > 1 ? 'Piantane' : 'Piantana'} ${piantane.join(', ')}` : '' },
         (() => {
           const note = noteDelNoleggio(n, { prezzi });
           return note.tecnico

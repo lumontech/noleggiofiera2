@@ -336,7 +336,11 @@ async function apriPlanimetrie(fiera, ricarica) {
 
 async function apriDettaglio(id, prodotti, ricarica) {
   const fiera = await api.fiera(id);
-  const attivi = fiera.noleggi.filter((n) => n.stato !== 'annullato');
+  const tutti = fiera.noleggi.filter((n) => n.stato !== 'annullato');
+  // La piantana abbinata a un TV sta nella riga del TV, non in una riga sua.
+  const ids = new Set(tutti.map((n) => n.id));
+  const attivi = tutti.filter((n) => !(n.abbinato_a && ids.has(n.abbinato_a)))
+    .map((n) => ({ ...n, piantane: tutti.filter((p) => p.abbinato_a === n.id) }));
 
   const tabella = attivi.length
     ? h('table', { class: 'tabella' },
@@ -355,7 +359,9 @@ async function apriDettaglio(id, prodotti, ricarica) {
             h('div', { class: 'sottotesto' }, `${n.prodotto_categoria}${n.prodotto_pollici ? ` ${n.prodotto_pollici}"` : ''}`
               + `${dateProprie ? ` · ${intervalloDate(n.data_inizio, n.data_fine)}` : ''}`)),
           h('td', {}, numero(n.quantita)),
-          h('td', {}, eSchermo(n.prodotto_categoria) ? badgeMontaggio(n.montaggio, { breve: true }) : '—'),
+          h('td', {}, eSchermo(n.prodotto_categoria) ? badgeMontaggio(n.montaggio, { breve: true }) : '—',
+            n.piantane.length ? h('div', { class: 'sottotesto' },
+              `${n.piantane.length > 1 ? 'Piantane' : 'Piantana'} ${n.piantane.map((p) => (/^\d+$/.test(p.prodotto_codice || '') ? `ID ${p.prodotto_codice}` : p.prodotto_nome)).join(', ')}`) : null),
           h('td', { class: 'tabella__note' }, noteInBreve(n)),
           h('td', {}, euro(n.importo)),
           h('td', {}, badge(n.stato)));

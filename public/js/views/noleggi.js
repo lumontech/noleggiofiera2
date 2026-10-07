@@ -146,6 +146,25 @@ function raggruppa(elenco) {
   return [...gruppi.values()];
 }
 
+/**
+ * La piantana abbinata a un TV non fa riga a sé (sembrerebbe un secondo
+ * noleggio dello stesso espositore): sta nella riga del TV, sotto il
+ * montaggio. Resta a sé solo se il suo TV non è nell'elenco.
+ */
+function conPiantaneNelTv(noleggi) {
+  const ids = new Set(noleggi.map((n) => n.id));
+  const piantane = new Map();
+  for (const n of noleggi) {
+    if (n.abbinato_a && ids.has(n.abbinato_a)) {
+      if (!piantane.has(n.abbinato_a)) piantane.set(n.abbinato_a, []);
+      piantane.get(n.abbinato_a).push(n);
+    }
+  }
+  return noleggi
+    .filter((n) => !(n.abbinato_a && ids.has(n.abbinato_a)))
+    .map((n) => ({ ...n, piantane: piantane.get(n.id) || [] }));
+}
+
 function riga(n, azioni) {
   const oggi = oggiISO();
   // Le date compaiono sulla riga solo quando differiscono da quelle della fiera.
@@ -176,7 +195,9 @@ function riga(n, azioni) {
       // La piantana abbinata in automatico dice a quale TV appartiene.
       n.abbinato_a ? h('em', { class: 'nol-riga__abbinata' }, ` · per il TV ${idProdotto(n.abbinato_codice) || ''}`) : null)),
   h('div', { class: 'nol-riga__montaggio' },
-    eSchermo(n.prodotto_categoria) ? badgeMontaggio(n.montaggio, { breve: true }) : h('span', { class: 'nol-riga__vuoto' }, '—')),
+    eSchermo(n.prodotto_categoria) ? badgeMontaggio(n.montaggio, { breve: true }) : h('span', { class: 'nol-riga__vuoto' }, '—'),
+    n.piantane?.length ? h('span', { class: 'nol-riga__piantana', title: n.piantane.map((p) => p.prodotto_nome).join(', ') },
+      `${n.piantane.length > 1 ? `${n.piantane.length} piantane: ` : 'Piantana '}${n.piantane.map((p) => idProdotto(p.prodotto_codice)).join(', ')}`) : null),
   h('div', { class: 'nol-riga__note' }, noteInBreve(n)),
   h('div', { class: 'nol-riga__importo' }, euro(n.importo)),
   // Stato e bottone per avanzarlo nella stessa colonna, per fare spazio.
@@ -295,7 +316,7 @@ export default async function vistaNoleggi({ corpo, azioni, ricarica }) {
   }
 
   async function carica() {
-    elenco = await api.noleggi(filtri);
+    elenco = conPiantaneNelTv(await api.noleggi(filtri));
     disegna();
   }
 

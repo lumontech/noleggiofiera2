@@ -5,7 +5,7 @@ import { Router } from 'express';
 import db from '../lib/db.js';
 import { HttpError, testo, decimale, intero, enumerato, MONTAGGI } from '../lib/domain.js';
 import { verificaCapienza } from '../lib/disponibilita.js';
-import { trovaRichiesta, proposta } from '../lib/richieste.js';
+import { trovaRichiesta, proposta, rigaCompleta } from '../lib/richieste.js';
 import { trovaFiera, finestraLogistica } from './fiere.js';
 import { trovaProdotto } from './prodotti.js';
 import { sincronizzaPiantane, avvisoPiantane, portataPiantana } from '../lib/piantane.js';
@@ -14,7 +14,7 @@ const router = Router();
 
 const perElenco = (r) => ({
   ...r,
-  righe: JSON.parse(r.righe),
+  righe: JSON.parse(r.righe).map(rigaCompleta),
   noleggi: JSON.parse(r.noleggi || '[]'),
 });
 

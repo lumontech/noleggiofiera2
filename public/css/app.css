@@ -1222,6 +1222,7 @@ body.pianta-aperta { overflow: hidden; }
 .org-confermati li span { color: var(--grigio-500); }
 
 .richiesta-voci { display: flex; flex-direction: column; gap: 0.45rem; margin-bottom: 1rem; }
+.richiesta-voci__titolo { margin: 0.2rem 0 0; font-size: 0.72rem; font-weight: 650; text-transform: uppercase; letter-spacing: 0.05em; color: var(--grigio-500); }
 .richiesta-voce { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem;
   padding: 0.55rem 0.7rem; border: 1px solid var(--grigio-200); border-radius: var(--raggio-s); }
 .richiesta-voce--scelta { border-color: var(--azzurro); background: var(--azzurro-tenue); }
@@ -1333,3 +1334,7 @@ body.pianta-aperta { overflow: hidden; }
   .cat-org td[data-etichetta]::before { content: attr(data-etichetta); color: var(--grigio-500); }
   .cat-org__nome { min-width: 0; margin-bottom: 0.3rem; }
 }
+
+/* La piantana abbinata, dentro la riga del suo TV. */
+.nol-riga__montaggio { display: flex; flex-direction: column; align-items: flex-start; gap: 0.2rem; }
+.nol-riga__piantana { font-size: 0.75rem; color: var(--grigio-500); white-space: nowrap; }

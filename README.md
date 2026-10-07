@@ -202,6 +202,16 @@ quante TV per misura (43", 55", 65", 75", 86") e quante piantane, note. Per
 ogni misura vede quante sono ancora libere nelle date della fiera, mai prezzi
 né quali apparecchi. Finché non è gestita la può ritirare.
 
+Nella sezione **Prodotti** l'organizzatore vede tutto il parco (tranne il
+dismesso) con il nostro ID e le misure: pollici, larghezza × altezza,
+profondità, altezza con base, peso e attacco VESA, da girare agli
+allestitori. Scegliendo una fiera vede anche cosa è libero nelle sue date.
+Niente EAN, sigle di modello, costi o prezzi: il server manda solo quei campi.
+
+Nell'elenco "Già confermati" padiglione e stand compaiono sempre allo stesso
+modo ("pad. 5 · stand 531", anche se lo stand era scritto "PAD 5 - 531"),
+in ordine di padiglione e poi di stand.
+
 L'amministratore la trova in **Richieste** (e un avviso nel Cruscotto):
 
 - **Conferma**: gli apparecchi liberi sono proposti in automatico e si possono
@@ -495,6 +505,7 @@ e `/api/profilo/*`; il resto risponde 403.
 | `GET` `PUT` | `/api/documenti/intestazione` | Dati dell'intestazione dei documenti. |
 | `POST` `DELETE` | `/api/documenti/intestazione/logo` | Logo (PNG o JPG nel corpo). |
 | `GET` | `/api/organizzatore/fiere` | Le fiere dell'organizzatore, cosa può chiedere e le sue richieste. Senza prezzi. |
+| `GET` | `/api/organizzatore/prodotti[?fiera_id=]` | Il parco con ID e misure (con la fiera: se è libero). Senza EAN né prezzi. |
 | `POST` `DELETE` | `/api/organizzatore/richieste[/:id]` | Invio e ritiro di una richiesta. |
 | `GET` | `/api/richieste` | Tutte le richieste. Solo amministratori. |
 | `GET` | `/api/richieste/:id/proposta` | Apparecchi liberi proposti per confermarla. |

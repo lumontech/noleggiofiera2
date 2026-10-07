@@ -47,6 +47,7 @@ export const api = {
 
   // Organizzatore di fiera: le sue fiere e le richieste di monitor, senza prezzi.
   fiereOrganizzatore: () => richiesta('GET', '/api/organizzatore/fiere'),
+  prodottiOrganizzatore: (fieraId = '') => richiesta('GET', `/api/organizzatore/prodotti${fieraId ? `?fiera_id=${fieraId}` : ''}`),
   inviaRichiesta: (d) => richiesta('POST', '/api/organizzatore/richieste', d),
   ritiraRichiesta: (id) => richiesta('DELETE', `/api/organizzatore/richieste/${id}`),
 

@@ -3,6 +3,7 @@
 // /api/organizzatore, che non ne contiene.
 
 import { api } from '../api.js';
+import { testoPosto } from '../pianta/stand.js';
 import {
   h, monta, modale, avviso, campo, input, areaTesto, griglia, vuoto, numero, intervalloDate, dataLunga,
   select, etichettaMontaggio,
@@ -17,8 +18,8 @@ const STATI = {
 const chiaveVoce = (v) => (v.tipo === 'tv' ? `tv_${v.pollici}` : v.tipo);
 const riassunto = (righe) => righe.map((r) => `${r.quantita}× ${r.tipo === 'tv' ? `TV ${r.pollici}"` : 'Piantana'}`).join(' · ');
 
-/** "pad. 5 · stand 5042": padiglione e stand, quelli che ci sono. */
-const posto = (r) => [r.padiglione && `pad. ${r.padiglione}`, r.stand && `stand ${r.stand}`].filter(Boolean).join(' · ');
+/** "pad. 5 · stand 5042": sempre padiglione e poi stand, anche se lo stand è scritto "PAD 5 - 5042". */
+const posto = (r) => testoPosto(r.stand, '', r.padiglione);
 
 /** Un contatore − n + per una voce del catalogo. */
 function contatore(voce) {

@@ -4,6 +4,7 @@
 // l'organizzatore legge.
 
 import { api } from '../api.js';
+import { testoPosto } from '../pianta/stand.js';
 import {
   h, monta, modale, avviso, campo, input, areaTesto, vuoto, numero, intervalloDate, dataLunga,
   nomeBreve, idProdotto,
@@ -68,8 +69,8 @@ async function conferma(r, ricarica) {
   });
 }
 
-/** "pad. 5 · stand 5042": padiglione e stand, quelli che ci sono. */
-const posto = (r) => [r.padiglione && `pad. ${r.padiglione}`, r.stand && `stand ${r.stand}`].filter(Boolean).join(' · ');
+/** "pad. 5 · stand 5042": sempre padiglione e poi stand, anche se lo stand è scritto "PAD 5 - 5042". */
+const posto = (r) => testoPosto(r.stand, '', r.padiglione);
 
 function rifiuta(r, ricarica) {
   modale({

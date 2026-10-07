@@ -1312,3 +1312,24 @@ body.pianta-aperta { overflow: hidden; }
 .tabella__centro { text-align: center; }
 
 .nol-riga__abbinata { font-style: normal; color: var(--grigio-500); }
+
+/* ---------- prodotti per l'organizzatore ---------- */
+.cat-org td { vertical-align: top; }
+.cat-org td[data-etichetta] { white-space: nowrap; }
+.cat-org__id { font-weight: 700; white-space: nowrap; }
+.cat-org__nome { min-width: 220px; }
+.cat-org__vuoto { color: var(--grigio-400); }
+.cat-org__riga--occupata td { color: var(--grigio-500); }
+.cat-org__stato { display: inline-block; padding: 0.15rem 0.55rem; border-radius: 999px; font-size: 0.78rem; font-weight: 600; }
+.cat-org__stato--libero { background: var(--verde-tenue); color: var(--verde); }
+.cat-org__stato--occupato { background: var(--grigio-100); color: var(--grigio-500); }
+/* Su telefono ogni prodotto diventa una scheda con le misure in elenco. */
+@media (max-width: 820px) {
+  .cat-org thead { display: none; }
+  .cat-org, .cat-org tbody, .cat-org tr, .cat-org td { display: block; width: 100%; }
+  .cat-org tr { padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--grigio-200); }
+  .cat-org td { padding: 0.1rem 0; border: 0; }
+  .cat-org td[data-etichetta] { display: flex; justify-content: space-between; gap: 1rem; font-size: 0.85rem; }
+  .cat-org td[data-etichetta]::before { content: attr(data-etichetta); color: var(--grigio-500); }
+  .cat-org__nome { min-width: 0; margin-bottom: 0.3rem; }
+}

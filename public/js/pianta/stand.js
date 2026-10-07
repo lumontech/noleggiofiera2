@@ -59,3 +59,27 @@ export function standInColonne(testo, padiglioneFiera = '', padiglioneProprio = 
 function pulisciPadiglione(valore) {
   return String(valore || '').trim().replace(/^pad(iglione)?\.?\s*/i, '');
 }
+
+/** "pad. 5 · stand 5042": padiglione e stand sempre nello stesso ordine e formato. */
+export function testoPosto(testo, padiglioneFiera = '', padiglioneProprio = '') {
+  const posto = standInColonne(testo, padiglioneFiera, padiglioneProprio);
+  return [posto.padiglione && `pad. ${posto.padiglione}`, posto.stand && `stand ${posto.stand}`]
+    .filter(Boolean).join(' · ');
+}
+
+/**
+ * Per ordinare: padiglione, poi stand (5017 prima di 5100). Chi non ha il
+ * padiglione va dopo, chi non ha né l'uno né l'altro in fondo.
+ * `a` e `b`: { padiglione, stand } come li restituisce standInColonne.
+ */
+export function confrontaPosti(a, b) {
+  const pa = a.padiglione || '';
+  const pb = b.padiglione || '';
+  const ca = codiciStand(a.stand)[0] || '';
+  const cb = codiciStand(b.stand)[0] || '';
+  return (!pa && !ca) - (!pb && !cb)
+    || (!pa) - (!pb)
+    || pa.localeCompare(pb, 'it', { numeric: true })
+    || (!ca) - (!cb)
+    || ca.localeCompare(cb, 'it', { numeric: true });
+}

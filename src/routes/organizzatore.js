@@ -4,7 +4,10 @@
 
 import { Router } from 'express';
 import db from '../lib/db.js';
-import { HttpError, intero, oggi } from '../lib/domain.js';
+import { HttpError, intero, oggi, ORDINE_PER_ID } from '../lib/domain.js';
+import { apparecchiPerPeriodo } from '../lib/disponibilita.js';
+import { finestraLogistica } from './fiere.js';
+import { standInColonne, confrontaPosti } from '../../public/js/pianta/stand.js';
 import {
   catalogo, leggiRichiesta, perOrganizzatore, trovaRichiesta, tipoDi, etichettaRiga,
 } from '../lib/richieste.js';
@@ -47,6 +50,7 @@ const fieraPerOrganizzatore = (f) => ({
   citta: f.citta,
   data_inizio: f.data_inizio,
   data_fine: f.data_fine,
+  padiglione: f.padiglione || '',
 });
 
 function richiesteDella(fieraId) {
@@ -57,25 +61,29 @@ function richiesteDella(fieraId) {
 }
 
 /** Cosa è già confermato sulla fiera, per espositore e stand: senza importi. */
-function confermatiDella(fieraId) {
+function confermatiDella(fiera) {
   const righe = db.prepare(`
     SELECT n.cliente, n.stand, n.padiglione, n.quantita, n.stato, p.categoria, p.pollici, p.nome
       FROM noleggi n JOIN prodotti p ON p.id = n.prodotto_id
      WHERE n.fiera_id = ? AND n.stato IN ('prenotato', 'consegnato')
-     ORDER BY n.cliente, n.stand`).all(fieraId);
+     ORDER BY n.cliente, n.stand`).all(fiera.id);
   const gruppi = new Map();
   for (const r of righe) {
-    const chiave = `${r.cliente}|${r.padiglione || ''}|${r.stand}`;
-    if (!gruppi.has(chiave)) gruppi.set(chiave, { espositore: r.cliente, stand: r.stand, padiglione: r.padiglione || '', apparecchi: {} });
+    // "PAD 5 - 531" e padiglione 5 + stand 531 sono lo stesso posto.
+    const posto = standInColonne(r.stand, fiera.padiglione, r.padiglione);
+    const chiave = `${(r.cliente || '').toLowerCase()}|${posto.padiglione}|${posto.stand.toLowerCase()}`;
+    if (!gruppi.has(chiave)) gruppi.set(chiave, { espositore: r.cliente, ...posto, apparecchi: {} });
     const tipo = tipoDi(r);
     const nome = tipo ? etichettaRiga(tipo) : r.categoria;
     const g = gruppi.get(chiave);
     g.apparecchi[nome] = (g.apparecchi[nome] || 0) + r.quantita;
   }
-  return [...gruppi.values()].map((g) => ({
-    ...g,
-    apparecchi: Object.entries(g.apparecchi).map(([nome, quantita]) => ({ nome, quantita })),
-  }));
+  return [...gruppi.values()]
+    .sort((a, b) => confrontaPosti(a, b) || (a.espositore || '').localeCompare(b.espositore || '', 'it'))
+    .map((g) => ({
+      ...g,
+      apparecchi: Object.entries(g.apparecchi).map(([nome, quantita]) => ({ nome, quantita })),
+    }));
 }
 
 router.get('/fiere', (req, res) => {
@@ -85,9 +93,53 @@ router.get('/fiere', (req, res) => {
       ...fieraPerOrganizzatore(f),
       catalogo: catalogo(f),
       richieste: richiesteDella(f.id),
-      confermati: confermatiDella(f.id),
+      confermati: confermatiDella(f),
     })),
   });
+});
+
+/**
+ * Il nome senza EAN e senza sigle di modello ("65UA73003", "86UR781C"):
+ * si tolgono le parole di almeno 5 caratteri fatte di lettere e cifre insieme.
+ */
+const nomeSenzaCodici = (nome) => String(nome || '')
+  .split(/\s+/)
+  .filter((parola) => !/^\d{8,}$/.test(parola)
+    && !(parola.length >= 5 && /^[A-Z0-9-]+$/i.test(parola) && /\d/.test(parola) && /[A-Z]/i.test(parola)))
+  .join(' ')
+  .trim();
+
+/**
+ * Un prodotto come lo vede l'organizzatore: il nostro ID, cos'è e le misure.
+ * Elenco chiuso di campi: niente EAN, costi, prezzi, note interne o modello.
+ */
+const prodottoPerOrganizzatore = (p, libero) => ({
+  id: p.codice,
+  nome: nomeSenzaCodici(p.nome),
+  categoria: p.categoria,
+  marca: p.marca,
+  pollici: p.pollici || null,
+  risoluzione: p.risoluzione,
+  larghezza_mm: p.larghezza_mm,
+  altezza_mm: p.altezza_mm,
+  profondita_mm: p.profondita_mm,
+  altezza_base_mm: p.altezza_base_mm,
+  peso_kg: p.peso_kg,
+  vesa: p.vesa,
+  // Solo con una fiera scelta: se è libero nelle sue date.
+  libero,
+});
+
+// Tutto il parco (tranne quello dismesso), con le misure. Con ?fiera_id=
+// dice anche cosa è libero in quella fiera, montaggio e smontaggio compresi.
+router.get('/prodotti', (req, res) => {
+  let liberi = null;
+  if (req.query.fiera_id) {
+    const fiera = fieraConsentita(req.utente, intero(req.query.fiera_id, 'fiera', { min: 1 }));
+    liberi = new Map(apparecchiPerPeriodo(finestraLogistica(fiera)).map((a) => [a.id, a.liberi]));
+  }
+  const prodotti = db.prepare(`SELECT * FROM prodotti WHERE stato != 'dismesso' ORDER BY ${ORDINE_PER_ID}`).all();
+  res.json(prodotti.map((p) => prodottoPerOrganizzatore(p, liberi ? (liberi.get(p.id) || 0) > 0 : null)));
 });
 
 router.post('/richieste', (req, res) => {

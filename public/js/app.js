@@ -11,6 +11,7 @@ import vistaUtenti from './views/utenti.js';
 import vistaInstallazioni from './views/installazioni.js';
 import vistaRichieste from './views/richieste.js';
 import vistaOrganizzatore from './views/organizzatore.js';
+import vistaCatalogoOrganizzatore from './views/catalogo-organizzatore.js';
 
 const app = document.getElementById('app');
 
@@ -43,6 +44,8 @@ const SEZIONI_TECNICO = [
 const SEZIONI_ORGANIZZATORE = [
   { id: 'le-mie-fiere', titolo: 'Le mie fiere', icona: '◈', vista: vistaOrganizzatore,
     descrizione: 'Richiedi i monitor per gli espositori: ti confermiamo appena possibile.' },
+  { id: 'catalogo', titolo: 'Prodotti', icona: '▤', vista: vistaCatalogoOrganizzatore,
+    descrizione: 'Tutti i nostri apparecchi con ID e misure, da girare agli allestitori.' },
 ];
 
 const sezioniDelRuolo = () => ({

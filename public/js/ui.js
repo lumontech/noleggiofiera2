@@ -97,7 +97,11 @@ export function nomeBreve({ nome, marca, pollici }) {
 }
 
 /** Toglie dalle note il marcatore tecnico usato dall'importatore Airtable. */
-export const notePulite = (testo) => (testo || '').replace(/\[airtable:[^\]]+\]/g, '').trim();
+// Toglie i marcatori dell'importazione: l'id Airtable e la nota automatica sulle date.
+export const notePulite = (testo) => (testo || '')
+  .replace(/\[airtable:[^\]]+\]/g, '')
+  .replace(/Date ereditate dalla fiera: in Airtable la richiesta non le riportava\.?/g, '')
+  .trim();
 
 export const etichetta = (chiave) => ({
   attivo: 'Attivo', manutenzione: 'In manutenzione', dismesso: 'Dismesso',

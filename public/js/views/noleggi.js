@@ -6,6 +6,7 @@ import { api } from '../api.js';
 import { stato as statoApp } from '../app.js';
 import { selettoreApparecchi } from '../selettore-apparecchi.js';
 import { apriDocumenti } from '../documenti.js';
+import { standInColonne } from '../pianta/stand.js';
 import {
   h, monta, badge, modale, avviso, campo, input, select, areaTesto,
   griglia, numero, euro, vuoto, intervalloDate, dataLunga, etichetta, oggiISO, nomeBreve,
@@ -149,6 +150,7 @@ function riga(n, azioni) {
   const dateProprie = n.data_inizio !== n.fiera_inizio || n.data_fine !== n.fiera_fine;
   const inRitardo = n.stato === 'consegnato' && n.data_fine < oggi;
   const apparecchio = { nome: n.prodotto_nome, marca: n.prodotto_marca, pollici: n.prodotto_pollici };
+  const posto = standInColonne(n.stand, n.fiera_padiglione);
 
   return h('li', {
     class: `nol-riga nol-riga--${n.stato}`,
@@ -160,8 +162,12 @@ function riga(n, azioni) {
   },
   h('div', { class: 'nol-riga__cliente' },
     h('strong', {}, n.cliente || 'Cliente non indicato'),
-    h('span', {}, [n.stand && `Stand ${n.stand}`, dateProprie && intervalloDate(n.data_inizio, n.data_fine)]
-      .filter(Boolean).join(' · ') || ' ')),
+    dateProprie ? h('span', {}, intervalloDate(n.data_inizio, n.data_fine)) : null),
+  h('div', { class: 'nol-riga__padiglione' }, posto.padiglione || h('span', { class: 'nol-riga__vuoto' }, '—')),
+  h('div', { class: 'nol-riga__stand', title: n.stand || '' },
+    // Su telefono le colonne diventano righe: padiglione e stand vanno insieme.
+    posto.padiglione ? h('span', { class: 'nol-riga__pad-telefono' }, `Pad. ${posto.padiglione} · `) : null,
+    posto.stand ? h('strong', {}, posto.stand) : h('span', { class: 'nol-riga__vuoto' }, '—')),
   h('div', { class: 'nol-riga__apparecchio', title: n.prodotto_nome },
     h('strong', {}, nomeBreve(apparecchio), n.quantita > 1 ? h('em', {}, ` ×${n.quantita}`) : null),
     h('span', {}, idProdotto(n.prodotto_codice) || n.prodotto_categoria)),
@@ -169,13 +175,13 @@ function riga(n, azioni) {
     eSchermo(n.prodotto_categoria) ? badgeMontaggio(n.montaggio, { breve: true }) : h('span', { class: 'nol-riga__vuoto' }, '—')),
   h('div', { class: 'nol-riga__note' }, noteInBreve(n)),
   h('div', { class: 'nol-riga__importo' }, euro(n.importo)),
+  // Stato e bottone per avanzarlo nella stessa colonna, per fare spazio.
   h('div', { class: 'nol-riga__stato' },
     badge(n.stato),
-    inRitardo ? h('span', { class: 'nol-riga__ritardo' }, `rientro atteso dal ${dataLunga(n.data_fine)}`) : null),
-  h('div', { class: 'nol-riga__azione' },
+    inRitardo ? h('span', { class: 'nol-riga__ritardo' }, `rientro atteso dal ${dataLunga(n.data_fine)}`) : null,
     PROSSIMO_STATO[n.stato]
       ? h('button', {
-          class: 'btn btn--mini btn--primario',
+          class: 'btn btn--mini btn--primario nol-riga__avanza',
           title: `Segna come ${etichetta(PROSSIMO_STATO[n.stato]).toLowerCase()}`,
           onclick: (e) => { e.stopPropagation(); azioni.avanza(n); },
         }, AZIONE[n.stato])
@@ -198,8 +204,9 @@ function gruppo(g, { aperto, azioni }) {
         h('span', { class: 'nol-gruppo__importo' }, euro(g.importo)))),
     h('ul', { class: 'nol-righe' },
       h('li', { class: 'nol-intestazione', 'aria-hidden': 'true' },
-        h('span', {}, 'Cliente'), h('span', {}, 'Apparecchio'), h('span', {}, 'Montaggio'), h('span', {}, 'Note'),
-        h('span', { class: 'nol-riga__importo' }, 'Importo'), h('span', {}, 'Stato'), h('span', {})),
+        h('span', {}, 'Cliente'), h('span', { class: 'nol-riga__padiglione' }, 'Pad.'), h('span', {}, 'Stand'),
+        h('span', {}, 'Apparecchio'), h('span', {}, 'Montaggio'), h('span', {}, 'Note'),
+        h('span', { class: 'nol-riga__importo' }, 'Importo'), h('span', {}, 'Stato')),
       g.righe.map((n) => riga(n, azioni))));
 }
 

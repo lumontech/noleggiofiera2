@@ -744,9 +744,9 @@ textarea.controllo { resize: vertical; }
 
 .nol-riga, .nol-intestazione {
   display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) 7.5rem minmax(0, 1.3fr) 5.5rem 8.5rem 9rem;
+  grid-template-columns: minmax(0, 1.2fr) 2.6rem 5.5rem minmax(0, 1fr) 7rem minmax(0, 1.2fr) 5.2rem 9.5rem;
   align-items: center;
-  gap: 1rem;
+  gap: 0.85rem;
   padding: 0.7rem 1.15rem 0.7rem 2.45rem;
   border-bottom: 1px solid var(--grigio-100);
   cursor: pointer;
@@ -778,7 +778,6 @@ textarea.controllo { resize: vertical; }
 .nol-riga__importo { font-weight: 650; text-align: right; font-variant-numeric: tabular-nums; }
 .nol-riga__stato { display: flex; flex-direction: column; align-items: flex-start; gap: 0.2rem; }
 .nol-riga__ritardo { font-size: 0.72rem; font-weight: 600; color: var(--rosso); }
-.nol-riga__azione { display: flex; justify-content: flex-end; }
 .nol-riga__vuoto { color: var(--grigio-300); }
 .nol-intestazione { padding-top: 0.45rem; padding-bottom: 0.45rem; background: var(--grigio-50);
   border-bottom: 1px solid var(--grigio-100);
@@ -794,10 +793,10 @@ textarea.controllo { resize: vertical; }
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
       "cliente importo"
+      "stand stand"
       "apparecchio stato"
       "montaggio montaggio"
-      "note note"
-      "azione azione";
+      "note note";
     gap: 0.35rem 0.75rem;
     padding-left: 1.15rem;
   }
@@ -805,8 +804,9 @@ textarea.controllo { resize: vertical; }
   .nol-riga__apparecchio { grid-area: apparecchio; }
   .nol-riga__importo { grid-area: importo; }
   .nol-riga__stato { grid-area: stato; align-items: flex-end; }
-  .nol-riga__azione { grid-area: azione; justify-content: flex-start; }
-  .nol-riga__azione:empty { display: none; }
+  .nol-riga__stand { grid-area: stand; }
+  .nol-riga__padiglione { display: none; }
+  .nol-riga__pad-telefono { display: inline !important; }
   .nol-riga__montaggio { grid-area: montaggio; }
   .nol-riga__montaggio:has(.nol-riga__vuoto) { display: none; }
   .nol-riga__note { grid-area: note; }
@@ -1300,3 +1300,11 @@ body.pianta-aperta { overflow: hidden; }
 .casella--pdf input { margin-top: 0.2rem; }
 .casella--pdf span { display: flex; flex-direction: column; }
 .casella--pdf small { font-size: 0.78rem; color: var(--grigio-500); }
+
+/* Padiglione e stand in colonna; sul telefono vanno su una riga sola. */
+.nol-riga__padiglione { text-align: center; font-weight: 600; color: var(--grigio-700); }
+.nol-riga__stand { min-width: 0; font-size: 0.88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nol-riga__stand strong { font-weight: 650; }
+.nol-riga__pad-telefono { display: none; color: var(--grigio-500); }
+.nol-riga__avanza { margin-top: 0.3rem; white-space: nowrap; }
+.tabella__centro { text-align: center; }

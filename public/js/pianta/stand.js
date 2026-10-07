@@ -38,3 +38,18 @@ export function codiciStand(testo) {
 
   return [...new Set(codici)];
 }
+
+/**
+ * Padiglione e stand separati, per le colonne: "PAD 5 - 5042" → { padiglione:
+ * "5", stand: "5042" }. Se lo stand non dice il padiglione si usa quello
+ * della fiera; se non ci sono codici si tiene il testo com'è ("Stand Airone").
+ */
+export function standInColonne(testo, padiglioneFiera = '') {
+  const codici = codiciStand(testo);
+  // Senza codici si tiene il testo, tolto il padiglione: "PAD 4" da solo non è uno stand.
+  const resto = String(testo || '').replace(/\bPAD(?:IGLIONE)?\s*\.?\s*\d{1,2}\b/gi, '').replace(/^[\s\-–·,]+|[\s\-–·,]+$/g, '');
+  return {
+    padiglione: padiglione(testo) || String(padiglioneFiera || '').replace(/^pad(iglione)?\.?\s*/i, '') || '',
+    stand: codici.length ? codici.join(' / ') : resto,
+  };
+}

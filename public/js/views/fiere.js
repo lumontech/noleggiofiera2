@@ -6,6 +6,7 @@ import { api, caricaAllegato } from '../api.js';
 import { stato as statoApp } from '../app.js';
 import { selettoreApparecchi } from '../selettore-apparecchi.js';
 import { apriPianta } from '../pianta/visore.js';
+import { standInColonne } from '../pianta/stand.js';
 import {
   h, monta, badge, modale, avviso, campo, input, select, areaTesto,
   griglia, numero, euro, vuoto, intervalloDate, dataLunga, etichetta, oggiISO, addGiorni,
@@ -337,19 +338,25 @@ async function apriDettaglio(id, prodotti, ricarica) {
   const tabella = attivi.length
     ? h('table', { class: 'tabella' },
         h('thead', {}, h('tr', {},
-          h('th', {}, 'Cliente'), h('th', {}, 'Prodotto'), h('th', {}, 'Pezzi'),
-          h('th', {}, 'Montaggio'), h('th', {}, 'Note'), h('th', {}, 'Periodo'), h('th', {}, 'Importo'), h('th', {}, 'Stato'))),
-        h('tbody', {}, attivi.map((n) => h('tr', {},
-          h('td', {}, h('strong', {}, n.cliente || '—'),
-            n.stand ? h('div', { class: 'sottotesto' }, n.stand) : null),
+          h('th', {}, 'Cliente'), h('th', {}, 'Pad.'), h('th', {}, 'Stand'), h('th', {}, 'Prodotto'), h('th', {}, 'Pezzi'),
+          h('th', {}, 'Montaggio'), h('th', {}, 'Note'), h('th', {}, 'Importo'), h('th', {}, 'Stato'))),
+        h('tbody', {}, attivi.map((n) => {
+          const posto = standInColonne(n.stand, fiera.padiglione);
+          // Le date si scrivono solo se non sono quelle della fiera.
+          const dateProprie = n.data_inizio !== fiera.data_inizio || n.data_fine !== fiera.data_fine;
+          return h('tr', {},
+          h('td', {}, h('strong', {}, n.cliente || '—')),
+          h('td', { class: 'tabella__centro' }, posto.padiglione || '—'),
+          h('td', {}, posto.stand ? h('strong', {}, posto.stand) : '—'),
           h('td', {}, n.prodotto_nome,
-            h('div', { class: 'sottotesto' }, `${n.prodotto_categoria}${n.prodotto_pollici ? ` ${n.prodotto_pollici}"` : ''}`)),
+            h('div', { class: 'sottotesto' }, `${n.prodotto_categoria}${n.prodotto_pollici ? ` ${n.prodotto_pollici}"` : ''}`
+              + `${dateProprie ? ` · ${intervalloDate(n.data_inizio, n.data_fine)}` : ''}`)),
           h('td', {}, numero(n.quantita)),
           h('td', {}, eSchermo(n.prodotto_categoria) ? badgeMontaggio(n.montaggio, { breve: true }) : '—'),
           h('td', { class: 'tabella__note' }, noteInBreve(n)),
-          h('td', {}, intervalloDate(n.data_inizio, n.data_fine)),
           h('td', {}, euro(n.importo)),
-          h('td', {}, badge(n.stato))))))
+          h('td', {}, badge(n.stato)));
+        })))
     : vuoto('Nessun materiale assegnato', 'Aggiungi i primi prodotti da portare in fiera.');
 
   modale({

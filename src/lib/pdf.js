@@ -139,10 +139,13 @@ export function tabella(ctx, colonne) {
 
   const intestazioneTabella = () => {
     const y = doc.y;
-    doc.rect(sinistra, y, larghezza, 20).fill(COLORE.fondo);
-    doc.font('Helvetica-Bold').fontSize(7.5).fillColor(COLORE.tenue);
+    // Alta quanto serve, se un titolo va a capo.
+    doc.font('Helvetica-Bold').fontSize(7.5);
+    const altezza = Math.max(...col.map((c) => doc.heightOfString(c.titolo.toUpperCase(), opzioni(c)))) + 13;
+    doc.rect(sinistra, y, larghezza, altezza).fill(COLORE.fondo);
+    doc.fillColor(COLORE.tenue);
     col.forEach((c) => doc.text(c.titolo.toUpperCase(), c.x + 6, y + 6.5, opzioni(c)));
-    doc.y = y + 20;
+    doc.y = y + altezza;
   };
 
   const altezzaCella = (cella, c) => {

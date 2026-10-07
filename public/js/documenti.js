@@ -26,6 +26,11 @@ export async function apriDocumenti({ fieraId = '' } = {}) {
   const aiutoFiera = h('span', { class: 'campo__aiuto' });
   const campoFiera = campo('Fiera', selFiera);
   campoFiera.appendChild(aiutoFiera);
+  // Solo per i Noleggi: in fondo, cosa si può ancora offrire per quella fiera.
+  const casellaDisponibile = h('label', { class: 'casella casella--pdf' },
+    h('input', { type: 'checkbox', name: 'disponibile', value: '1', checked: true }),
+    h('span', {}, h('strong', {}, 'Aggiungi il materiale ancora disponibile'),
+      h('small', {}, 'In fondo a ogni fiera, quello che è ancora libero nelle sue date: utile da girare all\'organizzatore.')));
 
   modale({
     titolo: 'Scarica PDF',
@@ -41,6 +46,7 @@ export async function apriDocumenti({ fieraId = '' } = {}) {
         scelta('prezzi', '1', 'Con prezzi', 'Importi e totali, IVA esclusa.', true),
         scelta('prezzi', '0', 'Senza prezzi', 'Da dare al tecnico o all\'organizzatore.')),
       campoFiera,
+      casellaDisponibile,
       h('p', { class: 'pdf-intestazione' },
         intestazione.logo ? 'Intestazione con logo. ' : 'Intestazione senza logo. ',
         h('button', { type: 'button', class: 'btn btn--mini', onclick: () => apriIntestazione() }, 'Modifica intestazione e logo')),
@@ -48,6 +54,7 @@ export async function apriDocumenti({ fieraId = '' } = {}) {
     onConferma: async (dati) => {
       const parametri = new URLSearchParams({ prezzi: dati.prezzi });
       if (dati.fiera_id) parametri.set('fiera_id', dati.fiera_id);
+      if (dati.tipo === 'noleggi' && dati.disponibile) parametri.set('disponibile', '1');
       const percorso = dati.tipo === 'materiale' ? 'materiale' : 'noleggi';
       await scaricaFile(`/api/documenti/${percorso}.pdf?${parametri}`, 'Documento.pdf');
       avviso('PDF scaricato.');
@@ -58,6 +65,7 @@ export async function apriDocumenti({ fieraId = '' } = {}) {
   const modulo = selFiera.closest('form');
   const aggiornaAiuto = () => {
     const tipo = modulo.querySelector('input[name=tipo]:checked').value;
+    casellaDisponibile.hidden = tipo !== 'noleggi';
     aiutoFiera.textContent = tipo === 'materiale'
       ? 'Con una fiera, nel PDF ci sono solo i pezzi liberi in quelle date.'
       : 'Con una fiera, tutti i suoi noleggi; altrimenti quelli delle fiere in programma.';

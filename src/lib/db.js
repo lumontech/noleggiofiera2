@@ -217,7 +217,11 @@ if (aggiungiColonna('noleggi', 'montaggio', "TEXT DEFAULT ''")) {
 
 // Listino: prezzo di un pezzo per una fiera (i noleggi si quotano così). Per
 // partire si prende il prezzo più frequente nello storico dello stesso modello.
-if (aggiungiColonna('prodotti', 'prezzo_fiera', 'REAL')) {
+/**
+ * Prezzo a fiera dei prodotti che non ce l'hanno: il più frequente nello
+ * storico del modello. Lo usano la migrazione e l'importazione da Airtable.
+ */
+export function prezziDaStorico() {
   const storico = db.prepare(`
     SELECT p.nome, n.importo / n.quantita AS prezzo
       FROM noleggi n JOIN prodotti p ON p.id = n.prodotto_id
@@ -230,12 +234,15 @@ if (aggiungiColonna('prodotti', 'prezzo_fiera', 'REAL')) {
     perModello.set(nome, conta);
   }
   const aggiorna = db.prepare('UPDATE prodotti SET prezzo_fiera = ? WHERE nome = ? AND prezzo_fiera IS NULL');
+  let aggiornati = 0;
   for (const [nome, conta] of perModello) {
     // A parità di frequenza vince il prezzo più alto: meglio non svendere.
     const [prezzo] = [...conta].sort((a, b) => b[1] - a[1] || b[0] - a[0])[0];
-    aggiorna.run(prezzo, nome);
+    aggiornati += aggiorna.run(prezzo, nome).changes;
   }
+  return aggiornati;
 }
+if (aggiungiColonna('prodotti', 'prezzo_fiera', 'REAL')) prezziDaStorico();
 
 // Impostazioni dell'app (per ora l'intestazione dei documenti), chiave → JSON.
 db.exec(`

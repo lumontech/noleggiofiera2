@@ -1296,3 +1296,7 @@ body.pianta-aperta { overflow: hidden; }
 .note-breve__interne { color: var(--grigio-500); }
 .note-breve__vuote { color: var(--grigio-300); }
 .tabella__note { max-width: 14rem; }
+.casella--pdf { align-items: flex-start; margin: 0.25rem 0 0.5rem; padding: 0.6rem 0.75rem; border: 1px solid var(--grigio-200); border-radius: var(--raggio-s); }
+.casella--pdf input { margin-top: 0.2rem; }
+.casella--pdf span { display: flex; flex-direction: column; }
+.casella--pdf small { font-size: 0.78rem; color: var(--grigio-500); }

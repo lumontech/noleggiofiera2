@@ -28,7 +28,8 @@ router.get('/materiale.pdf', (req, res) => {
 
 /**
  * PDF dei noleggi: di una fiera (?fiera_id=N) o di tutte quelle in programma.
- *   ?prezzi=1     con gli importi
+ *   ?prezzi=1       con gli importi
+ *   ?disponibile=1  in fondo a ogni fiera il materiale ancora libero nelle sue date
  */
 router.get('/noleggi.pdf', (req, res) => {
   const prezzi = req.query.prezzi === '1' || req.query.prezzi === 'true';
@@ -37,7 +38,8 @@ router.get('/noleggi.pdf', (req, res) => {
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(`${nome}.pdf`)}`);
   res.setHeader('Cache-Control', 'no-store');
-  scriviNoleggi(res, { prezzi, fiera });
+  const disponibile = req.query.disponibile === '1' || req.query.disponibile === 'true';
+  scriviNoleggi(res, { prezzi, fiera, disponibile });
 });
 
 router.get('/intestazione', (_req, res) => res.json(leggiIntestazione()));

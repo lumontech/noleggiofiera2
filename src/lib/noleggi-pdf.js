@@ -5,7 +5,7 @@
 import db from './db.js';
 // La stessa regola della pianta con TV per leggere il numero dello stand.
 import { codiciStand } from '../../public/js/pianta/stand.js';
-import { titoloModello } from './catalogo-pdf.js';
+import { titoloModello, modelliDaNoleggiare, scriviMateriale } from './catalogo-pdf.js';
 import {
   COLORE, periodo, euro, oggi, dataLunga, nuovoDocumento, titoloSezione, tabella, chiudiDocumento,
 } from './pdf.js';
@@ -35,7 +35,19 @@ export function fierePerDocumento(fiera) {
      ORDER BY f.data_inizio`).all(oggi());
 }
 
-export function scriviNoleggi(stream, { prezzi, fiera = null }) {
+/**
+ * Cosa si può ancora offrire per quella fiera: il materiale libero nelle sue
+ * date. Utile da girare all'organizzatore insieme ai noleggi.
+ */
+function ancoraDisponibile(ctx, fiera, prezzi) {
+  const modelli = modelliDaNoleggiare({ fiera });
+  titoloSezione(ctx, `Ancora disponibile per ${fiera.nome}`, modelli.length
+    ? `Materiale libero nelle date della fiera, da aggiungere su richiesta${prezzi ? '. Prezzi per pezzo, per tutta la fiera, IVA esclusa.' : '.'}`
+    : 'In quelle date tutto il materiale è già impegnato.');
+  if (modelli.length) scriviMateriale(ctx, modelli, { prezzi, piccolo: true });
+}
+
+export function scriviNoleggi(stream, { prezzi, fiera = null, disponibile = false }) {
   const fiere = fierePerDocumento(fiera);
   const ctx = nuovoDocumento(stream, {
     titolo: fiera ? `Noleggi · ${fiera.nome}` : 'Noleggi delle fiere in programma',
@@ -60,6 +72,7 @@ export function scriviNoleggi(stream, { prezzi, fiera = null }) {
       .filter(Boolean).join(' · '));
     if (!righe.length) {
       ctx.doc.font('Helvetica').fontSize(9.5).fillColor(COLORE.tenue).text('Nessun noleggio su questa fiera.');
+      if (disponibile) ancoraDisponibile(ctx, f, prezzi);
       continue;
     }
     const t = tabella(ctx, colonne);
@@ -81,6 +94,7 @@ export function scriviNoleggi(stream, { prezzi, fiera = null }) {
         { sfondo: COLORE.fondo });
       totaleGenerale += totale;
     }
+    if (disponibile) ancoraDisponibile(ctx, f, prezzi);
   }
   if (prezzi && fiere.length > 1) {
     ctx.doc.moveDown(0.8);

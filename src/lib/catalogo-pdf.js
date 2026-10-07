@@ -92,23 +92,31 @@ export function scriviCatalogo(stream, { prezzi, fiera = null }) {
       prezzi && 'Prezzi per pezzo, per l\'intera durata della fiera, IVA esclusa. Installazione e trasporto da concordare.',
     ],
   });
+  if (!modelli.length) {
+    ctx.doc.font('Helvetica').fontSize(11).fillColor(COLORE.tenue).text(fiera
+      ? 'Nessun apparecchio libero nelle date di questa fiera.'
+      : 'Nessun apparecchio disponibile al momento.');
+  }
+  scriviMateriale(ctx, modelli, { prezzi });
+  chiudiDocumento(ctx);
+}
+
+/**
+ * Le tabelle del materiale (Schermi, Supporti, Altro) dentro un documento già
+ * aperto: le usa anche il PDF dei noleggi per "Ancora disponibile".
+ */
+export function scriviMateriale(ctx, modelli, { prezzi, piccolo = false }) {
   const colonne = [
     { titolo: 'Apparecchio', peso: prezzi ? 42 : 50 },
     { titolo: 'Misure e attacco', peso: prezzi ? 33 : 38 },
     { titolo: 'Pezzi', peso: prezzi ? 10 : 12, allinea: 'center' },
     ...(prezzi ? [{ titolo: 'Prezzo', peso: 15, allinea: 'right' }] : []),
   ];
-
-  if (!modelli.length) {
-    ctx.doc.font('Helvetica').fontSize(11).fillColor(COLORE.tenue).text(fiera
-      ? 'Nessun apparecchio libero nelle date di questa fiera.'
-      : 'Nessun apparecchio disponibile al momento.');
-  }
   for (const sezione of SEZIONI) {
     const elenco = modelli.filter((m) => sezione.categorie.includes(m.categoria)
       || (sezione.titolo === 'Altro materiale' && !SEZIONI.some((s) => s.categorie.includes(m.categoria))));
     if (!elenco.length) continue;
-    titoloSezione(ctx, sezione.titolo);
+    titoloSezione(ctx, sezione.titolo, '', { piccolo });
     const t = tabella(ctx, colonne);
     t.intestazione();
     for (const m of elenco) {
@@ -122,5 +130,4 @@ export function scriviCatalogo(stream, { prezzi, fiera = null }) {
       ]);
     }
   }
-  chiudiDocumento(ctx);
 }

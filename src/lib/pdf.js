@@ -39,6 +39,9 @@ export function nuovoDocumento(stream, { titolo, sottotitoli = [] }) {
       altezzaTesta = 66;
     } catch { /* logo non leggibile: si va avanti col solo testo */ }
   }
+  if (!altezzaTesta && /lumon/i.test(intestazione.ragione_sociale)) {
+    altezzaTesta = marchioLumon(doc, sinistra, 36, intestazione.sottotitolo) - 40;
+  }
   if (!altezzaTesta) {
     doc.font('Helvetica-Bold').fontSize(22).fillColor(COLORE.testo)
       .text(intestazione.ragione_sociale.toUpperCase(), sinistra, 42, { width: larghezza / 2 });
@@ -70,12 +73,49 @@ export function nuovoDocumento(stream, { titolo, sottotitoli = [] }) {
   };
 }
 
+/**
+ * Il marchio Lumon ridisegnato, per quando il file del logo non è caricato:
+ * "lum" e "n" in nero, al posto della "o" il cerchio di puntini verdi a
+ * girasole, sotto la dicitura. Restituisce la y sotto il marchio.
+ * Il logo originale, caricato dall'app, ha sempre la precedenza.
+ */
+function marchioLumon(doc, x, y, dicitura) {
+  const corpo = 40;
+  const nero = '#1d1d1b';
+  const verde = '#8cc63f';
+  doc.font('Helvetica-Bold').fontSize(corpo).fillColor(nero);
+  doc.text('lum', x, y, { lineBreak: false, characterSpacing: -1 });
+  const larghezzaLum = doc.widthOfString('lum', { characterSpacing: -1 });
+  // Proporzioni di Helvetica: linea di base e altezza della x.
+  const base = y + corpo * 0.93;
+  const altezzaX = corpo * 0.53;
+  const diametro = altezzaX * 1.3;
+  const cx = x + larghezzaLum + diametro / 2 + corpo * 0.05;
+  // Il cerchio poggia sulla linea di base, come le lettere.
+  const cy = base - diametro / 2;
+  // Girasole: ogni punto ruota dell'angolo aureo e si allontana come la radice;
+  // i punti esterni sono un po' più piccoli.
+  const punti = 100;
+  for (let i = 1; i <= punti; i += 1) {
+    const r = (diametro / 2 - diametro * 0.03) * Math.sqrt((i - 0.5) / punti);
+    const angolo = i * 2.39996;
+    const raggio = diametro * (0.044 - 0.014 * (i / punti));
+    doc.circle(cx + r * Math.cos(angolo), cy + r * Math.sin(angolo), raggio).fill(verde);
+  }
+  doc.font('Helvetica-Bold').fontSize(corpo).fillColor(nero)
+    .text('n', cx + diametro / 2 + corpo * 0.05, y, { lineBreak: false });
+  doc.font('Helvetica').fontSize(12).fillColor('#3c3c3b')
+    .text(dicitura || 'Digital Signage Solution', x + 1, base + 6, { lineBreak: false });
+  return base + 6 + 15;
+}
+
 /** Un titolo di sezione (es. il nome della fiera); va a pagina nuova se non c'è spazio. */
-export function titoloSezione(ctx, testo, sotto = '') {
+export function titoloSezione(ctx, testo, sotto = '', { piccolo = false } = {}) {
   const { doc, sinistra, larghezza } = ctx;
   if (doc.y + 80 > ctx.fondoPagina()) { doc.addPage(); doc.y = doc.page.margins.top; }
-  doc.moveDown(0.6);
-  doc.font('Helvetica-Bold').fontSize(12.5).fillColor(COLORE.accento).text(testo, sinistra, doc.y, { width: larghezza });
+  doc.moveDown(piccolo ? 0.4 : 0.6);
+  doc.font('Helvetica-Bold').fontSize(piccolo ? 10 : 12.5).fillColor(piccolo ? COLORE.testo : COLORE.accento)
+    .text(testo, sinistra, doc.y, { width: larghezza });
   if (sotto) doc.font('Helvetica').fontSize(9).fillColor(COLORE.tenue).text(sotto, { width: larghezza });
   doc.moveDown(0.3);
 }

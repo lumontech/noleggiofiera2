@@ -9,7 +9,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import db from './lib/db.js';
+import db, { prezziDaStorico } from './lib/db.js';
 import { oggi, giorniTra } from './lib/domain.js';
 
 const SCRIVI = process.argv.includes('--scrivi');
@@ -205,6 +205,9 @@ const importa = db.transaction(() => {
       conteggi.noleggi += 1;
     }
   }
+
+  // Listino di partenza: il prezzo più frequente nello storico di ogni modello.
+  prezziDaStorico();
 
   if (!SCRIVI) throw new Error('PROVA');
 });

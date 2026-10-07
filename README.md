@@ -154,14 +154,17 @@ Due documenti, **con prezzi** o **senza prezzi**:
   apparecchio con ID, montaggio e note per il tecnico; con prezzi anche gli
   importi e i totali. Di una fiera (se ne hai filtrata una nella lista parte da
   quella) o di tutte quelle in programma. Senza prezzi è da dare al tecnico o
-  all'organizzatore.
+  all'organizzatore. Con la casella "Aggiungi il materiale ancora disponibile"
+  (già spuntata) in fondo a ogni fiera c'è anche cosa è ancora libero nelle
+  sue date: da girare all'organizzatore per fargli vedere cosa si può offrire.
 - **Materiale disponibile**: il listino del parco, un rigo per modello con
   misure, attacco VESA e pezzi; di tutto il materiale noleggiabile o solo di
   quello libero nelle date di una fiera.
 
 In alto c'è l'intestazione dell'azienda (Lumon Tec, indirizzo, P.IVA, sito):
 si modifica, e si carica il logo (PNG o JPG), da **Modifica intestazione e
-logo** nella stessa finestra. Il prezzo di listino si imposta su ogni prodotto
+logo** nella stessa finestra. Finché il file del logo non è caricato, al suo
+posto c'è il marchio Lumon ridisegnato (scritta e cerchio di puntini verdi). Il prezzo di listino si imposta su ogni prodotto
 (**Prezzo a fiera**); all'inizio è il prezzo più frequente nello storico di
 quel modello, e propone anche l'importo dei nuovi noleggi. I modelli senza
 prezzo compaiono come "su richiesta".

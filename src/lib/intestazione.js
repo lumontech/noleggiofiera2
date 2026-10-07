@@ -9,7 +9,7 @@ import { HttpError, testo } from './domain.js';
 
 const PREDEFINITA = {
   ragione_sociale: 'Lumon Tec',
-  sottotitolo: 'Noleggio ledwall, videowall, monitor e TV per fiere ed eventi',
+  sottotitolo: 'Digital Signage Solution',
   indirizzo: 'Via Silone 1, 80020 Napoli',
   piva: 'IT10433031217',
   telefono: '',

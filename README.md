@@ -157,9 +157,9 @@ Due documenti, **con prezzi** o **senza prezzi**:
   all'organizzatore. Con la casella "Aggiungi il materiale ancora disponibile"
   (già spuntata) in fondo a ogni fiera c'è anche cosa è ancora libero nelle
   sue date: da girare all'organizzatore per fargli vedere cosa si può offrire.
-- **Materiale disponibile**: il listino del parco, un rigo per modello con
-  misure, attacco VESA e pezzi; di tutto il materiale noleggiabile o solo di
-  quello libero nelle date di una fiera.
+- **Materiale disponibile**: quello che si può offrire, un rigo per modello
+  con misure, attacco VESA e pezzi liberi: nelle date di una fiera, o oggi se
+  non se ne sceglie una. Quello già impegnato non compare.
 
 In alto c'è l'intestazione dell'azienda (Lumon Tec, indirizzo, P.IVA, sito):
 si modifica, e si carica il logo (PNG o JPG), da **Modifica intestazione e

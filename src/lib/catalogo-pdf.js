@@ -58,15 +58,18 @@ function prezzoDelModello(apparecchi) {
  */
 export function modelliDaNoleggiare({ fiera = null } = {}) {
   const prodotti = db.prepare(`SELECT * FROM prodotti WHERE stato = 'attivo' ORDER BY ${ORDINE_PER_ID}`).all();
-  let liberi = null;
+  // Con una fiera: liberi nelle sue date (allestimento e smontaggio compresi).
+  // Senza: liberi oggi. Mai il parco intero: quello già fuori non si può offrire.
+  let from = oggi();
+  let to = from;
   if (fiera) {
-    const from = new Date(Date.parse(`${fiera.data_inizio}T00:00:00Z`) - fiera.giorni_allestimento * 86400000).toISOString().slice(0, 10);
-    const to = new Date(Date.parse(`${fiera.data_fine}T00:00:00Z`) + fiera.giorni_smontaggio * 86400000).toISOString().slice(0, 10);
-    liberi = new Map(apparecchiPerPeriodo({ from, to }).map((a) => [a.id, a.liberi]));
+    from = new Date(Date.parse(`${fiera.data_inizio}T00:00:00Z`) - fiera.giorni_allestimento * 86400000).toISOString().slice(0, 10);
+    to = new Date(Date.parse(`${fiera.data_fine}T00:00:00Z`) + fiera.giorni_smontaggio * 86400000).toISOString().slice(0, 10);
   }
+  const liberi = new Map(apparecchiPerPeriodo({ from, to }).map((a) => [a.id, a.liberi]));
   const modelli = new Map();
   for (const p of prodotti) {
-    const pezzi = liberi ? (liberi.get(p.id) || 0) : p.quantita;
+    const pezzi = liberi.get(p.id) || 0;
     if (!pezzi) continue;
     // Un rigo per nome da catalogo: due modelli di Samsung 65" stanno insieme.
     const chiave = `${p.categoria}|${titoloModello(p).toLowerCase()}`;
@@ -92,14 +95,14 @@ export function scriviCatalogo(stream, { prezzi, fiera = null }) {
   const ctx = nuovoDocumento(stream, {
     titolo: 'Materiale a noleggio',
     sottotitoli: [
-      fiera ? `Disponibile per ${fiera.nome} · ${periodo(fiera.data_inizio, fiera.data_fine)}` : `Aggiornato al ${dataLunga(oggi())}`,
+      fiera ? `Disponibile per ${fiera.nome} · ${periodo(fiera.data_inizio, fiera.data_fine)}` : `Disponibile oggi, ${dataLunga(oggi())}`,
       prezzi && 'Prezzi per pezzo, per l\'intera durata della fiera, IVA esclusa. Installazione e trasporto da concordare.',
     ],
   });
   if (!modelli.length) {
     ctx.doc.font('Helvetica').fontSize(11).fillColor(COLORE.tenue).text(fiera
       ? 'Nessun apparecchio libero nelle date di questa fiera.'
-      : 'Nessun apparecchio disponibile al momento.');
+      : 'Oggi non c\'è nessun apparecchio libero.');
   }
   scriviMateriale(ctx, modelli, { prezzi });
   chiudiDocumento(ctx);

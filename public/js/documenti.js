@@ -40,7 +40,7 @@ export async function apriDocumenti({ fieraId = '' } = {}) {
       h('p', { class: 'campo__etichetta' }, 'Documento'),
       h('div', { class: 'scelte-pdf' },
         scelta('tipo', 'noleggi', 'Noleggi', 'Espositore, stand, apparecchio, montaggio e note, fiera per fiera.', true),
-        scelta('tipo', 'materiale', 'Materiale disponibile', 'Il listino del parco: modelli, misure e quantità.')),
+        scelta('tipo', 'materiale', 'Materiale disponibile', 'Quello libero, con misure e quantità: da proporre ai clienti.')),
       h('p', { class: 'campo__etichetta' }, 'Prezzi'),
       h('div', { class: 'scelte-pdf' },
         scelta('prezzi', '1', 'Con prezzi', 'Importi e totali, IVA esclusa.', true),
@@ -67,7 +67,7 @@ export async function apriDocumenti({ fieraId = '' } = {}) {
     const tipo = modulo.querySelector('input[name=tipo]:checked').value;
     casellaDisponibile.hidden = tipo !== 'noleggi';
     aiutoFiera.textContent = tipo === 'materiale'
-      ? 'Con una fiera, nel PDF ci sono solo i pezzi liberi in quelle date.'
+      ? 'Con una fiera, i pezzi liberi nelle sue date; senza, quelli liberi oggi.'
       : 'Con una fiera, tutti i suoi noleggi; altrimenti quelli delle fiere in programma.';
   };
   modulo.addEventListener('change', aggiornaAiuto);

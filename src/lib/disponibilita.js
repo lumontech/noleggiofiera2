@@ -2,7 +2,7 @@
 // in un periodo e quanti restano liberi. È il cuore della piattaforma.
 
 import db from './db.js';
-import { STATI_IMPEGNATIVI, addGiorni, giorniTra, ORDINE_PER_ID } from './domain.js';
+import { STATI_IMPEGNATIVI, addGiorni, giorniTra, ORDINE_PER_ID, oggi } from './domain.js';
 
 const PLACEHOLDER_STATI = STATI_IMPEGNATIVI.map(() => '?').join(',');
 
@@ -16,6 +16,8 @@ const PLACEHOLDER_STATI = STATI_IMPEGNATIVI.map(() => '?').join(',');
  */
 export function noleggiImpegnativi({ from, to, prodottoId = null, escludiNoleggio = null }) {
   const parametri = [...STATI_IMPEGNATIVI, to, from];
+  // Un apparecchio consegnato e non ancora rientrato è fuori anche dopo la data
+  // di fine prevista: resta impegnato finché non lo si segna "rientrato".
   let sql = `
     SELECT n.*, p.nome AS prodotto_nome, p.quantita AS prodotto_quantita,
            f.nome AS fiera_nome, f.citta AS fiera_citta
@@ -24,7 +26,7 @@ export function noleggiImpegnativi({ from, to, prodottoId = null, escludiNoleggi
       JOIN fiere    f ON f.id = n.fiera_id
      WHERE n.stato IN (${PLACEHOLDER_STATI})
        AND n.data_inizio <= ?
-       AND n.data_fine   >= ?`;
+       AND (n.data_fine >= ? OR n.stato = 'consegnato')`;
   if (prodottoId !== null) {
     sql += ' AND n.prodotto_id = ?';
     parametri.push(prodottoId);
@@ -34,7 +36,12 @@ export function noleggiImpegnativi({ from, to, prodottoId = null, escludiNoleggi
     parametri.push(escludiNoleggio);
   }
   sql += ' ORDER BY n.data_inizio ASC, n.id ASC';
-  return db.prepare(sql).all(...parametri);
+  const giorno = oggi();
+  return db.prepare(sql).all(...parametri)
+    .map((n) => (n.stato === 'consegnato' && n.data_fine < giorno && to >= giorno
+      ? { ...n, data_fine: to, rientro_in_ritardo: true }
+      : n))
+    .filter((n) => n.data_fine >= from);
 }
 
 /**

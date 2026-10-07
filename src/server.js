@@ -18,6 +18,7 @@ import utenti, { profilo } from './routes/utenti.js';
 import tecnico from './routes/tecnico.js';
 import organizzatore from './routes/organizzatore.js';
 import richieste from './routes/richieste.js';
+import documenti from './routes/documenti.js';
 
 const RADICE = path.dirname(fileURLToPath(import.meta.url));
 const PORTA = Number(process.env.PORT || 3000);
@@ -59,6 +60,7 @@ app.use('/api/profilo', profilo);
 app.use('/api', soloAmministratore);
 app.use('/api/utenti', utenti);
 app.use('/api/richieste', richieste);
+app.use('/api/documenti', documenti);
 app.use('/api/prodotti', prodotti);
 app.use('/api/fiere', fiere);
 app.use('/api/noleggi', noleggi);

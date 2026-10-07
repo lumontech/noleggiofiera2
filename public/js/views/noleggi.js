@@ -10,6 +10,7 @@ import {
   griglia, numero, euro, vuoto, intervalloDate, dataLunga, etichetta, oggiISO, nomeBreve,
   idProdotto,
   campiMontaggio, badgeMontaggio, eSchermo,
+  noteInBreve,
 } from '../ui.js';
 
 const PROSSIMO_STATO = { prenotato: 'consegnato', consegnato: 'rientrato' };
@@ -165,6 +166,7 @@ function riga(n, azioni) {
     h('span', {}, idProdotto(n.prodotto_codice) || n.prodotto_categoria)),
   h('div', { class: 'nol-riga__montaggio' },
     eSchermo(n.prodotto_categoria) ? badgeMontaggio(n.montaggio, { breve: true }) : h('span', { class: 'nol-riga__vuoto' }, '—')),
+  h('div', { class: 'nol-riga__note' }, noteInBreve(n)),
   h('div', { class: 'nol-riga__importo' }, euro(n.importo)),
   h('div', { class: 'nol-riga__stato' },
     badge(n.stato),
@@ -195,7 +197,7 @@ function gruppo(g, { aperto, azioni }) {
         h('span', { class: 'nol-gruppo__importo' }, euro(g.importo)))),
     h('ul', { class: 'nol-righe' },
       h('li', { class: 'nol-intestazione', 'aria-hidden': 'true' },
-        h('span', {}, 'Cliente'), h('span', {}, 'Apparecchio'), h('span', {}, 'Montaggio'),
+        h('span', {}, 'Cliente'), h('span', {}, 'Apparecchio'), h('span', {}, 'Montaggio'), h('span', {}, 'Note'),
         h('span', { class: 'nol-riga__importo' }, 'Importo'), h('span', {}, 'Stato'), h('span', {})),
       g.righe.map((n) => riga(n, azioni))));
 }

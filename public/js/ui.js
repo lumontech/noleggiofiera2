@@ -286,3 +286,15 @@ export function campiMontaggio(n = {}) {
     }), { aiuto: 'Le vede chi installa. Niente prezzi qui.' }),
   ];
 }
+
+/**
+ * Le note di un noleggio in breve, per le colonne: quelle per il tecnico e
+ * quelle interne, ognuna su due righe al massimo (il testo intero nel title).
+ */
+export function noteInBreve(n) {
+  const interne = notePulite(n.note);
+  if (!n.note_tecnico && !interne) return h('span', { class: 'note-breve__vuote' }, '—');
+  return h('div', { class: 'note-breve' },
+    n.note_tecnico ? h('span', { class: 'note-breve__tecnico', title: `Per il tecnico: ${n.note_tecnico}` }, n.note_tecnico) : null,
+    interne ? h('span', { class: 'note-breve__interne', title: `Interne: ${interne}` }, interne) : null);
+}

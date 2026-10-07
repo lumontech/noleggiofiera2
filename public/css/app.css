@@ -744,7 +744,7 @@ textarea.controllo { resize: vertical; }
 
 .nol-riga, .nol-intestazione {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) 8.5rem 6rem 11rem 9rem;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) 7.5rem minmax(0, 1.3fr) 5.5rem 8.5rem 9rem;
   align-items: center;
   gap: 1rem;
   padding: 0.7rem 1.15rem 0.7rem 2.45rem;
@@ -796,6 +796,7 @@ textarea.controllo { resize: vertical; }
       "cliente importo"
       "apparecchio stato"
       "montaggio montaggio"
+      "note note"
       "azione azione";
     gap: 0.35rem 0.75rem;
     padding-left: 1.15rem;
@@ -808,6 +809,8 @@ textarea.controllo { resize: vertical; }
   .nol-riga__azione:empty { display: none; }
   .nol-riga__montaggio { grid-area: montaggio; }
   .nol-riga__montaggio:has(.nol-riga__vuoto) { display: none; }
+  .nol-riga__note { grid-area: note; }
+  .nol-riga__note:has(.note-breve__vuote) { display: none; }
   .nol-intestazione { display: none; }
   .nol-gruppo__numeri { width: 100%; justify-content: space-between; padding-left: 1.3rem; }
 }
@@ -1269,3 +1272,27 @@ body.pianta-aperta { overflow: hidden; }
 .org-richiesta__montaggio { font-weight: 500; color: var(--grigio-500); }
 .montaggio--misto { background: var(--ambra-tenue); color: #92400e; }
 .installa__nota--stand { margin: 0.55rem 0 0; font-size: 0.85rem; }
+
+/* ---------- PDF del materiale ---------- */
+
+.scelte-pdf { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1rem; }
+.scelta-pdf { display: flex; gap: 0.55rem; align-items: flex-start; padding: 0.65rem 0.75rem; border: 1px solid var(--grigio-200);
+  border-radius: var(--raggio-s); cursor: pointer; }
+.scelta-pdf:has(input:checked) { border-color: var(--azzurro); background: var(--azzurro-tenue); }
+.scelta-pdf span { display: flex; flex-direction: column; }
+.scelta-pdf small { font-size: 0.78rem; color: var(--grigio-500); }
+.pdf-intestazione { margin: 0.5rem 0 0; font-size: 0.84rem; color: var(--grigio-500); display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.logo-anteprima { display: flex; align-items: center; gap: 0.75rem; margin: 0.35rem 0 0.5rem; font-size: 0.85rem; color: var(--grigio-500); }
+.logo-anteprima img { max-height: 56px; max-width: 220px; background: #fff; border: 1px solid var(--grigio-200); border-radius: 6px; padding: 4px; }
+@media (max-width: 520px) { .scelte-pdf { grid-template-columns: 1fr; } }
+
+/* ---------- note in breve (colonne) ---------- */
+
+.note-breve { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.note-breve span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  font-size: 0.78rem; line-height: 1.3; white-space: normal; }
+.note-breve__tecnico { color: #92400e; }
+.note-breve__tecnico::before { content: '🔧 '; }
+.note-breve__interne { color: var(--grigio-500); }
+.note-breve__vuote { color: var(--grigio-300); }
+.tabella__note { max-width: 14rem; }

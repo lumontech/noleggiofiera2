@@ -24,6 +24,7 @@ function leggiCorpo(body) {
     prezzo_giorno: decimale(body.prezzo_giorno, 'prezzo_giorno', { min: 0, predefinito: 0 }),
     stato: enumerato(body.stato, 'stato', STATI_PRODOTTO, 'attivo'),
     note: testo(body.note, 'note', { max: 2000 }),
+    prezzo_fiera: decimale(body.prezzo_fiera, 'prezzo a fiera', { min: 0, predefinito: null }),
     costo_acquisto: decimale(body.costo_acquisto, 'costo d\'acquisto', { min: 0, predefinito: 0 }),
     ean: testo(body.ean, 'EAN', { max: 20 }).replace(/\s+/g, ''),
     larghezza_mm: misura(body.larghezza_mm, 'larghezza'),
@@ -40,7 +41,7 @@ function leggiCorpo(body) {
 const misura = (v, campo) => decimale(v, campo, { min: 0, max: 20000, predefinito: null });
 
 const CAMPI = ['nome', 'categoria', 'marca', 'modello', 'codice', 'pollici', 'risoluzione', 'quantita',
-  'prezzo_giorno', 'stato', 'note', 'costo_acquisto', 'ean', 'larghezza_mm', 'altezza_mm',
+  'prezzo_giorno', 'prezzo_fiera', 'stato', 'note', 'costo_acquisto', 'ean', 'larghezza_mm', 'altezza_mm',
   'profondita_mm', 'altezza_base_mm', 'peso_kg', 'vesa', 'scheda_url'];
 
 export function trovaProdotto(id) {

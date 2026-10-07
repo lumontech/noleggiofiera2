@@ -47,8 +47,11 @@ function leggiCorpo(body) {
       stato: enumerato(body.stato, 'stato', STATI_NOLEGGIO, 'prenotato'),
       // Importo a forfait del lavoro: è così che vengono quotati i noleggi.
       // Se non indicato si propone il listino del prodotto per i giorni scelti.
+      // Se non indicato: il prezzo a fiera del listino, o in mancanza quello al giorno.
       importo: body.importo === '' || body.importo == null
-        ? Math.round(prodotto.prezzo_giorno * giorniTra(inizio, fine)
+        ? Math.round((prodotto.prezzo_fiera > 0
+          ? prodotto.prezzo_fiera
+          : prodotto.prezzo_giorno * giorniTra(inizio, fine))
             * intero(body.quantita, 'quantita', { min: 1, max: 9999, predefinito: 1 }) * 100) / 100
         : decimale(body.importo, 'importo', { min: 0 }),
       note: testo(body.note, 'note', { max: 2000 }),

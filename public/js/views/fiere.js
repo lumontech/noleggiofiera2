@@ -12,6 +12,7 @@ import {
   notePulite, dimensioneFile,
   campiMontaggio,
   badgeMontaggio, eSchermo,
+  noteInBreve,
 } from '../ui.js';
 
 const DIMENSIONE_MASSIMA = 30 * 1024 * 1024;
@@ -337,15 +338,15 @@ async function apriDettaglio(id, prodotti, ricarica) {
     ? h('table', { class: 'tabella' },
         h('thead', {}, h('tr', {},
           h('th', {}, 'Cliente'), h('th', {}, 'Prodotto'), h('th', {}, 'Pezzi'),
-          h('th', {}, 'Montaggio'), h('th', {}, 'Periodo'), h('th', {}, 'Importo'), h('th', {}, 'Stato'))),
+          h('th', {}, 'Montaggio'), h('th', {}, 'Note'), h('th', {}, 'Periodo'), h('th', {}, 'Importo'), h('th', {}, 'Stato'))),
         h('tbody', {}, attivi.map((n) => h('tr', {},
           h('td', {}, h('strong', {}, n.cliente || '—'),
             n.stand ? h('div', { class: 'sottotesto' }, n.stand) : null),
           h('td', {}, n.prodotto_nome,
             h('div', { class: 'sottotesto' }, `${n.prodotto_categoria}${n.prodotto_pollici ? ` ${n.prodotto_pollici}"` : ''}`)),
           h('td', {}, numero(n.quantita)),
-          h('td', {}, eSchermo(n.prodotto_categoria) ? badgeMontaggio(n.montaggio, { breve: true }) : '—',
-            n.note_tecnico ? h('div', { class: 'sottotesto' }, n.note_tecnico) : null),
+          h('td', {}, eSchermo(n.prodotto_categoria) ? badgeMontaggio(n.montaggio, { breve: true }) : '—'),
+          h('td', { class: 'tabella__note' }, noteInBreve(n)),
           h('td', {}, intervalloDate(n.data_inizio, n.data_fine)),
           h('td', {}, euro(n.importo)),
           h('td', {}, badge(n.stato))))))

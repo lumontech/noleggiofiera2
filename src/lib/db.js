@@ -215,6 +215,36 @@ if (aggiungiColonna('noleggi', 'montaggio', "TEXT DEFAULT ''")) {
             AND lower(trim(p.stand)) = lower(trim(noleggi.stand)))`);
 }
 
+// Listino: prezzo di un pezzo per una fiera (i noleggi si quotano così). Per
+// partire si prende il prezzo più frequente nello storico dello stesso modello.
+if (aggiungiColonna('prodotti', 'prezzo_fiera', 'REAL')) {
+  const storico = db.prepare(`
+    SELECT p.nome, n.importo / n.quantita AS prezzo
+      FROM noleggi n JOIN prodotti p ON p.id = n.prodotto_id
+     WHERE n.stato != 'annullato' AND n.importo > 0`).all();
+  const perModello = new Map();
+  for (const { nome, prezzo } of storico) {
+    const conta = perModello.get(nome) || new Map();
+    const tondo = Math.round(prezzo);
+    conta.set(tondo, (conta.get(tondo) || 0) + 1);
+    perModello.set(nome, conta);
+  }
+  const aggiorna = db.prepare('UPDATE prodotti SET prezzo_fiera = ? WHERE nome = ? AND prezzo_fiera IS NULL');
+  for (const [nome, conta] of perModello) {
+    // A parità di frequenza vince il prezzo più alto: meglio non svendere.
+    const [prezzo] = [...conta].sort((a, b) => b[1] - a[1] || b[0] - a[0])[0];
+    aggiorna.run(prezzo, nome);
+  }
+}
+
+// Impostazioni dell'app (per ora l'intestazione dei documenti), chiave → JSON.
+db.exec(`
+CREATE TABLE IF NOT EXISTS impostazioni (
+  chiave        TEXT PRIMARY KEY,
+  valore        TEXT NOT NULL,
+  aggiornato_il TEXT NOT NULL
+);`);
+
 // In Airtable i TV da 86" erano segnati con 85 pollici.
 db.exec(`UPDATE prodotti SET pollici = 86 WHERE pollici = 85 AND nome LIKE '%86"%'`);
 

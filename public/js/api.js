@@ -40,6 +40,11 @@ export const api = {
   modificaUtente: (id, d) => richiesta('PUT', `/api/utenti/${id}`, d),
   eliminaUtente: (id) => richiesta('DELETE', `/api/utenti/${id}`),
 
+  // Documenti e intestazione.
+  intestazione: () => richiesta('GET', '/api/documenti/intestazione'),
+  salvaIntestazione: (d) => richiesta('PUT', '/api/documenti/intestazione', d),
+  eliminaLogo: () => richiesta('DELETE', '/api/documenti/intestazione/logo'),
+
   // Organizzatore di fiera: le sue fiere e le richieste di monitor, senza prezzi.
   fiereOrganizzatore: () => richiesta('GET', '/api/organizzatore/fiere'),
   inviaRichiesta: (d) => richiesta('POST', '/api/organizzatore/richieste', d),
@@ -116,4 +121,33 @@ export function caricaAllegato(fieraId, file, suAvanzamento = () => {}) {
     xhr.onerror = () => rifiuta(new Error('Connessione interrotta durante il caricamento.'));
     xhr.send(file);
   });
+}
+
+/** Carica il logo dell'intestazione (PNG o JPG). */
+export async function caricaLogo(file) {
+  const risposta = await fetch('/api/documenti/intestazione/logo', { method: 'POST', body: file });
+  const dati = await risposta.json().catch(() => null);
+  if (risposta.status === 401) { alLogout(); throw new Error('Sessione scaduta: effettua di nuovo l\'accesso.'); }
+  if (!risposta.ok) throw new Error(dati?.errore || `Caricamento non riuscito (errore ${risposta.status}).`);
+  return dati;
+}
+
+/** Scarica un file generato dal server (es. un PDF) con il nome che il server propone. */
+export async function scaricaFile(url, nomeRiserva = 'documento.pdf') {
+  const risposta = await fetch(url);
+  if (risposta.status === 401) { alLogout(); throw new Error('Sessione scaduta: effettua di nuovo l\'accesso.'); }
+  if (!risposta.ok) {
+    const dati = await risposta.json().catch(() => null);
+    throw new Error(dati?.errore || `Download non riuscito (errore ${risposta.status}).`);
+  }
+  const intestazione = risposta.headers.get('Content-Disposition') || '';
+  const nome = decodeURIComponent((intestazione.match(/filename\*=UTF-8''([^;]+)/) || [])[1] || nomeRiserva);
+  const blob = await risposta.blob();
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = nome;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(link.href), 10000);
 }

@@ -146,6 +146,22 @@ Altre regole:
   si blocca per 5 minuti (poi 10, 20… fino a un'ora).
 - Ognuno cambia la propria password dal bottone **Password** nella barra.
 
+### PDF del materiale da noleggiare
+
+Da **Prodotti → Scarica PDF** si scarica l'elenco del materiale, un rigo per
+modello con misure, attacco VESA e quanti pezzi ci sono:
+
+- **con prezzi** (listino "a fiera", per pezzo, IVA esclusa) o **senza prezzi**;
+- di **tutto il materiale noleggiabile** o solo di quello **libero nelle date
+  di una fiera** in programma.
+
+In alto c'è l'intestazione dell'azienda (Lumon Tec, indirizzo, P.IVA, sito):
+si modifica, e si carica il logo (PNG o JPG), da **Modifica intestazione e
+logo** nella stessa finestra. Il prezzo di listino si imposta su ogni prodotto
+(**Prezzo a fiera**); all'inizio è il prezzo più frequente nello storico di
+quel modello, e propone anche l'importo dei nuovi noleggi. I modelli senza
+prezzo compaiono come "su richiesta".
+
 ### Montaggio e note per il tecnico
 
 Ogni noleggio di uno schermo dice **come si monta**: a parete, su piantana, da
@@ -454,6 +470,9 @@ e `/api/profilo/*`; il resto risponde 403.
 | `POST` | `/api/accesso` | Login con `{ utente, password }` (senza `utente` vale il primo amministratore). |
 | `POST` | `/api/profilo/password` | Cambio della propria password `{ attuale, nuova }`. Tutti i ruoli. |
 | `GET` `POST` `PUT` `DELETE` | `/api/utenti[/:id]` | Gestione utenti. Solo amministratori. |
+| `GET` | `/api/documenti/materiale.pdf?prezzi=1&fiera_id=` | PDF del materiale, con o senza prezzi, tutto o libero per una fiera. |
+| `GET` `PUT` | `/api/documenti/intestazione` | Dati dell'intestazione dei documenti. |
+| `POST` `DELETE` | `/api/documenti/intestazione/logo` | Logo (PNG o JPG nel corpo). |
 | `GET` | `/api/organizzatore/fiere` | Le fiere dell'organizzatore, cosa può chiedere e le sue richieste. Senza prezzi. |
 | `POST` `DELETE` | `/api/organizzatore/richieste[/:id]` | Invio e ritiro di una richiesta. |
 | `GET` | `/api/richieste` | Tutte le richieste. Solo amministratori. |

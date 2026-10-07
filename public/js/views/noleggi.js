@@ -162,8 +162,9 @@ function riga(n, azioni) {
       .filter(Boolean).join(' · ') || ' ')),
   h('div', { class: 'nol-riga__apparecchio', title: n.prodotto_nome },
     h('strong', {}, nomeBreve(apparecchio), n.quantita > 1 ? h('em', {}, ` ×${n.quantita}`) : null),
-    h('span', {}, idProdotto(n.prodotto_codice) || n.prodotto_categoria,
-      eSchermo(n.prodotto_categoria) ? [' · ', badgeMontaggio(n.montaggio)] : null)),
+    h('span', {}, idProdotto(n.prodotto_codice) || n.prodotto_categoria)),
+  h('div', { class: 'nol-riga__montaggio' },
+    eSchermo(n.prodotto_categoria) ? badgeMontaggio(n.montaggio, { breve: true }) : h('span', { class: 'nol-riga__vuoto' }, '—')),
   h('div', { class: 'nol-riga__importo' }, euro(n.importo)),
   h('div', { class: 'nol-riga__stato' },
     badge(n.stato),
@@ -192,7 +193,11 @@ function gruppo(g, { aperto, azioni }) {
         h('span', {}, h('strong', {}, numero(g.pezzi)), g.pezzi === 1 ? ' apparecchio' : ' apparecchi'),
         h('span', {}, h('strong', {}, numero(g.clienti)), g.clienti === 1 ? ' cliente' : ' clienti'),
         h('span', { class: 'nol-gruppo__importo' }, euro(g.importo)))),
-    h('ul', { class: 'nol-righe' }, g.righe.map((n) => riga(n, azioni))));
+    h('ul', { class: 'nol-righe' },
+      h('li', { class: 'nol-intestazione', 'aria-hidden': 'true' },
+        h('span', {}, 'Cliente'), h('span', {}, 'Apparecchio'), h('span', {}, 'Montaggio'),
+        h('span', { class: 'nol-riga__importo' }, 'Importo'), h('span', {}, 'Stato'), h('span', {})),
+      g.righe.map((n) => riga(n, azioni))));
 }
 
 /* ---------- vista ---------- */

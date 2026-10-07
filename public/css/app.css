@@ -742,9 +742,9 @@ textarea.controllo { resize: vertical; }
 
 .nol-righe { border-top: 1px solid var(--grigio-100); }
 
-.nol-riga {
+.nol-riga, .nol-intestazione {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) 6rem 11rem 9rem;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) 8.5rem 6rem 11rem 9rem;
   align-items: center;
   gap: 1rem;
   padding: 0.7rem 1.15rem 0.7rem 2.45rem;
@@ -779,6 +779,10 @@ textarea.controllo { resize: vertical; }
 .nol-riga__stato { display: flex; flex-direction: column; align-items: flex-start; gap: 0.2rem; }
 .nol-riga__ritardo { font-size: 0.72rem; font-weight: 600; color: var(--rosso); }
 .nol-riga__azione { display: flex; justify-content: flex-end; }
+.nol-riga__vuoto { color: var(--grigio-300); }
+.nol-intestazione { padding-top: 0.45rem; padding-bottom: 0.45rem; background: var(--grigio-50);
+  border-bottom: 1px solid var(--grigio-100);
+  font-size: 0.7rem; font-weight: 650; text-transform: uppercase; letter-spacing: 0.05em; color: var(--grigio-500); }
 
 /* Eliminazione dentro il modale: a sinistra, lontana dal Salva. */
 .modale__pericolo { margin-right: auto; }
@@ -791,6 +795,7 @@ textarea.controllo { resize: vertical; }
     grid-template-areas:
       "cliente importo"
       "apparecchio stato"
+      "montaggio montaggio"
       "azione azione";
     gap: 0.35rem 0.75rem;
     padding-left: 1.15rem;
@@ -801,6 +806,9 @@ textarea.controllo { resize: vertical; }
   .nol-riga__stato { grid-area: stato; align-items: flex-end; }
   .nol-riga__azione { grid-area: azione; justify-content: flex-start; }
   .nol-riga__azione:empty { display: none; }
+  .nol-riga__montaggio { grid-area: montaggio; }
+  .nol-riga__montaggio:has(.nol-riga__vuoto) { display: none; }
+  .nol-intestazione { display: none; }
   .nol-gruppo__numeri { width: 100%; justify-content: space-between; padding-left: 1.3rem; }
 }
 

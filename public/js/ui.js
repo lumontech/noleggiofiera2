@@ -272,8 +272,9 @@ export const etichettaMontaggio = (m) => (MONTAGGI.find((x) => x.valore === (m |
 export const eSchermo = (categoria) => categoria === 'TV' || categoria === 'Monitor'
   || categoria === 'Videowall' || categoria === 'Totem';
 
-export const badgeMontaggio = (m) => h('span', { class: `montaggio montaggio--${m || 'da-definire'}` },
-  m ? etichettaMontaggio(m) : 'Montaggio da definire');
+// In una colonna intitolata "Montaggio" basta "Da definire" (breve).
+export const badgeMontaggio = (m, { breve = false } = {}) => h('span', { class: `montaggio montaggio--${m || 'da-definire'}` },
+  m ? etichettaMontaggio(m) : breve ? 'Da definire' : 'Montaggio da definire');
 
 /** I due campi del modulo noleggio: come si monta e cosa deve sapere il tecnico. */
 export function campiMontaggio(n = {}) {

@@ -5,6 +5,7 @@
 import { api } from '../api.js';
 import { stato as statoApp } from '../app.js';
 import { selettoreApparecchi } from '../selettore-apparecchi.js';
+import { apriDocumenti } from '../documenti.js';
 import {
   h, monta, badge, modale, avviso, campo, input, select, areaTesto,
   griglia, numero, euro, vuoto, intervalloDate, dataLunga, etichetta, oggiISO, nomeBreve,
@@ -215,12 +216,17 @@ export default async function vistaNoleggi({ corpo, azioni, ricarica }) {
     return a.data_inizio.localeCompare(b.data_inizio);
   });
 
-  azioni.appendChild(h('button', {
-    class: 'btn btn--primario',
-    onclick: () => apriForm(null, fiereOrdinate, ricarica),
-  }, '+ Nuovo noleggio'));
-
   const filtri = { q: '', fiera_id: '', prodotto_id: '' };
+  azioni.append(
+    // Parte dalla fiera filtrata nella lista, se ce n'è una.
+    h('button', {
+      class: 'btn',
+      onclick: () => apriDocumenti({ fieraId: filtri.fiera_id }).catch((e) => avviso(e.message, 'errore')),
+    }, 'Scarica PDF'),
+    h('button', {
+      class: 'btn btn--primario',
+      onclick: () => apriForm(null, fiereOrdinate, ricarica),
+    }, '+ Nuovo noleggio'));
   let scheda = 'attivi';
   let elenco = [];
   const barraSchede = h('div', { class: 'schede nol-schede', role: 'tablist' });

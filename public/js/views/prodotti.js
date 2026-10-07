@@ -1,10 +1,9 @@
-import { api, caricaLogo, scaricaFile } from '../api.js';
+import { api } from '../api.js';
 import { stato as statoApp } from '../app.js';
 import {
   h, monta, badge, modale, conferma, avviso, campo, input, select, areaTesto,
   griglia, numero, euro, vuoto, intervalloDate, etichetta,
   idProdotto,
-  oggiISO,
 } from '../ui.js';
 
 const CATEGORIA_ICONA = {
@@ -190,95 +189,12 @@ async function apriStorico(p) {
   });
 }
 
-/* ---------- PDF del materiale ---------- */
-
-async function apriPdf() {
-  const [fiere, intestazione] = await Promise.all([api.fiere(), api.intestazione()]);
-  const inProgramma = fiere.filter((f) => f.data_fine >= oggiISO() && f.stato !== 'annullata');
-  const scelta = (name, valore, testo, aiuto, checked = false) => h('label', { class: 'scelta-pdf' },
-    h('input', { type: 'radio', name, value: valore, checked }),
-    h('span', {}, h('strong', {}, testo), h('small', {}, aiuto)));
-
-  modale({
-    titolo: 'Scarica il PDF del materiale',
-    sottotitolo: `Con l'intestazione di ${intestazione.ragione_sociale}.`,
-    testoConferma: 'Scarica PDF',
-    corpo: [
-      h('p', { class: 'campo__etichetta' }, 'Prezzi'),
-      h('div', { class: 'scelte-pdf' },
-        scelta('prezzi', '1', 'Con prezzi', 'Listino a fiera, IVA esclusa: per i clienti.', true),
-        scelta('prezzi', '0', 'Senza prezzi', 'Solo apparecchi, misure e quantità.')),
-      campo('Quale materiale', select('fiera_id', [
-        { valore: '', testo: 'Tutto il materiale noleggiabile' },
-        ...inProgramma.map((f) => ({ valore: f.id, testo: `Libero per ${f.nome} (${intervalloDate(f.data_inizio, f.data_fine)})` })),
-      ], ''), { aiuto: 'Scegliendo una fiera, nel PDF ci sono solo i pezzi liberi in quelle date.' }),
-      h('p', { class: 'pdf-intestazione' },
-        intestazione.logo ? 'Intestazione con logo. ' : 'Intestazione senza logo. ',
-        h('button', { type: 'button', class: 'btn btn--mini', onclick: () => apriIntestazione() }, 'Modifica intestazione e logo')),
-    ],
-    onConferma: async (dati) => {
-      const parametri = new URLSearchParams({ prezzi: dati.prezzi });
-      if (dati.fiera_id) parametri.set('fiera_id', dati.fiera_id);
-      await scaricaFile(`/api/documenti/materiale.pdf?${parametri}`, 'Materiale a noleggio.pdf');
-      avviso('PDF scaricato.');
-    },
-  });
-}
-
-async function apriIntestazione() {
-  const dati = await api.intestazione();
-  const anteprima = h('div', { class: 'logo-anteprima' });
-  const disegnaLogo = (presente) => monta(anteprima, presente
-    ? [h('img', { src: `/api/documenti/intestazione/logo?v=${Date.now()}`, alt: 'Logo' }),
-      h('button', {
-        type: 'button', class: 'btn btn--mini',
-        onclick: async () => { await api.eliminaLogo(); disegnaLogo(false); avviso('Logo tolto.'); },
-      }, 'Togli logo')]
-    : h('span', {}, 'Nessun logo: in alto compare il nome dell\'azienda.'));
-  disegnaLogo(dati.logo);
-  const file = h('input', {
-    type: 'file', accept: 'image/png,image/jpeg',
-    onchange: async () => {
-      if (!file.files[0]) return;
-      try {
-        await caricaLogo(file.files[0]);
-        disegnaLogo(true);
-        avviso('Logo caricato.');
-      } catch (err) { avviso(err.message, 'errore'); }
-      file.value = '';
-    },
-  });
-  modale({
-    titolo: 'Intestazione dei documenti',
-    sottotitolo: 'Compare in alto nei PDF che scarichi.',
-    testoConferma: 'Salva intestazione',
-    larga: true,
-    corpo: [
-      h('div', { class: 'campo campo--largo' },
-        h('span', { class: 'campo__etichetta' }, 'Logo (PNG o JPG)'), anteprima, file),
-      griglia(
-        campo('Ragione sociale', input('ragione_sociale', { value: dati.ragione_sociale, required: true, maxlength: 120 })),
-        campo('Sottotitolo', input('sottotitolo', { value: dati.sottotitolo, maxlength: 160 })),
-        campo('Indirizzo', input('indirizzo', { value: dati.indirizzo, maxlength: 200 }), { largo: true }),
-        campo('Partita IVA', input('piva', { value: dati.piva, maxlength: 40 })),
-        campo('Telefono', input('telefono', { value: dati.telefono, maxlength: 60 })),
-        campo('Email', input('email', { value: dati.email, type: 'email', maxlength: 120 })),
-        campo('Sito', input('sito', { value: dati.sito, maxlength: 120 })),
-      ),
-    ],
-    onConferma: async (valori) => {
-      await api.salvaIntestazione(valori);
-      avviso('Intestazione salvata.');
-    },
-  });
-}
-
 export default async function vistaProdotti({ corpo, azioni, ricarica }) {
   const { categorie, stati_prodotto: statiProdotto } = statoApp.costanti;
 
-  azioni.append(
-    h('button', { class: 'btn', onclick: () => apriPdf().catch((e) => avviso(e.message, 'errore')) }, 'Scarica PDF'),
-    h('button', { class: 'btn btn--primario', onclick: () => apriForm(null, ricarica) }, '+ Nuovo prodotto'));
+  azioni.appendChild(h('button', {
+    class: 'btn btn--primario', onclick: () => apriForm(null, ricarica),
+  }, '+ Nuovo prodotto'));
 
   const filtri = { q: '', categoria: '', stato: '' };
   const contenitore = h('div', {});

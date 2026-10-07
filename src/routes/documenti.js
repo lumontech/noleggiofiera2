@@ -3,6 +3,7 @@
 import express, { Router } from 'express';
 import { intero } from '../lib/domain.js';
 import { scriviCatalogo } from '../lib/catalogo-pdf.js';
+import { scriviNoleggi } from '../lib/noleggi-pdf.js';
 import {
   leggiIntestazione, salvaIntestazione, salvaLogo, eliminaLogo, percorsoLogo,
 } from '../lib/intestazione.js';
@@ -23,6 +24,20 @@ router.get('/materiale.pdf', (req, res) => {
   res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(`${nome}.pdf`)}`);
   res.setHeader('Cache-Control', 'no-store');
   scriviCatalogo(res, { prezzi, fiera });
+});
+
+/**
+ * PDF dei noleggi: di una fiera (?fiera_id=N) o di tutte quelle in programma.
+ *   ?prezzi=1     con gli importi
+ */
+router.get('/noleggi.pdf', (req, res) => {
+  const prezzi = req.query.prezzi === '1' || req.query.prezzi === 'true';
+  const fiera = req.query.fiera_id ? trovaFiera(intero(req.query.fiera_id, 'fiera', { min: 1 })) : null;
+  const nome = ['Noleggi', fiera?.nome || 'fiere in programma', prezzi ? 'con prezzi' : 'senza prezzi'].join(' - ');
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(`${nome}.pdf`)}`);
+  res.setHeader('Cache-Control', 'no-store');
+  scriviNoleggi(res, { prezzi, fiera });
 });
 
 router.get('/intestazione', (_req, res) => res.json(leggiIntestazione()));

@@ -146,14 +146,18 @@ Altre regole:
   si blocca per 5 minuti (poi 10, 20… fino a un'ora).
 - Ognuno cambia la propria password dal bottone **Password** nella barra.
 
-### PDF del materiale da noleggiare
+### PDF (Noleggi → Scarica PDF)
 
-Da **Prodotti → Scarica PDF** si scarica l'elenco del materiale, un rigo per
-modello con misure, attacco VESA e quanti pezzi ci sono:
+Due documenti, **con prezzi** o **senza prezzi**:
 
-- **con prezzi** (listino "a fiera", per pezzo, IVA esclusa) o **senza prezzi**;
-- di **tutto il materiale noleggiabile** o solo di quello **libero nelle date
-  di una fiera** in programma.
+- **Noleggi**: fiera per fiera, espositore e stand (in ordine di stand),
+  apparecchio con ID, montaggio e note per il tecnico; con prezzi anche gli
+  importi e i totali. Di una fiera (se ne hai filtrata una nella lista parte da
+  quella) o di tutte quelle in programma. Senza prezzi è da dare al tecnico o
+  all'organizzatore.
+- **Materiale disponibile**: il listino del parco, un rigo per modello con
+  misure, attacco VESA e pezzi; di tutto il materiale noleggiabile o solo di
+  quello libero nelle date di una fiera.
 
 In alto c'è l'intestazione dell'azienda (Lumon Tec, indirizzo, P.IVA, sito):
 si modifica, e si carica il logo (PNG o JPG), da **Modifica intestazione e
@@ -470,6 +474,7 @@ e `/api/profilo/*`; il resto risponde 403.
 | `POST` | `/api/accesso` | Login con `{ utente, password }` (senza `utente` vale il primo amministratore). |
 | `POST` | `/api/profilo/password` | Cambio della propria password `{ attuale, nuova }`. Tutti i ruoli. |
 | `GET` `POST` `PUT` `DELETE` | `/api/utenti[/:id]` | Gestione utenti. Solo amministratori. |
+| `GET` | `/api/documenti/noleggi.pdf?prezzi=1&fiera_id=` | PDF dei noleggi di una fiera o di quelle in programma. |
 | `GET` | `/api/documenti/materiale.pdf?prezzi=1&fiera_id=` | PDF del materiale, con o senza prezzi, tutto o libero per una fiera. |
 | `GET` `PUT` | `/api/documenti/intestazione` | Dati dell'intestazione dei documenti. |
 | `POST` `DELETE` | `/api/documenti/intestazione/logo` | Logo (PNG o JPG nel corpo). |

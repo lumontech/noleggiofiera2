@@ -41,6 +41,9 @@ export function fierePerDocumento(fiera) {
  */
 function ancoraDisponibile(ctx, fiera, prezzi) {
   const modelli = modelliDaNoleggiare({ fiera });
+  // Sempre su una pagina nuova: i noleggi da una parte, l'offerta dall'altra.
+  ctx.doc.addPage();
+  ctx.doc.y = ctx.doc.page.margins.top;
   titoloSezione(ctx, `Ancora disponibile per ${fiera.nome}`, modelli.length
     ? `Materiale libero nelle date della fiera, da aggiungere su richiesta${prezzi ? '. Prezzi per pezzo, per tutta la fiera, IVA esclusa.' : '.'}`
     : 'In quelle date tutto il materiale è già impegnato.');

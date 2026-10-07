@@ -17,13 +17,12 @@ const SEZIONI = [
   { titolo: 'Altro materiale', categorie: ['Accessorio'] },
 ];
 
-/** Il nome da catalogo: "Samsung 65" · UE65DU7172U" invece del nome di magazzino. */
+/** Il nome da catalogo: "Samsung 65"" invece del nome di magazzino, senza sigle di modello. */
 export function titoloModello(p) {
   // Le sigle restano maiuscole (LG, TCL); gli altri marchi con l'iniziale maiuscola.
   const marca = !p.marca ? '' : p.marca.length <= 3 ? p.marca.toUpperCase()
     : p.marca.charAt(0).toUpperCase() + p.marca.slice(1).toLowerCase();
-  const base = marca && p.pollici ? `${marca} ${Math.round(p.pollici)}"` : p.nome;
-  return p.modello && base !== p.nome ? `${base} · ${p.modello}` : base;
+  return marca && p.pollici ? `${marca} ${Math.round(p.pollici)}"` : nomeSenzaCodici(p.nome);
 }
 const nomeSenzaCodici = (nome) => nome.replace(/\s+\d{8,}\b/g, '').trim();
 
@@ -42,11 +41,15 @@ function misure(p) {
 }
 
 /** Il prezzo che compare di più tra gli apparecchi dello stesso modello. */
+/**
+ * Il prezzo di un rigo. Nello stesso rigo possono finire modelli diversi con
+ * lo stesso nome ("Samsung 65""): se i prezzi sono diversi si dice "da" il
+ * più basso.
+ */
 function prezzoDelModello(apparecchi) {
-  const conta = new Map();
-  for (const a of apparecchi) if (a.prezzo_fiera > 0) conta.set(a.prezzo_fiera, (conta.get(a.prezzo_fiera) || 0) + 1);
-  if (!conta.size) return null;
-  return [...conta].sort((x, y) => y[1] - x[1] || y[0] - x[0])[0][0];
+  const prezzi = [...new Set(apparecchi.map((a) => a.prezzo_fiera).filter((p) => p > 0))];
+  if (!prezzi.length) return { prezzo: null, da: false };
+  return { prezzo: Math.min(...prezzi), da: prezzi.length > 1 };
 }
 
 /**
@@ -65,7 +68,8 @@ export function modelliDaNoleggiare({ fiera = null } = {}) {
   for (const p of prodotti) {
     const pezzi = liberi ? (liberi.get(p.id) || 0) : p.quantita;
     if (!pezzi) continue;
-    const chiave = `${p.categoria}|${(p.modello || nomeSenzaCodici(p.nome)).toLowerCase()}`;
+    // Un rigo per nome da catalogo: due modelli di Samsung 65" stanno insieme.
+    const chiave = `${p.categoria}|${titoloModello(p).toLowerCase()}`;
     if (!modelli.has(chiave)) modelli.set(chiave, { esempio: p, apparecchi: [], pezzi: 0 });
     const m = modelli.get(chiave);
     m.apparecchi.push(p);
@@ -74,11 +78,11 @@ export function modelliDaNoleggiare({ fiera = null } = {}) {
   return [...modelli.values()].map((m) => ({
     categoria: m.esempio.categoria,
     titolo: titoloModello(m.esempio),
-    descrizione: nomeSenzaCodici(m.esempio.nome),
     pollici: m.esempio.pollici,
-    misure: misure(m.esempio),
+    // Le misure del primo che le ha: i modelli con lo stesso nome si equivalgono.
+    misure: misure(m.apparecchi.find((a) => a.larghezza_mm) || m.esempio),
     pezzi: m.pezzi,
-    prezzo: prezzoDelModello(m.apparecchi),
+    ...prezzoDelModello(m.apparecchi),
   })).sort((a, b) => (b.pollici || 0) - (a.pollici || 0) || a.titolo.localeCompare(b.titolo, 'it'));
 }
 
@@ -121,11 +125,11 @@ export function scriviMateriale(ctx, modelli, { prezzi, piccolo = false }) {
     t.intestazione();
     for (const m of elenco) {
       t.riga([
-        { testo: m.titolo, grassetto: true, corpo: 10, sotto: m.descrizione !== m.titolo ? m.descrizione : '' },
+        { testo: m.titolo, grassetto: true, corpo: 10 },
         { testo: m.misure.join('\n') || '—', corpo: 8 },
         { testo: String(m.pezzi), grassetto: true, corpo: 11 },
         ...(prezzi ? [m.prezzo
-          ? { testo: euro(m.prezzo), grassetto: true, corpo: 11 }
+          ? { testo: `${m.da ? 'da ' : ''}${euro(m.prezzo)}`, grassetto: true, corpo: 11 }
           : { testo: 'su richiesta', corpo: 8.5, colore: COLORE.tenue }] : []),
       ]);
     }

@@ -111,6 +111,29 @@ partecipano decine di aziende, ognuna con il proprio stand e le proprie date.
 L'importo è quello **del lavoro**, non un prezzo al giorno: è così che vengono
 quotati i noleggi.
 
+### Noleggi: elenco, monitor disponibili e planimetria
+
+La sezione **Noleggi** ha tre schermate, in alto:
+
+- **Elenco**: i noleggi raggruppati per fiera, come prima.
+- **Monitor disponibili**: scelta una fiera, quanti pezzi di ogni apparecchio
+  sono ancora liberi nelle sue date (allestimento e smontaggio compresi) e,
+  per quelli già impegnati, da chi.
+- **Planimetria**: la pianta della fiera, con a sinistra i monitor liberi.
+  Si **trascina un monitor sulla pianta** e lo si lascia dove va montato: il
+  noleggio nasce subito, da un pezzo, con le date della fiera, ed è salvato
+  senza premere nulla. Se lo si lascia sopra uno stand, il numero dello stand
+  (e il cliente, se lo stand ha già altri noleggi) si compila da solo;
+  altrimenti il segnaposto resta arancione finché non si completa il noleggio
+  dai dettagli. I segnaposti già messi si spostano trascinandoli; cliccandone
+  uno si apre il riepilogo con **Modifica noleggio** e **Togli dalla pianta**
+  (il noleggio resta). Funziona col mouse e col dito.
+
+Il **tecnico** ritrova gli stessi segnaposti sulla sua **Pianta con TV**, in
+sola lettura: toccandone uno vede apparecchio, ID, cliente, stand e montaggio,
+senza prezzi. Schermata e fiera stanno nell'indirizzo
+(`#/noleggi?vista=planimetria&fiera=3`), così si possono mandare a un collega.
+
 ### Utenti e ruoli
 
 Ognuno entra con il proprio nome utente e la propria password. Gli utenti si
@@ -515,7 +538,7 @@ e `/api/profilo/*`; il resto risponde 403.
 | `GET` | `/api/richieste/:id/proposta` | Apparecchi liberi proposti per confermarla. |
 | `POST` | `/api/richieste/:id/conferma` `/rifiuta` | Conferma (crea i noleggi) o rifiuto. |
 | `GET` | `/api/tecnico/installazioni` | Edizioni con cosa installare, stand e planimetrie. Senza prezzi. Tutti i ruoli. |
-| `GET` | `/api/tecnico/fiere/:id[/allegati/:allegato[/posizioni]]` | Dettaglio, file e posizioni della pianta per il tecnico. |
+| `GET` | `/api/tecnico/fiere/:id[/allegati/:allegato[/posizioni\|/segnaposti]]` | Dettaglio, file, posizioni degli stand e segnaposti della pianta per il tecnico. |
 | `GET` | `/api/prodotti` | Elenco con disponibilità di oggi e picco a 30 giorni. |
 | `POST` `PUT` `DELETE` | `/api/prodotti[/:id]` | Gestione catalogo. |
 | `GET` | `/api/fiere` | Elenco con pezzi impegnati e valore stimato. |
@@ -524,6 +547,9 @@ e `/api/profilo/*`; il resto risponde 403.
 | `GET` `DELETE` | `/api/fiere/:id/allegati/:allegato` | Apertura ed eliminazione di una planimetria. |
 | `GET` `POST` `PUT` `DELETE` | `/api/noleggi[/:id]` | Righe di noleggio, con controllo di capienza. |
 | `PATCH` | `/api/noleggi/:id/stato` | Avanzamento stato. |
+| `POST` | `/api/noleggi/sulla-pianta` | Apparecchio trascinato sulla planimetria: crea il noleggio e il suo segnaposto `{ fiera_id, allegato_id, prodotto_id, pagina, x, y, stand?, cliente?, padiglione? }`. |
+| `PUT` `DELETE` | `/api/noleggi/:id/segnaposto` | Sposta il segnaposto `{ allegato_id, pagina, x, y }` o lo toglie (il noleggio resta). |
+| `GET` | `/api/fiere/:id/allegati/:allegato/segnaposti` | Segnaposti di una planimetria. |
 | `GET` | `/api/disponibilita?from=&to=` | Prospetto *da noleggiare* / *noleggiati*. |
 | `GET` | `/api/disponibilita/timeline?from=&to=` | Dati del calendario di occupazione. |
 | `GET` | `/api/disponibilita/dashboard` | Numeri del cruscotto. |

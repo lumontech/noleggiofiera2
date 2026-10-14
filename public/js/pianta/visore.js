@@ -8,13 +8,18 @@
 //
 // In sola lettura (il tecnico) non si sposta nulla: si guarda la pianta, e i
 // dati arrivano dal canale del tecnico, che non contiene prezzi.
+//
+// I segnaposti sono gli apparecchi messi in un punto preciso della pianta. In
+// modalità "disposizione" (Noleggi → Planimetria) la pianta sta dentro la
+// pagina, gli apparecchi liberi si trascinano dall'elenco a sinistra e ogni
+// rilascio crea il noleggio; i segnaposti già messi si spostano trascinandoli.
 
 import { api } from '../api.js';
 import { h, monta, svuota, avviso, numero, nomeBreve, idProdotto,
   etichettaMontaggio,
 } from '../ui.js';
 import { codiciStand, padiglione } from './stand.js';
-import { analizzaPagina, collocaStand } from './analisi.js';
+import { analizzaPagina, collocaStand, spazioDelNumero } from './analisi.js';
 
 const PDFJS = '/vendor/pdfjs/pdf.min.mjs';
 const PDFJS_WORKER = '/vendor/pdfjs/pdf.worker.min.mjs';
@@ -22,6 +27,8 @@ const PDFJS_WORKER = '/vendor/pdfjs/pdf.worker.min.mjs';
 const LATO_MASSIMO_CANVAS = 8000;
 // Dimensione di uno stand messo a mano, se non ce ne sono altri da imitare.
 const SPAZIO_MANUALE = { w: 0.05, h: 0.05 };
+// Sotto questo spostamento (in pixel) un trascinamento è solo un clic.
+const SOGLIA_TRASCINAMENTO = 5;
 
 let pdfjsCaricato = null;
 function caricaPdfjs() {
@@ -33,11 +40,16 @@ function caricaPdfjs() {
   return pdfjsCaricato;
 }
 
-/** I noleggi dell'edizione raggruppati per cliente e stand: un gruppo = una copertura. */
-function gruppiDaNoleggi(noleggi) {
+/**
+ * I noleggi dell'edizione raggruppati per cliente e stand: un gruppo = una copertura.
+ * Un apparecchio messo sulla pianta senza numero di stand ha già il suo
+ * segnaposto: non serve anche nell'elenco degli stand da trovare.
+ */
+function gruppiDaNoleggi(noleggi, sullaPianta = new Set()) {
   const gruppi = new Map();
   for (const n of noleggi) {
     if (n.stato === 'annullato') continue;
+    if (sullaPianta.has(n.id) && !codiciStand(n.stand).length) continue;
     const chiaveGruppo = `${(n.cliente || '').toLowerCase()}|${(n.stand || '').toLowerCase()}`;
     if (!gruppi.has(chiaveGruppo)) {
       const codici = codiciStand(n.stand);
@@ -72,7 +84,22 @@ function dimensioneTipica(gruppi, pagina) {
 const datiDaAmministratore = (fiera, allegato) => Promise.all([
   api.fiera(fiera.id),
   api.posizioni(fiera.id, allegato.id),
-]).then(([dettaglio, posizioni]) => ({ noleggi: dettaglio.noleggi, posizioni }));
+  api.segnaposti(fiera.id, allegato.id),
+]).then(([dettaglio, posizioni, segnaposti]) => ({ noleggi: dettaglio.noleggi, posizioni, segnaposti }));
+
+/** Etichetta corta di un segnaposto: pollici e ID, che è quello che il tecnico cerca in magazzino. */
+const etichettaSegnaposto = (n) => [
+  n.prodotto_pollici ? `${n.prodotto_pollici}"` : (n.prodotto_categoria || 'App.'),
+  idProdotto(n.prodotto_codice),
+].filter(Boolean).join(' · ');
+
+const descrizioneSegnaposto = (n) => [
+  nomeBreve({ nome: n.prodotto_nome, marca: n.prodotto_marca, pollici: n.prodotto_pollici })
+    + (n.prodotto_codice ? ` ${idProdotto(n.prodotto_codice)}` : ''),
+  n.cliente || 'Cliente da indicare',
+  n.stand ? `stand ${n.stand}` : 'stand da indicare',
+  n.montaggio ? etichettaMontaggio(n.montaggio) : null,
+].filter(Boolean).join(' · ');
 
 /**
  * @param {object} o
@@ -81,13 +108,26 @@ const datiDaAmministratore = (fiera, allegato) => Promise.all([
  * @param {boolean} [o.solaLettura] niente "Posiziona", "Sposta", "Ripristina"
  * @param {Function} [o.caricaDati] () => Promise<{ noleggi, posizioni }>
  * @param {string} [o.stand]      stand da mettere in evidenza all'apertura
+ * @param {HTMLElement} [o.contenitore] se c'è, la pianta sta dentro la pagina invece che a schermo intero
+ * @param {object} [o.disposizione] trascinare apparecchi sulla pianta:
+ *   { lato: elemento con le voci [data-prodotto] da trascinare,
+ *     crea: async ({ prodotto_id, pagina, x, y, cliente, stand, padiglione }) => noleggio,
+ *     modifica: (noleggio) => void, dopo: () => void (dopo ogni modifica) }
  */
 export async function apriPianta({
   fiera, allegato, solaLettura = false, caricaDati = () => datiDaAmministratore(fiera, allegato), stand = '',
+  contenitore = null, disposizione = null,
 }) {
-  const radice = h('div', { class: 'pianta', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Pianta con TV' });
-  document.body.appendChild(radice);
-  document.body.classList.add('pianta-aperta');
+  const incorporata = Boolean(contenitore);
+  const radice = h('div', incorporata
+    ? { class: `pianta pianta--incorporata ${disposizione ? 'pianta--disposizione' : ''}` }
+    : { class: 'pianta', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Pianta con TV' });
+  if (incorporata) {
+    monta(contenitore, radice);
+  } else {
+    document.body.appendChild(radice);
+    document.body.classList.add('pianta-aperta');
+  }
 
   const stato = {
     pagina: 1,
@@ -98,18 +138,24 @@ export async function apriPianta({
     gruppi: [],
     posiziona: null,     // gruppo in attesa di un clic sulla pianta
     evidenziato: null,
+    segnaposti: [],      // { noleggio_id, pagina, x, y }
+    scelto: null,        // noleggio del segnaposto selezionato
   };
 
   const chiudi = () => {
     document.removeEventListener('keydown', suTasto, true);
     window.removeEventListener('resize', suRidimensiona);
-    document.body.classList.remove('pianta-aperta');
-    radice.remove();
+    if (!incorporata) {
+      document.body.classList.remove('pianta-aperta');
+      radice.remove();
+    }
   };
   // In cattura e fermando la propagazione: Esc deve chiudere solo il visore,
   // non anche la finestra da cui lo si è aperto.
   const suTasto = (e) => {
     if (e.key !== 'Escape') return;
+    if (!radice.isConnected) { chiudi(); return; }
+    if (incorporata && !stato.posiziona) return;
     e.stopImmediatePropagation();
     if (stato.posiziona) annullaPosizionamento();
     else chiudi();
@@ -132,7 +178,7 @@ export async function apriPianta({
 
   monta(radice,
     h('header', { class: 'pianta__testa' },
-      h('button', { class: 'btn btn--fantasma pianta__chiudi', onclick: chiudi }, '← Chiudi'),
+      incorporata ? null : h('button', { class: 'btn btn--fantasma pianta__chiudi', onclick: chiudi }, '← Chiudi'),
       h('div', { class: 'pianta__titolo' },
         h('strong', {}, `${fiera.nome} · pianta con TV`),
         h('span', {}, allegato.nome)),
@@ -147,6 +193,7 @@ export async function apriPianta({
           h('button', { class: 'btn btn--mini', onclick: () => esporta('scarica') }, 'Scarica PNG'),
           h('button', { class: 'btn btn--mini', onclick: () => esporta('stampa') }, 'Stampa')))),
     h('div', { class: 'pianta__corpo' },
+      disposizione ? h('aside', { class: 'pianta__tavolozza' }, disposizione.lato) : null,
       h('div', { class: 'pianta__vista' }, banner, area),
       h('aside', { class: 'pianta__lato' }, elenco)));
 
@@ -162,7 +209,18 @@ export async function apriPianta({
     return;
   }
   const salvate = dati.posizioni;
-  const gruppiBase = gruppiDaNoleggi(dati.noleggi);
+  let gruppiBase;
+  const noleggiPerId = new Map();
+  function leggiDati() {
+    stato.segnaposti = dati.segnaposti || [];
+    noleggiPerId.clear();
+    for (const n of dati.noleggi) noleggiPerId.set(n.id, n);
+    // Un segnaposto il cui noleggio non arriva (annullato, o non visibile al tecnico) non si disegna.
+    stato.segnaposti = stato.segnaposti.filter((sp) => noleggiPerId.has(sp.noleggio_id));
+    gruppiBase = gruppiDaNoleggi(dati.noleggi, new Set(stato.segnaposti.map((sp) => sp.noleggio_id)));
+    if (stato.scelto) stato.scelto = noleggiPerId.get(stato.scelto.id) || null;
+  }
+  leggiDati();
   const eImmagine = allegato.tipo.startsWith('image/');
 
   try {
@@ -257,7 +315,7 @@ export async function apriPianta({
         // Vicino al bordo destro l'etichetta si allinea a destra, per non uscire dal foglio.
         const aDestra = s.x + s.w > 0.78 ? 'pianta__copertura--a-destra' : '';
         const copertura = h('div', {
-          class: `pianta__copertura pianta__copertura--${s.tipo} ${aDestra} ${stato.evidenziato === g ? 'pianta__copertura--evidenziata' : ''}`,
+          class: `pianta__copertura pianta__copertura--${s.tipo} ${aDestra} ${stato.evidenziato?.chiave === g.chiave ? 'pianta__copertura--evidenziata' : ''}`,
           style: { left: `${s.x * 100}%`, top: `${s.y * 100}%`, width: `${s.w * 100}%`, height: `${s.h * 100}%` },
           title: `${g.cliente}${g.stand ? ` · stand ${g.stand}` : ''}\n${g.apparecchi.join('\n')}`,
           onclick: (e) => { e.stopPropagation(); evidenzia(g, false); },
@@ -267,6 +325,18 @@ export async function apriPianta({
           h('strong', {}, `${g.tv} TV`), ` ${g.cliente}`) : null);
         livello.appendChild(copertura);
       });
+    }
+    for (const sp of stato.segnaposti.filter((x) => x.pagina === stato.pagina)) {
+      const n = noleggiPerId.get(sp.noleggio_id);
+      const aDestra = sp.x > 0.85 ? 'pianta__segnaposto--a-destra' : '';
+      livello.appendChild(h('button', {
+        type: 'button',
+        class: `pianta__segnaposto ${aDestra} ${stato.scelto?.id === n.id ? 'pianta__segnaposto--scelto' : ''}`
+          + ` ${n.stand ? '' : 'pianta__segnaposto--incompleto'} ${solaLettura ? '' : 'pianta__segnaposto--mobile'}`,
+        style: { left: `${sp.x * 100}%`, top: `${sp.y * 100}%` },
+        title: descrizioneSegnaposto(n),
+        dataset: { noleggio: n.id },
+      }, h('span', { class: 'pianta__segnaposto-punto' }), h('span', { class: 'pianta__segnaposto-testo' }, etichettaSegnaposto(n))));
     }
     livello.classList.toggle('pianta__livello--posiziona', Boolean(stato.posiziona));
   }
@@ -313,7 +383,7 @@ export async function apriPianta({
       const et = ETICHETTE[g.stato];
       const pagine = [...new Set(g.spazi.map((s) => s.pagina))];
       return h('li', {
-        class: `pianta__voce ${stato.evidenziato === g ? 'pianta__voce--evidenziata' : ''}`,
+        class: `pianta__voce ${stato.evidenziato?.chiave === g.chiave ? 'pianta__voce--evidenziata' : ''}`,
         onclick: () => g.spazi.length && evidenzia(g, true),
       },
       h('div', { class: 'pianta__voce-testa' },
@@ -343,7 +413,45 @@ export async function apriPianta({
         }, 'Ripristina') : null));
     };
 
+    const sullaPagina = stato.segnaposti.length;
+    const scelto = stato.scelto;
+    const schedaScelto = scelto ? h('div', { class: 'pianta__scelto' },
+      h('div', { class: 'pianta__voce-testa' },
+        h('strong', {}, nomeBreve({ nome: scelto.prodotto_nome, marca: scelto.prodotto_marca, pollici: scelto.prodotto_pollici })),
+        h('span', { class: 'pianta__stato pianta__stato--ok' }, idProdotto(scelto.prodotto_codice) || scelto.prodotto_categoria)),
+      h('p', { class: 'pianta__cliente' }, scelto.cliente || 'Cliente da indicare',
+        h('span', {}, scelto.stand ? ` · stand ${scelto.stand}` : ' · stand da indicare'),
+        scelto.padiglione ? h('span', {}, ` · pad. ${scelto.padiglione}`) : null),
+      scelto.montaggio || scelto.note_tecnico ? h('p', { class: 'pianta__apparecchi' },
+        [scelto.montaggio ? etichettaMontaggio(scelto.montaggio) : null, scelto.note_tecnico].filter(Boolean).join(' · ')) : null,
+      solaLettura ? null : h('div', { class: 'pianta__voce-azioni' },
+        disposizione?.modifica ? h('button', {
+          class: 'btn btn--mini btn--primario',
+          onclick: () => disposizione.modifica(scelto),
+        }, scelto.stand && scelto.cliente ? 'Modifica noleggio' : 'Completa il noleggio') : null,
+        h('button', {
+          class: 'btn btn--mini',
+          title: 'Il noleggio resta: si toglie solo il punto sulla pianta',
+          onclick: async () => {
+            await api.togliSegnaposto(scelto.id);
+            dati.segnaposti = (dati.segnaposti || []).filter((x) => x.noleggio_id !== scelto.id);
+            stato.scelto = null;
+            leggiDati();
+            ricolloca();
+            aggiornaTutto();
+            disposizione?.dopo?.();
+          },
+        }, 'Togli dalla pianta'),
+        h('button', { class: 'btn btn--mini', onclick: () => { stato.scelto = null; aggiornaTutto(); } }, 'Chiudi'))) : null;
+
     monta(elenco,
+      schedaScelto,
+      disposizione && !stato.segnaposti.length ? h('p', { class: 'pianta__suggerimento' },
+        'Trascina un monitor dall\'elenco a sinistra e lascialo sulla pianta dove va montato: '
+        + 'il noleggio si crea e si salva da solo. Se lo lasci sopra uno stand, stand e cliente si compilano da soli.') : null,
+      sullaPagina ? h('p', { class: 'pianta__nota' },
+        `${numero(sullaPagina)} ${sullaPagina === 1 ? 'apparecchio messo' : 'apparecchi messi'} sulla pianta`
+        + (solaLettura ? ': tocca un segnaposto per i dettagli.' : ': trascinali per spostarli, cliccali per i dettagli.')) : null,
       h('div', { class: 'pianta__riepilogo' },
         h('p', {}, h('strong', {}, numero(tvCoperte)), ` TV su ${numero(coperti.length)} stand coperti`),
         mancanti.length
@@ -392,6 +500,7 @@ export async function apriPianta({
 
   async function evidenzia(g, scorri) {
     stato.evidenziato = g;
+    stato.scelto = null;
     const spazio = g.spazi[0];
     if (spazio && spazio.pagina !== stato.pagina) await vaiA(spazio.pagina);
     aggiornaTutto();
@@ -439,6 +548,159 @@ export async function apriPianta({
     avviso(`Stand di ${g.cliente} posizionato.`);
   });
 
+  /* ---------- segnaposti e trascinamento ---------- */
+
+  /** Punto della pianta sotto il puntatore, in frazioni della pagina; null se fuori. */
+  function puntoSullaPianta(e) {
+    const r = livello.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width;
+    const y = (e.clientY - r.top) / r.height;
+    if (x < 0 || x > 1 || y < 0 || y > 1) return null;
+    // Il punto deve anche essere nella parte visibile dell'area, non sotto una barra.
+    const a = area.getBoundingClientRect();
+    if (e.clientX < a.left || e.clientX > a.right || e.clientY < a.top || e.clientY > a.bottom) return null;
+    return { pagina: stato.pagina, x, y };
+  }
+
+  /** Lo stand sotto un punto: prima uno già coperto (con il suo cliente), poi un numero letto dal PDF. */
+  function standNelPunto({ pagina, x, y }) {
+    const dentro = (s) => s.pagina === pagina && s.x <= x && x <= s.x + s.w && s.y <= y && y <= s.y + s.h;
+    const coperti = stato.gruppi
+      .flatMap((g) => g.spazi.filter(dentro).map((s) => ({ g, area: s.w * s.h })))
+      .sort((a, b) => a.area - b.area);
+    if (coperti.length) {
+      const { g } = coperti[0];
+      return { cliente: g.cliente === 'Cliente non indicato' ? '' : g.cliente, stand: g.stand, padiglione: g.padiglione || '' };
+    }
+    const p = stato.pagine[pagina - 1];
+    const numeri = (p?.testi || [])
+      .map((t) => ({ t, s: { pagina, ...spazioDelNumero(t.box, p.riquadri) } }))
+      .filter(({ s }) => dentro(s))
+      .sort((a, b) => a.s.w * a.s.h - b.s.w * b.s.h);
+    if (numeri.length) {
+      const { t } = numeri[0];
+      return {
+        cliente: '',
+        stand: t.testo.length <= 24 ? t.testo : t.codici.join(' '),
+        padiglione: padiglione(t.testo) || '',
+      };
+    }
+    return { cliente: '', stand: '', padiglione: '' };
+  }
+
+  async function ricaricaDati() {
+    dati = await caricaDati();
+    leggiDati();
+    ricolloca();
+    aggiornaTutto();
+  }
+
+  /**
+   * Trascinamento con il puntatore (mouse, dito o penna): funziona uguale su
+   * computer e tablet, dove il drag and drop nativo del browser non c'è.
+   */
+  function trascina(e, { fantasma, suMuovi = () => {}, suRilascio, suClic = () => {} }) {
+    const inizio = { x: e.clientX, y: e.clientY };
+    let avviato = false;
+    const muovi = (ev) => {
+      if (!avviato && Math.hypot(ev.clientX - inizio.x, ev.clientY - inizio.y) < SOGLIA_TRASCINAMENTO) return;
+      if (!avviato) {
+        avviato = true;
+        document.body.appendChild(fantasma);
+        radice.classList.add('pianta--trascina');
+      }
+      ev.preventDefault();
+      fantasma.style.transform = `translate(${ev.clientX}px, ${ev.clientY}px)`;
+      const punto = puntoSullaPianta(ev);
+      livello.classList.toggle('pianta__livello--rilascio', Boolean(punto));
+      suMuovi(ev, punto);
+    };
+    const fine = async (ev) => {
+      document.removeEventListener('pointermove', muovi);
+      document.removeEventListener('pointerup', fine);
+      document.removeEventListener('pointercancel', annulla);
+      fantasma.remove();
+      radice.classList.remove('pianta--trascina');
+      livello.classList.remove('pianta__livello--rilascio');
+      if (!avviato) { suClic(); return; }
+      const punto = puntoSullaPianta(ev);
+      if (punto) await suRilascio(punto);
+    };
+    const annulla = () => {
+      document.removeEventListener('pointermove', muovi);
+      document.removeEventListener('pointerup', fine);
+      document.removeEventListener('pointercancel', annulla);
+      fantasma.remove();
+      radice.classList.remove('pianta--trascina');
+      livello.classList.remove('pianta__livello--rilascio');
+    };
+    document.addEventListener('pointermove', muovi);
+    document.addEventListener('pointerup', fine);
+    document.addEventListener('pointercancel', annulla);
+  }
+
+  // Clic (o tocco) su un segnaposto: i dettagli nell'elenco. Trascinandolo, si sposta.
+  livello.addEventListener('pointerdown', (e) => {
+    const bottone = e.target.closest('.pianta__segnaposto');
+    if (!bottone || stato.posiziona) return;
+    const n = noleggiPerId.get(Number(bottone.dataset.noleggio));
+    if (!n) return;
+    const scegli = () => { stato.scelto = n; stato.evidenziato = null; aggiornaTutto(); };
+    if (solaLettura) { scegli(); return; }
+    e.preventDefault();
+    trascina(e, {
+      fantasma: h('div', { class: 'pianta__fantasma pianta__fantasma--segnaposto' }, etichettaSegnaposto(n)),
+      suClic: scegli,
+      suRilascio: async (punto) => {
+        try {
+          await api.spostaSegnaposto(n.id, { allegato_id: allegato.id, ...punto });
+        } catch (err) {
+          avviso(err.message, 'errore');
+          return;
+        }
+        const sp = (dati.segnaposti || []).find((x) => x.noleggio_id === n.id);
+        Object.assign(sp, punto);
+        stato.scelto = n;
+        leggiDati();
+        aggiornaTutto();
+        avviso(`${etichettaSegnaposto(n)} spostato.`);
+        disposizione?.dopo?.();
+      },
+    });
+  });
+
+  // Dall'elenco degli apparecchi liberi alla pianta: nasce il noleggio.
+  if (disposizione) {
+    disposizione.lato.addEventListener('pointerdown', (e) => {
+      const voce = e.target.closest('[data-prodotto]');
+      if (!voce || e.button > 0) return;
+      // Col dito si trascina dalla maniglia, così l'elenco si può ancora scorrere.
+      if (e.pointerType !== 'mouse' && !e.target.closest('.tav-maniglia')) return;
+      e.preventDefault();
+      const etichetta = voce.dataset.etichetta || 'Apparecchio';
+      trascina(e, {
+        fantasma: h('div', { class: 'pianta__fantasma' }, etichetta),
+        suRilascio: async (punto) => {
+          const posto = standNelPunto(punto);
+          let noleggio;
+          try {
+            noleggio = await disposizione.crea({ prodotto_id: Number(voce.dataset.prodotto), ...punto, ...posto });
+          } catch (err) {
+            avviso(err.message, 'errore');
+            return;
+          }
+          await ricaricaDati();
+          stato.scelto = noleggiPerId.get(noleggio.id) || null;
+          aggiornaTutto();
+          avviso(posto.stand
+            ? `${etichetta} messo sullo stand ${posto.stand}${posto.cliente ? ` (${posto.cliente})` : ''}.`
+            : `${etichetta} messo sulla pianta. Stand non riconosciuto: completalo dai dettagli a destra.`);
+          disposizione.dopo?.();
+        },
+      });
+    });
+  }
+
   /* ---------- esportazione ---------- */
 
   async function immagineConCoperture() {
@@ -482,6 +744,27 @@ export async function apriPianta({
         }
       });
     }
+    // E i segnaposti, uguali a quelli a schermo.
+    for (const sp of stato.segnaposti.filter((x) => x.pagina === stato.pagina)) {
+      const n = noleggiPerId.get(sp.noleggio_id);
+      const [x, y] = [sp.x * larghezza, sp.y * altezza];
+      const raggio = Math.max(7, larghezza / 260);
+      ctx.beginPath();
+      ctx.arc(x, y, raggio, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgb(79, 70, 229)';
+      ctx.fill();
+      ctx.lineWidth = raggio / 3;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+      const testo = etichettaSegnaposto(n);
+      ctx.font = `bold ${carattere}px sans-serif`;
+      const tw = ctx.measureText(testo).width + carattere * 0.8;
+      const ex = Math.min(x + raggio * 1.4, larghezza - tw);
+      ctx.fillStyle = 'rgb(55, 48, 163)';
+      ctx.fillRect(ex, y - carattere * 0.75, tw, carattere * 1.5);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(testo, ex + carattere * 0.4, y + carattere * 0.35);
+    }
     return c.toDataURL('image/png');
   }
 
@@ -515,6 +798,8 @@ export async function apriPianta({
 
   let attesaRidimensiona;
   const suRidimensiona = () => {
+    // Incorporata, la pianta sparisce quando si cambia pagina: si smette di ascoltare.
+    if (!radice.isConnected) { chiudi(); return; }
     clearTimeout(attesaRidimensiona);
     attesaRidimensiona = setTimeout(disegnaPagina, 150);
   };
@@ -523,4 +808,5 @@ export async function apriPianta({
   aggiornaTutto();
   await disegnaPagina();
   if (richiesto) evidenzia(richiesto, true);
+  return { ricarica: ricaricaDati };
 }

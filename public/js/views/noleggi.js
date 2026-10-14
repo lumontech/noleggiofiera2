@@ -1,8 +1,14 @@
-// Noleggi raggruppati per fiera: date e nome della fiera compaiono una volta
-// sola nell'intestazione del gruppo invece di ripetersi su ogni riga, e i
-// noleggi ancora da gestire stanno separati dallo storico.
+// Noleggi, in tre schermate:
+// - Elenco: i noleggi raggruppati per fiera. Date e nome della fiera compaiono
+//   una volta sola nell'intestazione del gruppo, e i noleggi ancora da gestire
+//   stanno separati dallo storico.
+// - Monitor disponibili: cosa è ancora libero nelle date di una fiera.
+// - Planimetria: si trascinano i monitor liberi sulla pianta della fiera; ogni
+//   monitor lasciato sulla pianta è un noleggio, salvato subito, che il
+//   tecnico ritrova sulla sua pianta.
 
-import { api } from '../api.js';
+import { api, caricaAllegato } from '../api.js';
+import { apriPianta } from '../pianta/visore.js';
 import { stato as statoApp } from '../app.js';
 import { selettoreApparecchi } from '../selettore-apparecchi.js';
 import { apriDocumenti } from '../documenti.js';
@@ -235,6 +241,238 @@ function gruppo(g, { aperto, azioni }) {
       g.righe.map((n) => riga(n, azioni))));
 }
 
+/* ---------- schermate ---------- */
+
+const SCHERMATE = [
+  { id: 'elenco', testo: 'Elenco' },
+  { id: 'disponibili', testo: 'Monitor disponibili' },
+  { id: 'planimetria', testo: 'Planimetria' },
+];
+
+// Schermata e fiera stanno nell'indirizzo (#/noleggi?vista=planimetria&fiera=3):
+// si ritrovano ricaricando la pagina e si possono mandare a un collega.
+const parametri = () => new URLSearchParams(location.hash.split('?')[1] || '');
+const indirizzo = (vista, fiera) => `#/noleggi?${new URLSearchParams(
+  Object.entries({ vista, fiera }).filter(([, v]) => v),
+)}`;
+
+// Prima i monitor e i TV, poi il resto (supporti, accessori…).
+const ORDINE_CATEGORIE = ['TV', 'Monitor', 'Videowall', 'Totem', 'Supporto', 'Accessorio'];
+const SCHERMI = ['TV', 'Monitor', 'Videowall', 'Totem'];
+const posizioneCategoria = (c) => (ORDINE_CATEGORIE.indexOf(c) + 1 || 99);
+const perCategoria = (elenco) => {
+  const gruppi = new Map();
+  for (const a of [...elenco].sort((x, y) => posizioneCategoria(x.categoria) - posizioneCategoria(y.categoria)
+    || (x.pollici || 0) - (y.pollici || 0))) {
+    if (!gruppi.has(a.categoria)) gruppi.set(a.categoria, []);
+    gruppi.get(a.categoria).push(a);
+  }
+  return [...gruppi.entries()];
+};
+const testoApparecchio = (a) => [a.nome, a.marca, a.codice, idProdotto(a.codice), a.pollici && `${a.pollici}`, a.categoria]
+  .filter(Boolean).join(' ').toLowerCase();
+
+/** La fiera su cui lavorare: quella nell'indirizzo, o la prossima da svolgere. */
+function fieraScelta(fiereOrdinate) {
+  const id = Number(parametri().get('fiera'));
+  return fiereOrdinate.find((f) => f.id === id)
+    || fiereOrdinate.find((f) => f.data_fine >= oggiISO())
+    || fiereOrdinate[0] || null;
+}
+
+function selettoreFiera(fiereOrdinate, scelta, vista) {
+  // Le fiere già svolte non servono qui, a parte quella aperta.
+  const proposte = fiereOrdinate.filter((f) => f.data_fine >= oggiISO() || f.id === scelta.id);
+  const sel = select('fiera', proposte.map((f) => ({
+    valore: f.id, testo: `${f.nome} — ${intervalloDate(f.data_inizio, f.data_fine)}`,
+  })), scelta.id);
+  sel.addEventListener('change', () => { location.hash = indirizzo(vista, sel.value); });
+  return sel;
+}
+
+/* ---------- monitor disponibili ---------- */
+
+async function schermataDisponibili(corpo, fiereOrdinate) {
+  const fiera = fieraScelta(fiereOrdinate);
+  if (!fiera) {
+    monta(corpo, vuoto('Nessuna fiera', 'Crea prima una fiera: i monitor disponibili si contano nelle sue date.'));
+    return;
+  }
+  const finestra = await api.finestraFiera(fiera.id);
+  const elenco = await api.apparecchi({ from: finestra.data_inizio, to: finestra.data_fine });
+  const filtri = { q: '', soloSchermi: true };
+  const contenitore = h('div', { class: 'disp-elenco' });
+
+  const cerca = input('q', { placeholder: 'Cerca modello, pollici o ID…', type: 'search' });
+  cerca.addEventListener('input', () => { filtri.q = cerca.value.trim().toLowerCase(); disegna(); });
+  const soloSchermi = h('input', { type: 'checkbox', checked: true });
+  soloSchermi.addEventListener('change', () => { filtri.soloSchermi = soloSchermi.checked; disegna(); });
+
+  function riga(a) {
+    const occupati = a.quantita - a.liberi;
+    return h('li', { class: `disp-riga ${a.liberi ? '' : 'disp-riga--esaurito'}` },
+      h('div', { class: 'disp-riga__nome' },
+        h('strong', {}, nomeBreve(a)),
+        h('span', {}, [idProdotto(a.codice), a.stato === 'manutenzione' ? 'in manutenzione' : null].filter(Boolean).join(' · '))),
+      h('div', { class: 'disp-riga__conta' },
+        h('strong', {}, numero(a.liberi)), ` liberi su ${numero(a.quantita)}`,
+        h('span', { class: 'disp-barra', 'aria-hidden': 'true' },
+          h('span', { style: { width: `${a.quantita ? (a.liberi / a.quantita) * 100 : 0}%` } }))),
+      h('div', { class: 'disp-riga__occupato' }, occupati && a.occupato_da.length
+        ? a.occupato_da.map((o) => `${o.cliente || 'senza cliente'} (${o.fiera_nome})`).join(' · ')
+        : h('span', { class: 'nol-riga__vuoto' }, a.stato === 'manutenzione' ? 'In manutenzione' : '—')),
+      a.liberi ? h('a', {
+        class: 'btn btn--mini',
+        href: indirizzo('planimetria', fiera.id),
+        title: 'Apri la planimetria e trascinalo dove va montato',
+      }, 'Metti sulla pianta →') : h('span'));
+  }
+
+  function disegna() {
+    const visibili = elenco.filter((a) => (!filtri.soloSchermi || SCHERMI.includes(a.categoria))
+      && (!filtri.q || testoApparecchio(a).includes(filtri.q)));
+    const liberi = visibili.filter((a) => a.liberi > 0);
+    const esauriti = visibili.filter((a) => !a.liberi);
+    const pezzi = liberi.reduce((t, a) => t + a.liberi, 0);
+    monta(contenitore,
+      h('p', { class: 'riepilogo-filtro' },
+        h('strong', {}, numero(pezzi)), ` ${pezzi === 1 ? 'pezzo libero' : 'pezzi liberi'} `
+        + `dal ${dataLunga(finestra.data_inizio)} al ${dataLunga(finestra.data_fine)}, allestimento e smontaggio compresi.`),
+      !visibili.length ? vuoto('Nessun apparecchio trovato', 'Prova a cambiare la ricerca.') : null,
+      perCategoria(liberi).map(([categoria, righe]) => h('section', { class: 'disp-gruppo' },
+        h('h3', {}, categoria, h('span', {}, ` · ${numero(righe.reduce((t, a) => t + a.liberi, 0))} liberi`)),
+        h('ul', {}, righe.map(riga)))),
+      esauriti.length ? h('details', { class: 'disp-gruppo disp-gruppo--esauriti' },
+        h('summary', {}, `Già tutti noleggiati in queste date (${numero(esauriti.length)})`),
+        h('ul', {}, esauriti.map(riga))) : null);
+  }
+
+  monta(corpo,
+    h('div', { class: 'filtri' },
+      selettoreFiera(fiereOrdinate, fiera, 'disponibili'),
+      cerca,
+      h('label', { class: 'disp-spunta' }, soloSchermi, ' Solo TV e monitor')),
+    contenitore);
+  disegna();
+}
+
+/* ---------- planimetria ---------- */
+
+/** L'elenco a sinistra della pianta: gli apparecchi liberi, da trascinare. */
+function tavolozza() {
+  const elenco = h('div', { class: 'tav-elenco' });
+  const cerca = input('q', { placeholder: 'Cerca…', type: 'search' });
+  let ultimo = [];
+  let soloSchermi = true;
+  const schermi = h('input', { type: 'checkbox', checked: true });
+  schermi.addEventListener('change', () => { soloSchermi = schermi.checked; disegna(); });
+  cerca.addEventListener('input', () => disegna());
+
+  function disegna() {
+    const q = cerca.value.trim().toLowerCase();
+    const liberi = ultimo.filter((a) => a.liberi > 0 && (!soloSchermi || SCHERMI.includes(a.categoria))
+      && (!q || testoApparecchio(a).includes(q)));
+    monta(elenco,
+      !liberi.length ? h('p', { class: 'pianta__attesa' }, ultimo.length
+        ? 'Nessun apparecchio libero da mostrare.' : 'Carico gli apparecchi liberi…') : null,
+      perCategoria(liberi).map(([categoria, righe]) => [
+        h('h3', {}, categoria),
+        h('ul', {}, righe.map((a) => h('li', {
+          class: 'tav-voce',
+          title: `Trascina sulla pianta: ${a.nome}`,
+          dataset: { prodotto: a.id, etichetta: [nomeBreve(a), idProdotto(a.codice)].filter(Boolean).join(' ') },
+        },
+        h('span', { class: 'tav-maniglia', 'aria-hidden': 'true' }, '⠿'),
+        h('span', { class: 'tav-voce__nome' },
+          h('strong', {}, nomeBreve(a)),
+          h('span', {}, idProdotto(a.codice) || a.categoria)),
+        h('span', { class: 'tav-voce__conta', title: 'Pezzi liberi nelle date della fiera' }, `${a.liberi}`)))),
+      ]));
+  }
+
+  return {
+    lato: h('div', { class: 'tav' },
+      h('div', { class: 'tav-testa' },
+        h('strong', {}, 'Monitor disponibili'),
+        h('p', {}, 'Trascinali sulla pianta, dove vanno montati.'),
+        cerca,
+        h('label', { class: 'disp-spunta' }, schermi, ' Solo TV e monitor')),
+      elenco),
+    aggiorna: (apparecchi) => { ultimo = apparecchi; disegna(); },
+  };
+}
+
+async function schermataPlanimetria(corpo, fiereOrdinate) {
+  const fiera = fieraScelta(fiereOrdinate);
+  if (!fiera) {
+    monta(corpo, vuoto('Nessuna fiera', 'Crea prima una fiera e allega la sua planimetria.'));
+    return;
+  }
+  const [dettaglio, finestra] = await Promise.all([api.fiera(fiera.id), api.finestraFiera(fiera.id)]);
+  const piante = dettaglio.allegati.filter((a) => a.tipo === 'application/pdf' || a.tipo.startsWith('image/'));
+  const idPianta = Number(parametri().get('pianta'));
+  const allegato = piante.find((a) => a.id === idPianta) || piante[0];
+
+  // Allegare una pianta da qui, senza passare dalla scheda della fiera.
+  const scegliFile = h('input', { type: 'file', accept: 'application/pdf,image/*', hidden: true });
+  scegliFile.addEventListener('change', async () => {
+    const file = scegliFile.files[0];
+    if (!file) return;
+    avviso('Carico la planimetria…');
+    try {
+      const nuovo = await caricaAllegato(fiera.id, file);
+      location.hash = `${indirizzo('planimetria', fiera.id)}&pianta=${nuovo.id}`;
+    } catch (err) {
+      avviso(err.message, 'errore');
+    }
+  });
+  const carica = h('button', { class: 'btn', onclick: () => scegliFile.click() }, '+ Allega planimetria');
+
+  const selPianta = piante.length > 1 ? select('pianta', piante.map((a) => ({ valore: a.id, testo: a.nome })), allegato.id) : null;
+  selPianta?.addEventListener('change', () => {
+    location.hash = `${indirizzo('planimetria', fiera.id)}&pianta=${selPianta.value}`;
+  });
+
+  const zona = h('div', { class: 'nol-pianta' });
+  monta(corpo,
+    h('div', { class: 'filtri' }, selettoreFiera(fiereOrdinate, fiera, 'planimetria'), selPianta, carica, scegliFile),
+    zona);
+
+  if (!allegato) {
+    monta(zona, vuoto('Nessuna planimetria per questa fiera',
+      'Allega la pianta della fiera (PDF o foto): poi trascini i monitor dove vanno montati.',
+      h('button', { class: 'btn btn--primario', onclick: () => scegliFile.click() }, '+ Allega planimetria')));
+    return;
+  }
+
+  const lato = tavolozza();
+  const aggiornaLiberi = async () => {
+    lato.aggiorna(await api.apparecchi({ from: finestra.data_inizio, to: finestra.data_fine }));
+  };
+  aggiornaLiberi();
+
+  let pianta = null;
+  const dopoUnaModifica = async () => {
+    await aggiornaLiberi();
+    await pianta?.ricarica();
+  };
+  pianta = await apriPianta({
+    fiera,
+    allegato,
+    contenitore: zona,
+    disposizione: {
+      lato: lato.lato,
+      crea: async (dati) => {
+        const salvato = await api.noleggioSullaPianta({ fiera_id: fiera.id, allegato_id: allegato.id, ...dati });
+        avvisoPiantane(salvato);
+        return salvato;
+      },
+      modifica: (n) => apriForm({ ...n, fiera_nome: fiera.nome }, fiereOrdinate, dopoUnaModifica),
+      dopo: aggiornaLiberi,
+    },
+  });
+}
+
 /* ---------- vista ---------- */
 
 export default async function vistaNoleggi({ corpo, azioni, ricarica }) {
@@ -248,17 +486,35 @@ export default async function vistaNoleggi({ corpo, azioni, ricarica }) {
     return a.data_inizio.localeCompare(b.data_inizio);
   });
 
+  const vista = SCHERMATE.find((v) => v.id === parametri().get('vista'))?.id || 'elenco';
+  const fieraAperta = vista === 'elenco' ? null : fieraScelta(fiereOrdinate);
+  const barraViste = h('nav', { class: 'viste', 'aria-label': 'Schermate dei noleggi' },
+    SCHERMATE.map((v) => h('a', {
+      class: `vista-bottone ${v.id === vista ? 'vista-bottone--attiva' : ''}`,
+      href: indirizzo(v.id, v.id === 'elenco' ? null : fieraAperta?.id || parametri().get('fiera')),
+      'aria-current': v.id === vista ? 'page' : null,
+    }, v.testo)));
+
   const filtri = { q: '', fiera_id: '', prodotto_id: '' };
   azioni.append(
     // Parte dalla fiera filtrata nella lista, se ce n'è una.
     h('button', {
       class: 'btn',
-      onclick: () => apriDocumenti({ fieraId: filtri.fiera_id }).catch((e) => avviso(e.message, 'errore')),
+      onclick: () => apriDocumenti({ fieraId: filtri.fiera_id || fieraAperta?.id || '' }).catch((e) => avviso(e.message, 'errore')),
     }, 'Scarica PDF'),
     h('button', {
       class: 'btn btn--primario',
       onclick: () => apriForm(null, fiereOrdinate, ricarica),
     }, '+ Nuovo noleggio'));
+
+  if (vista !== 'elenco') {
+    const area = h('div', { class: 'vista' });
+    monta(corpo, barraViste, area);
+    if (vista === 'disponibili') await schermataDisponibili(area, fiereOrdinate);
+    else await schermataPlanimetria(area, fiereOrdinate);
+    return;
+  }
+
   let scheda = 'attivi';
   let elenco = [];
   const barraSchede = h('div', { class: 'schede nol-schede', role: 'tablist' });
@@ -337,6 +593,7 @@ export default async function vistaNoleggi({ corpo, azioni, ricarica }) {
   selProdotto.addEventListener('change', () => { filtri.prodotto_id = selProdotto.value; carica(); });
 
   monta(corpo,
+    barraViste,
     h('div', { class: 'filtri' }, cerca, selFiera, selProdotto),
     barraSchede,
     contenitore);

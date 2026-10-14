@@ -49,11 +49,12 @@ function apriLaPianta(fiera, allegato, stand = '') {
     stand,
     solaLettura: true,
     caricaDati: async () => {
-      const [dettaglio, posizioni] = await Promise.all([
+      const [dettaglio, posizioni, segnaposti] = await Promise.all([
         api.installazioniFiera(fiera.id),
         api.posizioniTecnico(fiera.id, allegato.id),
+        api.segnapostiTecnico(fiera.id, allegato.id),
       ]);
-      return { noleggi: dettaglio.noleggi, posizioni };
+      return { noleggi: dettaglio.noleggi, posizioni, segnaposti };
     },
   });
 }

@@ -7,6 +7,7 @@ import {
   idProdotto,
 } from '../lib/domain.js';
 import { impegnoMassimo } from '../lib/disponibilita.js';
+import { segnapostiDi } from '../lib/segnaposti.js';
 
 const router = Router();
 
@@ -317,6 +318,12 @@ router.put('/:id/allegati/:allegato/posizioni/:chiave', express.json(), (req, re
        SET pagina = excluded.pagina, x = excluded.x, y = excluded.y, aggiornato_il = excluded.aggiornato_il`)
     .run(allegato.id, chiave, posizione.pagina, posizione.x, posizione.y, new Date().toISOString());
   res.json({ chiave, ...posizione });
+});
+
+// Dove sono stati messi gli apparecchi trascinati su questa planimetria.
+router.get('/:id/allegati/:allegato/segnaposti', (req, res) => {
+  const fiera = trovaFiera(req.params.id);
+  res.json(segnapostiDi(trovaAllegato(fiera, req.params.allegato).id));
 });
 
 router.delete('/:id/allegati/:allegato/posizioni/:chiave', (req, res) => {

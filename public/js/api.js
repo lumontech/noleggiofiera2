@@ -61,6 +61,7 @@ export const api = {
   installazioni: () => richiesta('GET', '/api/tecnico/installazioni'),
   installazioniFiera: (id) => richiesta('GET', `/api/tecnico/fiere/${id}`),
   posizioniTecnico: (fieraId, id) => richiesta('GET', `/api/tecnico/fiere/${fieraId}/allegati/${id}/posizioni`),
+  segnapostiTecnico: (fieraId, id) => richiesta('GET', `/api/tecnico/fiere/${fieraId}/allegati/${id}/segnaposti`),
   uscita: () => richiesta('POST', '/api/uscita'),
 
   costanti: () => richiesta('GET', '/api/disponibilita/costanti'),
@@ -82,6 +83,7 @@ export const api = {
     `/api/fiere/${fieraId}/allegati/${id}/posizioni/${encodeURIComponent(chiave)}`, pos),
   eliminaPosizione: (fieraId, id, chiave) => richiesta('DELETE',
     `/api/fiere/${fieraId}/allegati/${id}/posizioni/${encodeURIComponent(chiave)}`),
+  segnaposti: (fieraId, id) => richiesta('GET', `/api/fiere/${fieraId}/allegati/${id}/segnaposti`),
   manifestazioni: () => richiesta('GET', '/api/fiere/raggruppate'),
   fiera: (id) => richiesta('GET', `/api/fiere/${id}`),
   finestraFiera: (id) => richiesta('GET', `/api/fiere/${id}/finestra`),
@@ -94,6 +96,10 @@ export const api = {
   modificaNoleggio: (id, d) => richiesta('PUT', `/api/noleggi/${id}`, d),
   statoNoleggio: (id, stato) => richiesta('PATCH', `/api/noleggi/${id}/stato`, { stato }),
   eliminaNoleggio: (id) => richiesta('DELETE', `/api/noleggi/${id}`),
+  // Planimetria: un apparecchio trascinato sulla pianta diventa un noleggio.
+  noleggioSullaPianta: (d) => richiesta('POST', '/api/noleggi/sulla-pianta', d),
+  spostaSegnaposto: (id, d) => richiesta('PUT', `/api/noleggi/${id}/segnaposto`, d),
+  togliSegnaposto: (id) => richiesta('DELETE', `/api/noleggi/${id}/segnaposto`),
 };
 
 /**

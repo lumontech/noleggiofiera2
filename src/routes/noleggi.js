@@ -6,8 +6,9 @@ import {
 } from '../lib/domain.js';
 import { verificaCapienza } from '../lib/disponibilita.js';
 import { trovaProdotto } from './prodotti.js';
-import { trovaFiera } from './fiere.js';
+import { trovaFiera, finestraLogistica } from './fiere.js';
 import { sincronizzaPiantane, sganciaPiantane, avvisoPiantane } from '../lib/piantane.js';
+import { leggiPosizione, allegatoDellaFiera, salvaSegnaposto } from '../lib/segnaposti.js';
 
 const router = Router();
 
@@ -107,27 +108,75 @@ router.get('/', (req, res) => {
            p.pollici AS prodotto_pollici, p.marca AS prodotto_marca, p.codice AS prodotto_codice,
            f.nome AS fiera_nome, f.citta AS fiera_citta, f.stato AS fiera_stato, f.padiglione AS fiera_padiglione,
            (SELECT tp.codice FROM noleggi t JOIN prodotti tp ON tp.id = t.prodotto_id WHERE t.id = n.abbinato_a) AS abbinato_codice,
-           f.data_inizio AS fiera_inizio, f.data_fine AS fiera_fine
+           f.data_inizio AS fiera_inizio, f.data_fine AS fiera_fine,
+           s.allegato_id AS segnaposto_allegato
       FROM noleggi n
       JOIN prodotti p ON p.id = n.prodotto_id
-      JOIN fiere    f ON f.id = n.fiera_id`;
+      JOIN fiere    f ON f.id = n.fiera_id
+      LEFT JOIN segnaposti s ON s.noleggio_id = n.id`;
   if (condizioni.length) sql += ` WHERE ${condizioni.join(' AND ')}`;
   sql += ' ORDER BY n.data_inizio DESC, n.id DESC';
   res.json(db.prepare(sql).all(...parametri).map(arricchisci));
 });
 
-router.post('/', (req, res) => {
-  const { prodotto, dati } = leggiCorpo(req.body);
-  controllaDisponibilita({ prodotto, dati });
+function inserisci(dati) {
   const adesso = new Date().toISOString();
-  const info = db.prepare(`
+  return db.prepare(`
     INSERT INTO noleggi (prodotto_id, fiera_id, cliente, stand, padiglione, quantita, data_inizio,
                          data_fine, stato, importo, note, montaggio, note_tecnico, creato_il, aggiornato_il)
     VALUES (@prodotto_id, @fiera_id, @cliente, @stand, @padiglione, @quantita, @data_inizio,
             @data_fine, @stato, @importo, @note, @montaggio, @note_tecnico, @creato_il, @aggiornato_il)`)
-    .run({ ...dati, creato_il: adesso, aggiornato_il: adesso });
-  const piantane = sincronizzaPiantane(info.lastInsertRowid);
-  res.status(201).json({ ...arricchisci(trovaNoleggio(info.lastInsertRowid)), avviso: avvisoPiantane(piantane) });
+    .run({ ...dati, creato_il: adesso, aggiornato_il: adesso }).lastInsertRowid;
+}
+
+router.post('/', (req, res) => {
+  const { prodotto, dati } = leggiCorpo(req.body);
+  controllaDisponibilita({ prodotto, dati });
+  const id = inserisci(dati);
+  const piantane = sincronizzaPiantane(id);
+  res.status(201).json({ ...arricchisci(trovaNoleggio(id)), avviso: avvisoPiantane(piantane) });
+});
+
+// Un apparecchio trascinato sulla planimetria: nasce un noleggio da un pezzo,
+// con le date della fiera (allestimento e smontaggio compresi) e il punto
+// dove montarlo. Stand e cliente arrivano dalla pianta, se riconosciuti.
+router.post('/sulla-pianta', (req, res) => {
+  const fiera = trovaFiera(intero(req.body?.fiera_id, 'fiera_id', { min: 1 }));
+  const allegato = allegatoDellaFiera(req.body?.allegato_id, fiera.id);
+  const posizione = leggiPosizione(req.body);
+  const { from, to } = finestraLogistica(fiera);
+  const { prodotto, dati } = leggiCorpo({
+    prodotto_id: req.body?.prodotto_id,
+    fiera_id: fiera.id,
+    cliente: req.body?.cliente,
+    stand: req.body?.stand,
+    padiglione: req.body?.padiglione,
+    quantita: 1,
+    data_inizio: from,
+    data_fine: to,
+  });
+  controllaDisponibilita({ prodotto, dati });
+  const id = db.transaction(() => {
+    const nuovo = inserisci(dati);
+    salvaSegnaposto(nuovo, allegato.id, posizione);
+    return nuovo;
+  })();
+  const piantane = sincronizzaPiantane(id);
+  res.status(201).json({ ...arricchisci(trovaNoleggio(id)), avviso: avvisoPiantane(piantane) });
+});
+
+// Spostare il segnaposto di un noleggio (anche su un'altra planimetria della stessa fiera).
+router.put('/:id/segnaposto', (req, res) => {
+  const noleggio = trovaNoleggio(req.params.id);
+  const allegato = allegatoDellaFiera(req.body?.allegato_id, noleggio.fiera_id);
+  res.json(salvaSegnaposto(noleggio.id, allegato.id, leggiPosizione(req.body)));
+});
+
+// Togliere il noleggio dalla pianta: il noleggio resta.
+router.delete('/:id/segnaposto', (req, res) => {
+  const noleggio = trovaNoleggio(req.params.id);
+  db.prepare('DELETE FROM segnaposti WHERE noleggio_id = ?').run(noleggio.id);
+  res.json({ ok: true });
 });
 
 router.put('/:id', (req, res) => {

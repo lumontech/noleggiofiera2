@@ -126,10 +126,14 @@ La sezione **Noleggi** ha tre schermate, in alto. Si apre sulla prima:
   **Modifica noleggio**, **Togli solo dalla pianta** (il noleggio resta) ed
   **Elimina** (il noleggio sparisce; chiede conferma). Funziona col mouse e
   col dito.
-- **Padiglioni**: se la fiera ha più planimetrie (di solito una per
-  padiglione), sopra la pianta c'è un bottone per ciascuna, con quanti
-  apparecchi ci sono già sopra: un clic e si cambia padiglione. Se un PDF ha
-  più pagine, ogni pagina ha il suo bottone nella barra della pianta.
+- **Padiglioni**: in alto sulla pianta c'è il numero del padiglione
+  (**PAD 6**), letto dal titolo della planimetria (la scritta "PAD 6" o
+  "Padiglione 6" più grande) o dal nome del file. Se la fiera ha più
+  planimetrie, sopra la pianta c'è un bottone per ciascuna, in ordine di
+  padiglione e con quanti apparecchi ci sono già sopra: un clic e si cambia
+  padiglione. Se un PDF ha più pagine, ogni pagina ha il suo bottone.
+- La colonna con l'elenco degli stand, a destra, qui parte chiusa: si apre
+  con **Elenco stand** e l'app ricorda la scelta.
 - **Elenco**: i noleggi raggruppati per fiera, come prima.
 - **Monitor disponibili**: scelta una fiera, quanti pezzi di ogni apparecchio
   sono ancora liberi nelle sue date (allestimento e smontaggio compresi) e,

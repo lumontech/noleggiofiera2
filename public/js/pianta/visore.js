@@ -169,6 +169,27 @@ export async function apriPianta({
   /* ---------- struttura ---------- */
 
   const titoloPagina = h('span', { class: 'pianta__pagina' });
+  // Il numero del padiglione, ben visibile in alto: dal titolo della pianta o dal nome del file.
+  const etichettaPad = h('span', { class: 'pianta__pad', hidden: true });
+  const padDelFile = padiglione(String(allegato.nome || '').replace(/[_-]/g, ' '));
+  const padDellaPagina = (n) => stato.pagine[n - 1]?.padiglione || padDelFile || null;
+
+  // La colonna degli stand si può chiudere; dentro Noleggi parte chiusa.
+  const CHIAVE_LATO = incorporata ? 'nf_lato_stand_noleggi' : 'nf_lato_stand';
+  let latoAperto = !incorporata;
+  try { const v = localStorage.getItem(CHIAVE_LATO); if (v !== null) latoAperto = v === '1'; } catch { /* niente */ }
+  const bottoneLato = h('button', { class: 'btn btn--mini', type: 'button' });
+  const applicaLato = () => {
+    radice.classList.toggle('pianta--senza-lato', !latoAperto);
+    bottoneLato.textContent = latoAperto ? 'Nascondi stand' : 'Elenco stand';
+    bottoneLato.title = latoAperto ? 'Chiudi la colonna con l\'elenco degli stand' : 'Apri l\'elenco degli stand coperti e non trovati';
+  };
+  bottoneLato.addEventListener('click', () => {
+    latoAperto = !latoAperto;
+    try { localStorage.setItem(CHIAVE_LATO, latoAperto ? '1' : '0'); } catch { /* niente */ }
+    applicaLato();
+    disegnaPagina();
+  });
   const bottoniPagina = h('div', { class: 'pianta__gruppo-bottoni' });
   const etichettaZoom = h('span', { class: 'pianta__zoom' }, '100%');
   const area = h('div', { class: 'pianta__area' });
@@ -183,6 +204,7 @@ export async function apriPianta({
   monta(radice,
     h('header', { class: 'pianta__testa' },
       incorporata ? null : h('button', { class: 'btn btn--fantasma pianta__chiudi', onclick: chiudi }, '← Chiudi'),
+      etichettaPad,
       h('div', { class: 'pianta__titolo' },
         h('strong', {}, `${fiera.nome} · pianta con TV`),
         h('span', {}, allegato.nome)),
@@ -195,12 +217,14 @@ export async function apriPianta({
           h('button', { class: 'btn btn--mini', onclick: () => cambiaZoom(1) }, 'Adatta')),
         h('div', { class: 'pianta__gruppo-bottoni' },
           h('button', { class: 'btn btn--mini', onclick: () => esporta('scarica') }, 'Scarica PNG'),
-          h('button', { class: 'btn btn--mini', onclick: () => esporta('stampa') }, 'Stampa')))),
+          h('button', { class: 'btn btn--mini', onclick: () => esporta('stampa') }, 'Stampa'),
+          bottoneLato))),
     h('div', { class: 'pianta__corpo' },
       disposizione ? h('aside', { class: 'pianta__tavolozza' }, disposizione.lato) : null,
       h('div', { class: 'pianta__vista' }, banner, area),
       h('aside', { class: 'pianta__lato' }, elenco)));
 
+  applicaLato();
   monta(elenco, h('p', { class: 'pianta__attesa' }, 'Leggo la planimetria…'));
 
   /* ---------- caricamento e analisi ---------- */
@@ -445,6 +469,12 @@ export async function apriPianta({
 
   function disegnaPaginazione() {
     const tot = stato.pagine.length;
+    const pad = padDellaPagina(stato.pagina);
+    etichettaPad.hidden = !pad;
+    etichettaPad.textContent = pad ? `PAD ${pad}` : '';
+    // Se ogni pagina è un padiglione diverso, i bottoni portano il suo numero.
+    const pads = stato.pagine.map((_, i) => stato.pagine[i].padiglione);
+    const perPadiglione = pads.every(Boolean) && new Set(pads).size === tot;
     // Spesso ogni pagina è un padiglione: con poche pagine, un bottone per
     // ciascuna (col numero di stand e apparecchi sopra), per saltare subito.
     if (tot > 1 && tot <= 12) {
@@ -454,7 +484,7 @@ export async function apriPianta({
         class: `btn btn--mini pianta__pagina-bottone ${n === stato.pagina ? 'pianta__pagina-bottone--attiva' : ''}`,
         title: `Pagina ${n}${sopra(n) ? ` · ${sopra(n)} sulla pianta` : ''}`,
         onclick: () => vaiA(n),
-      }, `Pag. ${n}`, sopra(n) ? h('span', { class: 'pianta__pagina-conta' }, sopra(n)) : null)));
+      }, perPadiglione ? `PAD ${pads[n - 1]}` : `Pag. ${n}`, sopra(n) ? h('span', { class: 'pianta__pagina-conta' }, sopra(n)) : null)));
       return;
     }
     monta(bottoniPagina, tot > 1 ? [
@@ -854,5 +884,5 @@ export async function apriPianta({
   aggiornaTutto();
   await disegnaPagina();
   if (richiesto) evidenzia(richiesto, true);
-  return { ricarica: ricaricaDati };
+  return { ricarica: ricaricaDati, padiglione: padDellaPagina(stato.pagina) };
 }

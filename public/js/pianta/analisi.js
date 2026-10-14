@@ -4,7 +4,7 @@
 //
 // Non usa il DOM: gira uguale nel browser e nei test con Node.
 
-import { codiciStand } from './stand.js';
+import { codiciStand, padiglione } from './stand.js';
 
 const IDENTITA = [1, 0, 0, 1, 0, 0];
 
@@ -41,8 +41,14 @@ function riquadro(vista, punti) {
 async function testiConCodici(pagina, vista) {
   const contenuto = await pagina.getTextContent();
   const testi = [];
+  // Il padiglione della pagina: la scritta "PAD 6" / "Padiglione 6" più grande,
+  // che di solito è il titolo della pianta.
+  let pad = null;
   for (const el of contenuto.items) {
     if (!el.str || !el.str.trim()) continue;
+    const numeroPad = padiglione(el.str.replace(/[_-]/g, ' '));
+    const grandezza = Math.hypot(el.transform[2], el.transform[3]) || el.height || 0;
+    if (numeroPad && (!pad || grandezza > pad.grandezza)) pad = { numero: numeroPad, grandezza };
     const codici = codiciStand(el.str);
     if (!codici.length) continue;
     // Gli angoli del testo seguono la sua direzione: vale anche per le
@@ -64,7 +70,7 @@ async function testiConCodici(pagina, vista) {
       ]),
     });
   }
-  return testi;
+  return { testi, padiglione: pad?.numero || null };
 }
 
 /**
@@ -140,11 +146,11 @@ async function riquadriDisegnati(pagina, vista, OPS) {
 
 export async function analizzaPagina(pagina, OPS) {
   const vista = pagina.getViewport({ scale: 1 });
-  const [testi, riquadri] = await Promise.all([
+  const [{ testi, padiglione: pad }, riquadri] = await Promise.all([
     testiConCodici(pagina, vista),
     riquadriDisegnati(pagina, vista, OPS),
   ]);
-  return { testi, riquadri, proporzione: vista.width / vista.height };
+  return { testi, riquadri, padiglione: pad, proporzione: vista.width / vista.height };
 }
 
 /**

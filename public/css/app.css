@@ -1553,3 +1553,24 @@ body.pianta-aperta .modale__sfondo { z-index: 60; }
 .pianta__gruppo-bottoni .pianta__pagina-bottone--attiva, .pianta__gruppo-bottoni .pianta__pagina-bottone--attiva:hover { background: var(--azzurro); border-color: var(--azzurro); color: var(--bianco); }
 .pianta__pagina-conta { font-size: 0.7rem; padding: 0 0.35rem; border-radius: 999px; background: var(--azzurro-tenue); color: #3730a3; }
 .pianta__pagina-bottone--attiva .pianta__pagina-conta { background: rgb(255 255 255 / 25%); color: var(--bianco); }
+
+/* Numero del padiglione in alto sulla pianta. */
+.pianta__pad {
+  flex-shrink: 0;
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--raggio-s);
+  background: var(--bianco);
+  color: var(--inchiostro);
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+/* Colonna degli stand chiusa: la pianta prende tutto lo spazio. */
+.pianta--senza-lato .pianta__lato { display: none; }
+.pianta--senza-lato .pianta__corpo,
+.pianta--incorporata.pianta--senza-lato .pianta__corpo { grid-template-columns: minmax(0, 1fr); }
+.pianta--disposizione.pianta--senza-lato .pianta__corpo { grid-template-columns: 250px minmax(0, 1fr); }
+@media (max-width: 760px) {
+  .pianta--disposizione.pianta--senza-lato .pianta__corpo { grid-template-columns: minmax(0, 1fr); }
+}

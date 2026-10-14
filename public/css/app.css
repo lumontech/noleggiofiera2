@@ -1,8 +1,8 @@
 /* NoleggioFiera — foglio di stile unico, nessun framework. */
 
 :root {
-  --inchiostro: #0f172a;
-  --inchiostro-2: #1e293b;
+  --inchiostro: #1e1b4b;
+  --inchiostro-2: #312e81;
   --grigio-900: #0f172a;
   --grigio-700: #334155;
   --grigio-500: #64748b;
@@ -12,9 +12,9 @@
   --grigio-100: #f1f5f9;
   --grigio-50: #f8fafc;
   --bianco: #ffffff;
-  --azzurro: #0284c7;
-  --azzurro-chiaro: #38bdf8;
-  --azzurro-tenue: #e0f2fe;
+  --azzurro: #4f46e5;
+  --azzurro-chiaro: #818cf8;
+  --azzurro-tenue: #e0e7ff;
   --verde: #059669;
   --verde-tenue: #d1fae5;
   --ambra: #d97706;
@@ -63,8 +63,8 @@ ul { margin: 0; padding: 0; list-style: none; }
   min-height: 100vh;
   padding: 1.5rem;
   background:
-    radial-gradient(1200px 600px at 10% -10%, #1e3a8a 0%, transparent 60%),
-    radial-gradient(900px 500px at 110% 110%, #0369a1 0%, transparent 55%),
+    radial-gradient(1200px 600px at 10% -10%, #4338ca 0%, transparent 60%),
+    radial-gradient(900px 500px at 110% 110%, #6d28d9 0%, transparent 55%),
     var(--inchiostro);
 }
 
@@ -143,7 +143,7 @@ ul { margin: 0; padding: 0; list-style: none; }
   transition: background 0.15s, color 0.15s;
 }
 .voce:hover { background: rgb(255 255 255 / 6%); color: var(--bianco); }
-.voce--attiva { background: rgb(56 189 248 / 14%); color: var(--bianco); }
+.voce--attiva { background: rgb(129 140 248 / 14%); color: var(--bianco); }
 .voce__icona { width: 18px; text-align: center; color: var(--azzurro-chiaro); }
 
 .contenuto { padding: 2rem 2.25rem 4rem; min-width: 0; }
@@ -183,7 +183,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 .btn:active { transform: translateY(1px); }
 .btn:disabled { opacity: 0.55; cursor: progress; }
 .btn--primario { background: var(--azzurro); border-color: var(--azzurro); color: var(--bianco); }
-.btn--primario:hover { background: #0369a1; border-color: #0369a1; }
+.btn--primario:hover { background: #4338ca; border-color: #4338ca; }
 .btn--pericolo { color: var(--rosso); }
 .btn--pericolo:hover { background: var(--rosso-tenue); border-color: #fca5a5; }
 .btn--fantasma { background: transparent; border-color: rgb(255 255 255 / 18%); color: var(--grigio-300); }
@@ -249,7 +249,7 @@ textarea.controllo { resize: vertical; }
   background: var(--grigio-200);
   color: var(--grigio-700);
 }
-.badge--attivo, .badge--prenotato { background: var(--azzurro-tenue); color: #075985; }
+.badge--attivo, .badge--prenotato { background: var(--azzurro-tenue); color: #3730a3; }
 .badge--in_corso, .badge--consegnato { background: var(--verde-tenue); color: #065f46; }
 .badge--manutenzione, .badge--pianificata { background: var(--ambra-tenue); color: #92400e; }
 .badge--dismesso, .badge--annullata, .badge--annullato { background: var(--rosso-tenue); color: #991b1b; }
@@ -403,7 +403,7 @@ textarea.controllo { resize: vertical; }
   padding: 0.1rem 0.45rem;
   border-radius: 999px;
   background: var(--azzurro-tenue);
-  color: #075985 !important;
+  color: #3730a3 !important;
   font-size: 0.75rem !important;
   font-weight: 600;
 }
@@ -642,7 +642,7 @@ textarea.controllo { resize: vertical; }
   padding: 0.28rem 0.7rem;
   border-radius: 999px;
   background: var(--azzurro-tenue);
-  color: #075985;
+  color: #3730a3;
   font-size: 0.8rem;
   font-weight: 600;
   white-space: nowrap;
@@ -679,7 +679,7 @@ textarea.controllo { resize: vertical; }
   font-size: 0.75rem;
   font-weight: 650;
 }
-.scheda--attiva .scheda__conta { background: var(--azzurro-tenue); color: #075985; }
+.scheda--attiva .scheda__conta { background: var(--azzurro-tenue); color: #3730a3; }
 
 .nol-gruppi { display: flex; flex-direction: column; gap: 0.85rem; }
 
@@ -736,7 +736,7 @@ textarea.controllo { resize: vertical; }
 }
 .nol-quando--in-corso { background: var(--verde-tenue); color: #065f46; }
 .nol-quando--vicina { background: var(--ambra-tenue); color: #92400e; }
-.nol-quando--futura { background: var(--azzurro-tenue); color: #075985; }
+.nol-quando--futura { background: var(--azzurro-tenue); color: #3730a3; }
 
 .nol-gruppo__numeri { display: flex; align-items: baseline; gap: 1.1rem; font-size: 0.84rem; color: var(--grigio-500); }
 .nol-gruppo__numeri strong { color: var(--grigio-900); font-weight: 650; }
@@ -829,8 +829,8 @@ select.controllo option:disabled { color: var(--grigio-400); }
 .campo__aiuto--attenzione { color: #b45309; font-weight: 600; }
 
 /* Il bottone planimetria si distingue quando ce n'è almeno una. */
-.btn--planimetrie-piene { border-color: #7dd3fc; background: var(--azzurro-tenue); color: #075985; }
-.btn--planimetrie-piene:hover { background: #bae6fd; border-color: #38bdf8; }
+.btn--planimetrie-piene { border-color: #a5b4fc; background: var(--azzurro-tenue); color: #3730a3; }
+.btn--planimetrie-piene:hover { background: #c7d2fe; border-color: #818cf8; }
 
 /* ---------- planimetrie ---------- */
 
@@ -969,7 +969,7 @@ body.pianta-aperta { overflow: hidden; }
 .pianta__foglio { position: relative; margin: 0 auto; background: var(--bianco); box-shadow: var(--ombra); }
 .pianta__tela, .pianta__immagine { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .pianta__livello { position: absolute; inset: 0; }
-.pianta__livello--posiziona { cursor: crosshair; background: rgb(2 132 199 / 6%); outline: 3px dashed var(--azzurro); outline-offset: -3px; }
+.pianta__livello--posiziona { cursor: crosshair; background: rgb(79 70 229 / 6%); outline: 3px dashed var(--azzurro); outline-offset: -3px; }
 
 .pianta__banner {
   display: flex;
@@ -982,7 +982,7 @@ body.pianta-aperta { overflow: hidden; }
   font-size: 0.86rem;
   border-bottom: 1px solid #fcd34d;
 }
-.pianta__banner--azione { background: var(--azzurro); color: var(--bianco); border-bottom-color: #0369a1; font-weight: 600; }
+.pianta__banner--azione { background: var(--azzurro); color: var(--bianco); border-bottom-color: #4338ca; font-weight: 600; }
 
 /* La copertura dello stand: arancione, ben distinguibile dai colori delle piante. */
 .pianta__copertura {
@@ -1142,7 +1142,7 @@ body.pianta-aperta { overflow: hidden; }
 }
 .installa__compito--da-fare { background: var(--ambra-tenue); color: #92400e; }
 .installa__compito--fatto { background: var(--verde-tenue); color: #065f46; }
-.installa__compito--ritiro { background: var(--azzurro-tenue); color: #075985; }
+.installa__compito--ritiro { background: var(--azzurro-tenue); color: #3730a3; }
 @media (max-width: 520px) {
   .installa { padding: 0.85rem 0.8rem 0.9rem; }
   .installa__piante .btn { flex: 1 1 100%; }
@@ -1188,7 +1188,7 @@ body.pianta-aperta { overflow: hidden; }
 /* ---------- richieste degli organizzatori ---------- */
 
 .allerta--richieste { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;
-  background: var(--azzurro-tenue); border-color: #7dd3fc; color: #075985; }
+  background: var(--azzurro-tenue); border-color: #a5b4fc; color: #3730a3; }
 .allerta--richieste .allerta__titolo { margin: 0; }
 .badge--ruolo-organizzatore { background: var(--verde-tenue); color: #065f46; }
 
@@ -1263,7 +1263,7 @@ body.pianta-aperta { overflow: hidden; }
 
 .montaggio { display: inline-block; padding: 0.08rem 0.5rem; border-radius: 999px; font-size: 0.74rem; font-weight: 650; white-space: nowrap; }
 .montaggio--parete { background: #ede9fe; color: #5b21b6; }
-.montaggio--piantana { background: var(--azzurro-tenue); color: #075985; }
+.montaggio--piantana { background: var(--azzurro-tenue); color: #3730a3; }
 .montaggio--tavolo { background: var(--verde-tenue); color: #065f46; }
 .montaggio--da-definire { background: var(--grigio-100); color: var(--grigio-500); font-weight: 500; }
 .installa__montaggio { display: block; margin-top: 0.2rem; }

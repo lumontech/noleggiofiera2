@@ -243,10 +243,11 @@ function gruppo(g, { aperto, azioni }) {
 
 /* ---------- schermate ---------- */
 
+// La planimetria è la prima e si apre entrando in Noleggi.
 const SCHERMATE = [
+  { id: 'planimetria', testo: 'Planimetria' },
   { id: 'elenco', testo: 'Elenco' },
   { id: 'disponibili', testo: 'Monitor disponibili' },
-  { id: 'planimetria', testo: 'Planimetria' },
 ];
 
 // Schermata e fiera stanno nell'indirizzo (#/noleggi?vista=planimetria&fiera=3):
@@ -428,14 +429,11 @@ async function schermataPlanimetria(corpo, fiereOrdinate) {
   });
   const carica = h('button', { class: 'btn', onclick: () => scegliFile.click() }, '+ Allega planimetria');
 
-  const selPianta = piante.length > 1 ? select('pianta', piante.map((a) => ({ valore: a.id, testo: a.nome })), allegato.id) : null;
-  selPianta?.addEventListener('change', () => {
-    location.hash = `${indirizzo('planimetria', fiera.id)}&pianta=${selPianta.value}`;
-  });
-
   const zona = h('div', { class: 'nol-pianta' });
+  const barraPadiglioni = h('nav', { class: 'padiglioni', 'aria-label': 'Planimetrie della fiera' });
   monta(corpo,
-    h('div', { class: 'filtri' }, selettoreFiera(fiereOrdinate, fiera, 'planimetria'), selPianta, carica, scegliFile),
+    h('div', { class: 'filtri' }, selettoreFiera(fiereOrdinate, fiera, 'planimetria'), carica, scegliFile),
+    piante.length > 1 ? barraPadiglioni : null,
     zona);
 
   if (!allegato) {
@@ -445,33 +443,71 @@ async function schermataPlanimetria(corpo, fiereOrdinate) {
     return;
   }
 
-  const lato = tavolozza();
-  const aggiornaLiberi = async () => {
-    lato.aggiorna(await api.apparecchi({ from: finestra.data_inizio, to: finestra.data_fine }));
-  };
-  aggiornaLiberi();
-
+  let apparecchi = [];
+  let aperta = allegato;
+  let lato = null;
   let pianta = null;
+
+  const aggiornaLiberi = async () => {
+    apparecchi = await api.apparecchi({ from: finestra.data_inizio, to: finestra.data_fine });
+    lato?.aggiorna(apparecchi);
+  };
+
+  // Un bottone per planimetria (di solito una per padiglione), con quanti
+  // apparecchi ci sono già sopra: si passa dall'una all'altra con un clic.
+  async function disegnaPadiglioni() {
+    if (piante.length < 2) return;
+    const noleggi = await api.noleggi({ fiera_id: fiera.id });
+    const conta = (id) => noleggi.filter((n) => n.segnaposto_allegato === id && n.stato !== 'annullato').length;
+    monta(barraPadiglioni, piante.map((a) => {
+      const quanti = conta(a.id);
+      return h('button', {
+        type: 'button',
+        class: `padiglione ${a.id === aperta.id ? 'padiglione--attivo' : ''}`,
+        'aria-current': a.id === aperta.id ? 'true' : null,
+        title: a.nome,
+        onclick: () => { if (a.id !== aperta.id) apri(a); },
+      }, nomePianta(a.nome), h('span', { class: 'padiglione__conta' }, numero(quanti)));
+    }));
+  }
+
   const dopoUnaModifica = async () => {
     await aggiornaLiberi();
     await pianta?.ricarica();
+    disegnaPadiglioni();
   };
-  pianta = await apriPianta({
-    fiera,
-    allegato,
-    contenitore: zona,
-    disposizione: {
-      lato: lato.lato,
-      crea: async (dati) => {
-        const salvato = await api.noleggioSullaPianta({ fiera_id: fiera.id, allegato_id: allegato.id, ...dati });
-        avvisoPiantane(salvato);
-        return salvato;
+
+  async function apri(a) {
+    aperta = a;
+    // Nell'indirizzo, così ricaricando si torna sullo stesso padiglione.
+    history.replaceState(null, '', `${indirizzo('planimetria', fiera.id)}&pianta=${a.id}`);
+    disegnaPadiglioni();
+    lato = tavolozza();
+    lato.aggiorna(apparecchi);
+    pianta = null;
+    pianta = await apriPianta({
+      fiera,
+      allegato: a,
+      contenitore: zona,
+      disposizione: {
+        lato: lato.lato,
+        crea: async (dati) => {
+          const salvato = await api.noleggioSullaPianta({ fiera_id: fiera.id, allegato_id: a.id, ...dati });
+          avvisoPiantane(salvato);
+          return salvato;
+        },
+        modifica: (n) => apriForm({ ...n, fiera_nome: fiera.nome }, fiereOrdinate, dopoUnaModifica),
+        dopo: async () => { await aggiornaLiberi(); disegnaPadiglioni(); },
       },
-      modifica: (n) => apriForm({ ...n, fiera_nome: fiera.nome }, fiereOrdinate, dopoUnaModifica),
-      dopo: aggiornaLiberi,
-    },
-  });
+    });
+  }
+
+  aggiornaLiberi();
+  await apri(allegato);
 }
+
+/** "Padiglione 5 - pianta.pdf" → "Padiglione 5 - pianta": il nome del file, senza estensione. */
+const nomePianta = (nome) => String(nome || 'Planimetria').replace(/\.(pdf|png|jpe?g|webp)$/i, '');
 
 /* ---------- vista ---------- */
 
@@ -486,7 +522,7 @@ export default async function vistaNoleggi({ corpo, azioni, ricarica }) {
     return a.data_inizio.localeCompare(b.data_inizio);
   });
 
-  const vista = SCHERMATE.find((v) => v.id === parametri().get('vista'))?.id || 'elenco';
+  const vista = SCHERMATE.find((v) => v.id === parametri().get('vista'))?.id || SCHERMATE[0].id;
   const fieraAperta = vista === 'elenco' ? null : fieraScelta(fiereOrdinate);
   const barraViste = h('nav', { class: 'viste', 'aria-label': 'Schermate dei noleggi' },
     SCHERMATE.map((v) => h('a', {

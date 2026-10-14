@@ -1514,3 +1514,42 @@ body.pianta-aperta { overflow: hidden; }
   .pianta--disposizione .pianta__tavolozza { max-height: 230px; border-right: 0; border-bottom: 1px solid var(--grigio-200); }
   .pianta--disposizione .pianta__vista { height: 60vh; min-height: 360px; }
 }
+
+/* Popup di un apparecchio sulla pianta. */
+.scheda-app { display: grid; gap: 0.1rem; margin: 0; }
+.scheda-app__riga { display: grid; grid-template-columns: 9rem 1fr; gap: 1rem; padding: 0.5rem 0; border-bottom: 1px solid var(--grigio-100); font-size: 0.92rem; }
+.scheda-app__riga:last-child { border-bottom: 0; }
+.scheda-app dt { color: var(--grigio-500); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.03em; padding-top: 0.1rem; }
+.scheda-app dd { margin: 0; font-weight: 600; }
+.scheda-app__mancante { color: #b45309; font-weight: 500 !important; font-style: italic; }
+.scheda-app__altro { margin-top: 0.75rem; }
+body.pianta-aperta .modale__sfondo { z-index: 60; }
+
+/* Padiglioni: una planimetria per bottone. */
+.padiglioni { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.padiglione {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--grigio-300);
+  border-radius: 999px;
+  background: var(--bianco);
+  color: var(--grigio-700);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  max-width: 280px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.padiglione:hover { border-color: var(--azzurro-chiaro); color: var(--grigio-900); }
+.padiglione--attivo { background: var(--azzurro); border-color: var(--azzurro); color: var(--bianco); }
+.padiglione__conta { min-width: 1.4rem; padding: 0 0.4rem; border-radius: 999px; background: var(--grigio-100); color: var(--grigio-700); font-size: 0.75rem; text-align: center; }
+.padiglione--attivo .padiglione__conta { background: rgb(255 255 255 / 25%); color: var(--bianco); }
+.pianta__pagina-bottone { display: inline-flex; align-items: center; gap: 0.3rem; }
+.pianta__gruppo-bottoni .pianta__pagina-bottone--attiva, .pianta__gruppo-bottoni .pianta__pagina-bottone--attiva:hover { background: var(--azzurro); border-color: var(--azzurro); color: var(--bianco); }
+.pianta__pagina-conta { font-size: 0.7rem; padding: 0 0.35rem; border-radius: 999px; background: var(--azzurro-tenue); color: #3730a3; }
+.pianta__pagina-bottone--attiva .pianta__pagina-conta { background: rgb(255 255 255 / 25%); color: var(--bianco); }

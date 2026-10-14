@@ -111,28 +111,35 @@ partecipano decine di aziende, ognuna con il proprio stand e le proprie date.
 L'importo è quello **del lavoro**, non un prezzo al giorno: è così che vengono
 quotati i noleggi.
 
-### Noleggi: elenco, monitor disponibili e planimetria
+### Noleggi: planimetria, elenco e monitor disponibili
 
-La sezione **Noleggi** ha tre schermate, in alto:
+La sezione **Noleggi** ha tre schermate, in alto. Si apre sulla prima:
 
-- **Elenco**: i noleggi raggruppati per fiera, come prima.
-- **Monitor disponibili**: scelta una fiera, quanti pezzi di ogni apparecchio
-  sono ancora liberi nelle sue date (allestimento e smontaggio compresi) e,
-  per quelli già impegnati, da chi.
 - **Planimetria**: la pianta della fiera, con a sinistra i monitor liberi.
   Si **trascina un monitor sulla pianta** e lo si lascia dove va montato: il
   noleggio nasce subito, da un pezzo, con le date della fiera, ed è salvato
   senza premere nulla. Se lo si lascia sopra uno stand, il numero dello stand
   (e il cliente, se lo stand ha già altri noleggi) si compila da solo;
-  altrimenti il segnaposto resta arancione finché non si completa il noleggio
-  dai dettagli. I segnaposti già messi si spostano trascinandoli; cliccandone
-  uno si apre il riepilogo con **Modifica noleggio** e **Togli dalla pianta**
-  (il noleggio resta). Funziona col mouse e col dito.
+  altrimenti il segnaposto resta arancione finché non si completa il noleggio.
+  I segnaposti si spostano trascinandoli. **Cliccandone uno si apre un popup**
+  con apparecchio, cliente, stand, montaggio, date e stato, e i bottoni
+  **Modifica noleggio**, **Togli solo dalla pianta** (il noleggio resta) ed
+  **Elimina** (il noleggio sparisce; chiede conferma). Funziona col mouse e
+  col dito.
+- **Padiglioni**: se la fiera ha più planimetrie (di solito una per
+  padiglione), sopra la pianta c'è un bottone per ciascuna, con quanti
+  apparecchi ci sono già sopra: un clic e si cambia padiglione. Se un PDF ha
+  più pagine, ogni pagina ha il suo bottone nella barra della pianta.
+- **Elenco**: i noleggi raggruppati per fiera, come prima.
+- **Monitor disponibili**: scelta una fiera, quanti pezzi di ogni apparecchio
+  sono ancora liberi nelle sue date (allestimento e smontaggio compresi) e,
+  per quelli già impegnati, da chi.
 
 Il **tecnico** ritrova gli stessi segnaposti sulla sua **Pianta con TV**, in
-sola lettura: toccandone uno vede apparecchio, ID, cliente, stand e montaggio,
-senza prezzi. Schermata e fiera stanno nell'indirizzo
-(`#/noleggi?vista=planimetria&fiera=3`), così si possono mandare a un collega.
+sola lettura: toccandone uno si apre lo stesso popup, senza prezzi e senza
+poter cancellare. Schermata, fiera e padiglione stanno nell'indirizzo
+(`#/noleggi?vista=planimetria&fiera=3&pianta=2`), così si possono mandare a
+un collega.
 
 ### Utenti e ruoli
 

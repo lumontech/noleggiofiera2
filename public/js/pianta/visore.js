@@ -16,7 +16,7 @@
 
 import { api } from '../api.js';
 import { h, monta, svuota, avviso, numero, nomeBreve, idProdotto,
-  etichettaMontaggio,
+  etichettaMontaggio, modale, badge, intervalloDate,
 } from '../ui.js';
 import { codiciStand, padiglione } from './stand.js';
 import { analizzaPagina, collocaStand, spazioDelNumero } from './analisi.js';
@@ -45,11 +45,13 @@ function caricaPdfjs() {
  * Un apparecchio messo sulla pianta senza numero di stand ha già il suo
  * segnaposto: non serve anche nell'elenco degli stand da trovare.
  */
-function gruppiDaNoleggi(noleggi, sullaPianta = new Set()) {
+function gruppiDaNoleggi(noleggi, sullaPianta = new Set(), idAllegato = null) {
   const gruppi = new Map();
   for (const n of noleggi) {
     if (n.stato === 'annullato') continue;
     if (sullaPianta.has(n.id) && !codiciStand(n.stand).length) continue;
+    // Messo dall'ufficio sulla pianta di un altro padiglione: non va cercato qui.
+    if (n.segnaposto_allegato && n.segnaposto_allegato !== idAllegato) continue;
     const chiaveGruppo = `${(n.cliente || '').toLowerCase()}|${(n.stand || '').toLowerCase()}`;
     if (!gruppi.has(chiaveGruppo)) {
       const codici = codiciStand(n.stand);
@@ -155,6 +157,8 @@ export async function apriPianta({
   const suTasto = (e) => {
     if (e.key !== 'Escape') return;
     if (!radice.isConnected) { chiudi(); return; }
+    // Con un popup aperto, Esc chiude il popup e basta.
+    if (document.querySelector('#modale-host .modale__sfondo')) return;
     if (incorporata && !stato.posiziona) return;
     e.stopImmediatePropagation();
     if (stato.posiziona) annullaPosizionamento();
@@ -217,7 +221,7 @@ export async function apriPianta({
     for (const n of dati.noleggi) noleggiPerId.set(n.id, n);
     // Un segnaposto il cui noleggio non arriva (annullato, o non visibile al tecnico) non si disegna.
     stato.segnaposti = stato.segnaposti.filter((sp) => noleggiPerId.has(sp.noleggio_id));
-    gruppiBase = gruppiDaNoleggi(dati.noleggi, new Set(stato.segnaposti.map((sp) => sp.noleggio_id)));
+    gruppiBase = gruppiDaNoleggi(dati.noleggi, new Set(stato.segnaposti.map((sp) => sp.noleggio_id)), allegato.id);
     if (stato.scelto) stato.scelto = noleggiPerId.get(stato.scelto.id) || null;
   }
   leggiDati();
@@ -414,44 +418,13 @@ export async function apriPianta({
     };
 
     const sullaPagina = stato.segnaposti.length;
-    const scelto = stato.scelto;
-    const schedaScelto = scelto ? h('div', { class: 'pianta__scelto' },
-      h('div', { class: 'pianta__voce-testa' },
-        h('strong', {}, nomeBreve({ nome: scelto.prodotto_nome, marca: scelto.prodotto_marca, pollici: scelto.prodotto_pollici })),
-        h('span', { class: 'pianta__stato pianta__stato--ok' }, idProdotto(scelto.prodotto_codice) || scelto.prodotto_categoria)),
-      h('p', { class: 'pianta__cliente' }, scelto.cliente || 'Cliente da indicare',
-        h('span', {}, scelto.stand ? ` · stand ${scelto.stand}` : ' · stand da indicare'),
-        scelto.padiglione ? h('span', {}, ` · pad. ${scelto.padiglione}`) : null),
-      scelto.montaggio || scelto.note_tecnico ? h('p', { class: 'pianta__apparecchi' },
-        [scelto.montaggio ? etichettaMontaggio(scelto.montaggio) : null, scelto.note_tecnico].filter(Boolean).join(' · ')) : null,
-      solaLettura ? null : h('div', { class: 'pianta__voce-azioni' },
-        disposizione?.modifica ? h('button', {
-          class: 'btn btn--mini btn--primario',
-          onclick: () => disposizione.modifica(scelto),
-        }, scelto.stand && scelto.cliente ? 'Modifica noleggio' : 'Completa il noleggio') : null,
-        h('button', {
-          class: 'btn btn--mini',
-          title: 'Il noleggio resta: si toglie solo il punto sulla pianta',
-          onclick: async () => {
-            await api.togliSegnaposto(scelto.id);
-            dati.segnaposti = (dati.segnaposti || []).filter((x) => x.noleggio_id !== scelto.id);
-            stato.scelto = null;
-            leggiDati();
-            ricolloca();
-            aggiornaTutto();
-            disposizione?.dopo?.();
-          },
-        }, 'Togli dalla pianta'),
-        h('button', { class: 'btn btn--mini', onclick: () => { stato.scelto = null; aggiornaTutto(); } }, 'Chiudi'))) : null;
-
     monta(elenco,
-      schedaScelto,
       disposizione && !stato.segnaposti.length ? h('p', { class: 'pianta__suggerimento' },
         'Trascina un monitor dall\'elenco a sinistra e lascialo sulla pianta dove va montato: '
         + 'il noleggio si crea e si salva da solo. Se lo lasci sopra uno stand, stand e cliente si compilano da soli.') : null,
       sullaPagina ? h('p', { class: 'pianta__nota' },
         `${numero(sullaPagina)} ${sullaPagina === 1 ? 'apparecchio messo' : 'apparecchi messi'} sulla pianta`
-        + (solaLettura ? ': tocca un segnaposto per i dettagli.' : ': trascinali per spostarli, cliccali per i dettagli.')) : null,
+        + (solaLettura ? ': tocca un segnaposto per i dettagli.' : ': trascinali per spostarli, cliccali per aprirli.')) : null,
       h('div', { class: 'pianta__riepilogo' },
         h('p', {}, h('strong', {}, numero(tvCoperte)), ` TV su ${numero(coperti.length)} stand coperti`),
         mancanti.length
@@ -472,6 +445,18 @@ export async function apriPianta({
 
   function disegnaPaginazione() {
     const tot = stato.pagine.length;
+    // Spesso ogni pagina è un padiglione: con poche pagine, un bottone per
+    // ciascuna (col numero di stand e apparecchi sopra), per saltare subito.
+    if (tot > 1 && tot <= 12) {
+      const sopra = (n) => stato.gruppi.filter((g) => g.spazi.some((sp) => sp.pagina === n)).length
+        + stato.segnaposti.filter((sp) => sp.pagina === n).length;
+      monta(bottoniPagina, Array.from({ length: tot }, (_, i) => i + 1).map((n) => h('button', {
+        class: `btn btn--mini pianta__pagina-bottone ${n === stato.pagina ? 'pianta__pagina-bottone--attiva' : ''}`,
+        title: `Pagina ${n}${sopra(n) ? ` · ${sopra(n)} sulla pianta` : ''}`,
+        onclick: () => vaiA(n),
+      }, `Pag. ${n}`, sopra(n) ? h('span', { class: 'pianta__pagina-conta' }, sopra(n)) : null)));
+      return;
+    }
     monta(bottoniPagina, tot > 1 ? [
       h('button', { class: 'btn btn--mini', disabled: stato.pagina <= 1, onclick: () => vaiA(stato.pagina - 1) }, '‹'),
       titoloPagina,
@@ -547,6 +532,67 @@ export async function apriPianta({
     aggiornaTutto();
     avviso(`Stand di ${g.cliente} posizionato.`);
   });
+
+  /* ---------- scheda di un apparecchio (popup) ---------- */
+
+  function togliDaiDati(id) {
+    dati.segnaposti = (dati.segnaposti || []).filter((x) => x.noleggio_id !== id);
+    stato.scelto = null;
+    leggiDati();
+    ricolloca();
+    aggiornaTutto();
+  }
+
+  function apriScheda(n) {
+    stato.scelto = n;
+    stato.evidenziato = null;
+    aggiornaTutto();
+    const riga = (etichetta, valore, mancante = '') => h('div', { class: 'scheda-app__riga' },
+      h('dt', {}, etichetta),
+      h('dd', { class: valore ? '' : 'scheda-app__mancante' }, valore || mancante || '—'));
+    let finestra;
+    const togli = solaLettura ? null : h('button', {
+      class: 'btn btn--mini',
+      type: 'button',
+      title: 'Il noleggio resta: si toglie solo il punto sulla pianta',
+      onclick: async () => {
+        await api.togliSegnaposto(n.id);
+        togliDaiDati(n.id);
+        finestra.chiudi();
+        avviso('Tolto dalla pianta: il noleggio resta nell\'elenco.');
+        disposizione?.dopo?.();
+      },
+    }, 'Togli solo dalla pianta');
+    const puoModificare = !solaLettura && disposizione?.modifica;
+    finestra = modale({
+      titolo: nomeBreve({ nome: n.prodotto_nome, marca: n.prodotto_marca, pollici: n.prodotto_pollici }),
+      sottotitolo: [idProdotto(n.prodotto_codice), n.prodotto_nome].filter(Boolean).join(' · '),
+      corpo: [
+        h('dl', { class: 'scheda-app' },
+          riga('Cliente', n.cliente, 'da indicare'),
+          riga('Stand', [n.padiglione ? `Pad. ${n.padiglione}` : null, n.stand].filter(Boolean).join(' · '), 'da indicare'),
+          riga('Montaggio', n.montaggio ? etichettaMontaggio(n.montaggio) : '', 'da definire'),
+          n.note_tecnico ? riga('Note per il tecnico', n.note_tecnico) : null,
+          riga('Date', intervalloDate(n.data_inizio, n.data_fine)),
+          h('div', { class: 'scheda-app__riga' }, h('dt', {}, 'Stato'), h('dd', {}, badge(n.stato)))),
+        togli ? h('div', { class: 'scheda-app__altro' }, togli) : null,
+      ],
+      testoConferma: puoModificare ? (n.cliente && n.stand ? 'Modifica noleggio' : 'Completa il noleggio') : 'Chiudi',
+      soloChiudi: !puoModificare,
+      onConferma: async () => { if (puoModificare) disposizione.modifica(n); },
+      azionePericolosa: solaLettura ? null : {
+        testo: 'Elimina',
+        testoConferma: 'Clicca ancora per eliminare',
+        onClick: async () => {
+          await api.eliminaNoleggio(n.id);
+          dati.noleggi = dati.noleggi.filter((x) => x.id !== n.id);
+          togliDaiDati(n.id);
+          avviso(`${etichettaSegnaposto(n)} eliminato: il noleggio non c'è più.`);
+          disposizione?.dopo?.();
+        },
+      },
+    });
+  }
 
   /* ---------- segnaposti e trascinamento ---------- */
 
@@ -645,7 +691,7 @@ export async function apriPianta({
     if (!bottone || stato.posiziona) return;
     const n = noleggiPerId.get(Number(bottone.dataset.noleggio));
     if (!n) return;
-    const scegli = () => { stato.scelto = n; stato.evidenziato = null; aggiornaTutto(); };
+    const scegli = () => apriScheda(n);
     if (solaLettura) { scegli(); return; }
     e.preventDefault();
     trascina(e, {

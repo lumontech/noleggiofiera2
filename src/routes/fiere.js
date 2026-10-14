@@ -156,7 +156,8 @@ router.get('/:id', (req, res) => {
   const noleggi = db.prepare(`
     SELECT n.*, p.nome AS prodotto_nome, p.categoria AS prodotto_categoria,
            p.pollici AS prodotto_pollici, p.quantita AS prodotto_quantita,
-           p.marca AS prodotto_marca, p.codice AS prodotto_codice
+           p.marca AS prodotto_marca, p.codice AS prodotto_codice,
+           (SELECT s.allegato_id FROM segnaposti s WHERE s.noleggio_id = n.id) AS segnaposto_allegato
       FROM noleggi n JOIN prodotti p ON p.id = n.prodotto_id
      WHERE n.fiera_id = ? ORDER BY p.categoria, p.nome`).all(fiera.id);
   const allegati = db.prepare('SELECT * FROM allegati WHERE fiera_id = ? ORDER BY creato_il DESC')

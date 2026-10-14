@@ -27,7 +27,7 @@ const SEZIONI_AMMINISTRATORE = [
   { id: 'fiere', titolo: 'Fiere', icona: '◈', vista: vistaFiere,
     descrizione: 'Gli eventi dove il materiale viene noleggiato.' },
   { id: 'noleggi', titolo: 'Noleggi', icona: '⇄', vista: vistaNoleggi,
-    descrizione: 'Chi ha cosa, fiera per fiera. Clicca un noleggio per modificarlo.' },
+    descrizione: 'La pianta di ogni fiera con i monitor, cosa è ancora libero e l\'elenco dei noleggi.' },
   { id: 'richieste', titolo: 'Richieste', icona: '✉', vista: vistaRichieste,
     descrizione: 'Le richieste di monitor mandate dagli organizzatori di fiera: confermale o rifiutale.' },
   { id: 'utenti', titolo: 'Utenti', icona: '◉', vista: vistaUtenti,

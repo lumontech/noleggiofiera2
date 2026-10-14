@@ -60,6 +60,8 @@ const installazionePerTecnico = (n) => ({
   prodotto_altezza_base_mm: n.prodotto_altezza_base_mm,
   prodotto_peso_kg: n.prodotto_peso_kg,
   prodotto_vesa: n.prodotto_vesa,
+  // Su quale planimetria l'ufficio l'ha messo, se l'ha messo.
+  segnaposto_allegato: n.segnaposto_allegato,
 });
 
 const allegatoPerTecnico = (a, fieraId) => ({
@@ -77,7 +79,8 @@ function installazioniDella(fieraId) {
            p.codice AS prodotto_codice, p.categoria AS prodotto_categoria,
            p.larghezza_mm AS prodotto_larghezza_mm, p.altezza_mm AS prodotto_altezza_mm,
            p.altezza_base_mm AS prodotto_altezza_base_mm, p.peso_kg AS prodotto_peso_kg,
-           p.vesa AS prodotto_vesa
+           p.vesa AS prodotto_vesa,
+           (SELECT s.allegato_id FROM segnaposti s WHERE s.noleggio_id = n.id) AS segnaposto_allegato
       FROM noleggi n JOIN prodotti p ON p.id = n.prodotto_id
      WHERE n.fiera_id = ? AND n.stato IN (${SEGNAPOSTO})
      ORDER BY n.stand, n.cliente`).all(fieraId, ...STATI_IMPEGNATIVI).map(installazionePerTecnico);

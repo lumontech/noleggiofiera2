@@ -126,6 +126,11 @@ La sezione **Noleggi** ha tre schermate, in alto. Si apre sulla prima:
   **Modifica noleggio**, **Togli solo dalla pianta** (il noleggio resta) ed
   **Elimina** (il noleggio sparisce; chiede conferma). Funziona col mouse e
   col dito.
+- Anche le **coperture arancioni degli stand** si cliccano: si apre lo stand
+  con l'elenco dei suoi monitor, e ogni monitor apre la sua scheda. Cliccando
+  un monitor della **lista a sinistra** (senza trascinarlo) si vedono
+  categoria, pollici, quanti ne restano liberi e a chi sono già noleggiati
+  gli altri.
 - **Padiglioni**: in alto sulla pianta c'è il numero del padiglione
   (**PAD 6**), letto dal titolo della planimetria (la scritta "PAD 6" o
   "Padiglione 6" più grande) o dal nome del file. Se la fiera ha più

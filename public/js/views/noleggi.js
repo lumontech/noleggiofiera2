@@ -507,6 +507,7 @@ async function schermataPlanimetria(corpo, fiereOrdinate) {
         },
         modifica: (n) => apriForm({ ...n, fiera_nome: fiera.nome }, fiereOrdinate, dopoUnaModifica),
         dopo: async () => { await aggiornaLiberi(); disegnaPadiglioni(); },
+        dettagli: (id) => dettagliApparecchio(apparecchi.find((x) => x.id === id), finestra),
       },
     });
     if (pianta?.padiglione && !padLetti.has(a.id)) {
@@ -517,6 +518,28 @@ async function schermataPlanimetria(corpo, fiereOrdinate) {
 
   aggiornaLiberi();
   await apri(allegato);
+}
+
+/** Popup di un apparecchio della lista: cos'è, quanti ne restano e chi ha gli altri. */
+function dettagliApparecchio(a, finestra) {
+  if (!a) return;
+  const riga = (etichetta, valore) => h('div', { class: 'scheda-app__riga' }, h('dt', {}, etichetta), h('dd', {}, valore || '—'));
+  modale({
+    titolo: nomeBreve(a),
+    sottotitolo: [idProdotto(a.codice), a.nome].filter(Boolean).join(' · '),
+    corpo: [
+      h('dl', { class: 'scheda-app' },
+        riga('Categoria', a.categoria),
+        a.pollici ? riga('Pollici', `${a.pollici}"`) : null,
+        riga('Liberi', `${numero(a.liberi)} su ${numero(a.quantita)} dal ${dataLunga(finestra.data_inizio)} al ${dataLunga(finestra.data_fine)}`),
+        a.occupato_da.length ? riga('Già noleggiati a', h('ul', { class: 'scheda-app__lista' },
+          a.occupato_da.map((o) => h('li', {}, `${o.cliente || 'cliente da indicare'}${o.stand ? ` · stand ${o.stand}` : ''} (${o.fiera_nome})`)))) : null),
+      h('p', { class: 'campo__aiuto' }, 'Per noleggiarlo, trascinalo sulla pianta dove va montato.'),
+    ],
+    testoConferma: 'Chiudi',
+    soloChiudi: true,
+    onConferma: async () => {},
+  });
 }
 
 /** "Padiglione 5 - pianta.pdf" → "Padiglione 5 - pianta": il nome del file, senza estensione. */

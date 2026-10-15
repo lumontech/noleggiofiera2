@@ -63,11 +63,13 @@ function gruppiDaNoleggi(noleggi, sullaPianta = new Set(), idAllegato = null) {
         // Chiave con cui si salva la posizione messa a mano.
         chiave: codici[0] || `cliente:${(n.cliente || n.stand || n.id).toString().toLowerCase()}`,
         apparecchi: [],
+        noleggi: [],
         tv: 0,
       });
     }
     const g = gruppi.get(chiaveGruppo);
     g.tv += n.quantita;
+    g.noleggi.push(n);
     g.apparecchi.push(`${n.quantita > 1 ? `${n.quantita}× ` : ''}${nomeBreve({
       nome: n.prodotto_nome, marca: n.prodotto_marca, pollici: n.prodotto_pollici,
     })}${n.prodotto_codice ? ` ${idProdotto(n.prodotto_codice)}` : ''}${n.montaggio ? ` (${etichettaMontaggio(n.montaggio).toLowerCase()})` : ''}`);
@@ -346,7 +348,7 @@ export async function apriPianta({
           class: `pianta__copertura pianta__copertura--${s.tipo} ${aDestra} ${stato.evidenziato?.chiave === g.chiave ? 'pianta__copertura--evidenziata' : ''}`,
           style: { left: `${s.x * 100}%`, top: `${s.y * 100}%`, width: `${s.w * 100}%`, height: `${s.h * 100}%` },
           title: `${g.cliente}${g.stand ? ` · stand ${g.stand}` : ''}\n${g.apparecchi.join('\n')}`,
-          onclick: (e) => { e.stopPropagation(); evidenzia(g, false); },
+          onclick: (e) => { e.stopPropagation(); evidenzia(g, false); apriStand(g); },
         },
         // L'etichetta solo sulla prima copertura del gruppo (es. 5017 e 5018 sono uno stand solo).
         i === 0 ? h('span', { class: 'pianta__etichetta' },
@@ -624,6 +626,37 @@ export async function apriPianta({
     });
   }
 
+  /** Popup di uno stand: i monitor che ci vanno, ognuno apribile nei suoi dettagli. */
+  function apriStand(g) {
+    let finestra;
+    const voce = (n) => h('li', {},
+      h('button', {
+        type: 'button',
+        class: 'stand-app',
+        onclick: () => { finestra.chiudi(); apriScheda(n); },
+      },
+      h('span', { class: 'stand-app__nome' },
+        h('strong', {}, `${n.quantita > 1 ? `${n.quantita}× ` : ''}${nomeBreve({ nome: n.prodotto_nome, marca: n.prodotto_marca, pollici: n.prodotto_pollici })}`),
+        h('span', {}, [idProdotto(n.prodotto_codice), n.montaggio ? etichettaMontaggio(n.montaggio) : 'montaggio da definire',
+          n.note_tecnico].filter(Boolean).join(' · '))),
+      badge(n.stato),
+      h('span', { class: 'stand-app__vai', 'aria-hidden': 'true' }, '›')));
+    finestra = modale({
+      titolo: g.stand ? `Stand ${g.stand}` : 'Stand senza numero',
+      sottotitolo: [g.cliente, g.padiglione ? `Pad. ${g.padiglione}` : null,
+        `${g.tv} ${g.tv === 1 ? 'apparecchio' : 'apparecchi'}`].filter(Boolean).join(' · '),
+      corpo: [
+        h('ul', { class: 'stand-app__elenco' }, g.noleggi.map(voce)),
+        h('p', { class: 'campo__aiuto' }, solaLettura
+          ? 'Tocca un apparecchio per vederne i dettagli.'
+          : 'Clicca un apparecchio per i dettagli, per modificarlo o eliminarlo.'),
+      ],
+      testoConferma: 'Chiudi',
+      soloChiudi: true,
+      onConferma: async () => {},
+    });
+  }
+
   /* ---------- segnaposti e trascinamento ---------- */
 
   /** Punto della pianta sotto il puntatore, in frazioni della pagina; null se fuori. */
@@ -746,6 +779,13 @@ export async function apriPianta({
   });
 
   // Dall'elenco degli apparecchi liberi alla pianta: nasce il noleggio.
+  // Un clic (o un tocco) senza trascinare apre invece i dettagli dell'apparecchio.
+  if (disposizione?.dettagli) {
+    disposizione.lato.addEventListener('click', (e) => {
+      const voce = e.target.closest('[data-prodotto]');
+      if (voce) disposizione.dettagli(Number(voce.dataset.prodotto));
+    });
+  }
   if (disposizione) {
     disposizione.lato.addEventListener('pointerdown', (e) => {
       const voce = e.target.closest('[data-prodotto]');

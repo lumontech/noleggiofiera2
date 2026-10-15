@@ -27,6 +27,17 @@ const PDFJS_WORKER = '/vendor/pdfjs/pdf.worker.min.mjs';
 const LATO_MASSIMO_CANVAS = 8000;
 // Dimensione di uno stand messo a mano, se non ce ne sono altri da imitare.
 const SPAZIO_MANUALE = { w: 0.05, h: 0.05 };
+const SCHERMI = ['TV', 'Monitor', 'Videowall', 'Totem'];
+
+/** "1 TV + 1 piantana", "2 TV + 3 accessori", "1 cassa"…: cosa va nello stand, a colpo d'occhio. */
+function contenutoStand(g) {
+  const parti = [];
+  if (g.tv) parti.push(`${g.tv} TV`);
+  if (g.piantane) parti.push(`${g.piantane} ${g.piantane === 1 ? 'piantana' : 'piantane'}`);
+  if (g.altri) parti.push(`${g.altri} ${g.altri === 1 ? 'accessorio' : 'accessori'}`);
+  return parti.join(' + ');
+}
+
 // Sotto questo spostamento (in pixel) un trascinamento è solo un clic.
 const SOGLIA_TRASCINAMENTO = 5;
 
@@ -64,11 +75,18 @@ function gruppiDaNoleggi(noleggi, sullaPianta = new Set(), idAllegato = null) {
         chiave: codici[0] || `cliente:${(n.cliente || n.stand || n.id).toString().toLowerCase()}`,
         apparecchi: [],
         noleggi: [],
-        tv: 0,
+        tv: 0,         // solo gli schermi: TV, monitor, videowall, totem
+        piantane: 0,
+        altri: 0,      // casse, cavi, segreterie…
+        pezzi: 0,      // tutto
       });
     }
     const g = gruppi.get(chiaveGruppo);
-    g.tv += n.quantita;
+    // Una piantana o una cassa non è una TV: si contano a parte.
+    if (SCHERMI.includes(n.prodotto_categoria)) g.tv += n.quantita;
+    else if (/piantana/i.test(n.prodotto_nome || '')) g.piantane += n.quantita;
+    else g.altri += n.quantita;
+    g.pezzi += n.quantita;
     g.noleggi.push(n);
     g.apparecchi.push(`${n.quantita > 1 ? `${n.quantita}× ` : ''}${nomeBreve({
       nome: n.prodotto_nome, marca: n.prodotto_marca, pollici: n.prodotto_pollici,
@@ -357,7 +375,7 @@ export async function apriPianta({
         },
         // L'etichetta solo sulla prima copertura del gruppo (es. 5017 e 5018 sono uno stand solo).
         i === 0 ? h('span', { class: 'pianta__etichetta' },
-          h('strong', {}, `${g.tv} TV`), ` ${g.cliente}`) : null);
+          h('strong', {}, contenutoStand(g)), ` ${g.cliente}`) : null);
         livello.appendChild(copertura);
       });
     }
@@ -649,7 +667,7 @@ export async function apriPianta({
     finestra = modale({
       titolo: g.stand ? `Stand ${g.stand}` : 'Stand senza numero',
       sottotitolo: [g.cliente, g.padiglione ? `Pad. ${g.padiglione}` : null,
-        `${g.tv} ${g.tv === 1 ? 'apparecchio' : 'apparecchi'}`].filter(Boolean).join(' · '),
+        contenutoStand(g)].filter(Boolean).join(' · '),
       corpo: [
         h('ul', { class: 'stand-app__elenco' }, g.noleggi.map(voce)),
         h('p', { class: 'campo__aiuto' }, solaLettura
@@ -875,7 +893,7 @@ export async function apriPianta({
         ctx.strokeStyle = 'rgb(234, 88, 12)';
         ctx.strokeRect(x, y, w, hh);
         if (i === 0) {
-          const testo = `${g.tv} TV ${g.cliente}`;
+          const testo = `${contenutoStand(g)} ${g.cliente}`;
           ctx.font = `bold ${carattere}px sans-serif`;
           const tw = ctx.measureText(testo).width + carattere * 0.8;
           // Come a schermo: l'etichetta non deve uscire dall'immagine.

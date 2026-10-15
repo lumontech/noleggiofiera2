@@ -57,7 +57,39 @@ function ancoraDisponibile(ctx, fiera, prezzi) {
   if (modelli.length) scriviMateriale(ctx, modelli, { prezzi, piccolo: true });
 }
 
-export function scriviNoleggi(stream, { prezzi, fiera = null, disponibile = false }) {
+/**
+ * I noleggi che finirebbero nel PDF, per sceglierli prima di scaricarlo:
+ * per fiera, nello stesso ordine del documento. La piantana abbinata a un TV
+ * non è una voce a sé: segue il TV.
+ */
+export function noleggiPerDocumento(fiera = null) {
+  return fierePerDocumento(fiera).map((f) => {
+    const righe = noleggiDella(f, { soloAttivi: !fiera });
+    const ids = new Set(righe.map((n) => n.id));
+    return {
+      id: f.id,
+      nome: f.nome,
+      noleggi: righe.filter((n) => !(n.abbinato_a && ids.has(n.abbinato_a))).map((n) => {
+        const posto = standInColonne(n.stand, f.padiglione, n.padiglione);
+        return {
+          id: n.id,
+          cliente: n.cliente || '',
+          padiglione: posto.padiglione,
+          stand: posto.stand,
+          apparecchio: `${n.quantita > 1 ? `${n.quantita}× ` : ''}${titoloModello(n)}`,
+          codice: n.codice,
+          piantane: righe.filter((p) => p.abbinato_a === n.id).length,
+        };
+      }),
+    };
+  });
+}
+
+/**
+ * @param {object} o
+ * @param {Set<number>} [o.escludi] noleggi da lasciare fuori (con le loro piantane)
+ */
+export function scriviNoleggi(stream, { prezzi, fiera = null, disponibile = false, escludi = new Set() }) {
   const fiere = fierePerDocumento(fiera);
   const ctx = nuovoDocumento(stream, {
     titolo: fiera ? `Noleggi · ${fiera.nome}` : 'Noleggi delle fiere in programma',
@@ -76,7 +108,10 @@ export function scriviNoleggi(stream, { prezzi, fiera = null, disponibile = fals
   let totaleGenerale = 0;
   if (!fiere.length) ctx.doc.font('Helvetica').fontSize(11).fillColor(COLORE.tenue).text('Nessun noleggio in programma.');
   for (const f of fiere) {
-    const righe = noleggiDella(f, { soloAttivi: !fiera });
+    const righe = noleggiDella(f, { soloAttivi: !fiera })
+      .filter((n) => !escludi.has(n.id) && !escludi.has(n.abbinato_a));
+    // Tra più fiere, quella di cui si è tolto tutto non compare proprio.
+    if (!fiera && !righe.length && escludi.size) continue;
     const pezzi = righe.reduce((t, n) => t + n.quantita, 0);
     const espositori = new Set(righe.map((n) => n.cliente).filter(Boolean)).size;
     titoloSezione(ctx, f.nome, [periodo(f.data_inizio, f.data_fine), [f.luogo, f.citta].filter(Boolean).join(', '),

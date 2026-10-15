@@ -3,8 +3,8 @@
 //
 // Ogni campo che esce da qui è scelto per nome (niente SELECT *, niente
 // oggetti passati interi): se un domani si aggiunge al database una colonna con
-// un importo, al tecnico non arriva. Le note libere restano fuori perché
-// potrebbero contenere un prezzo scritto a mano.
+// un importo, al tecnico non arriva. Delle note libere arrivano solo le righe
+// che non parlano di soldi (vedi lib/note.js).
 //
 // Il tecnico vede le edizioni in cui c'è materiale da installare o ancora
 // installato (noleggi prenotati o consegnati): quando tutto è rientrato,
@@ -53,12 +53,8 @@ const installazionePerTecnico = (n) => ({
   prodotto_pollici: n.prodotto_pollici,
   prodotto_codice: n.prodotto_codice,
   prodotto_categoria: n.prodotto_categoria,
-  // Misure e attacco: servono a chi monta. Niente costi.
-  prodotto_larghezza_mm: n.prodotto_larghezza_mm,
-  prodotto_altezza_mm: n.prodotto_altezza_mm,
-  prodotto_altezza_base_mm: n.prodotto_altezza_base_mm,
-  prodotto_peso_kg: n.prodotto_peso_kg,
-  prodotto_vesa: n.prodotto_vesa,
+  // La piantana abbinata dice di quale TV è: sta con lui.
+  abbinato_a: n.abbinato_a,
 });
 
 const allegatoPerTecnico = (a, fieraId) => ({
@@ -71,12 +67,9 @@ const allegatoPerTecnico = (a, fieraId) => ({
 function installazioniDella(fieraId) {
   return db.prepare(`
     SELECT n.id, n.cliente, n.stand, n.padiglione, n.quantita, n.data_inizio, n.data_fine, n.stato,
-           n.montaggio, n.note_tecnico, n.note,
+           n.montaggio, n.note_tecnico, n.note, n.abbinato_a,
            p.nome AS prodotto_nome, p.marca AS prodotto_marca, p.pollici AS prodotto_pollici,
-           p.codice AS prodotto_codice, p.categoria AS prodotto_categoria,
-           p.larghezza_mm AS prodotto_larghezza_mm, p.altezza_mm AS prodotto_altezza_mm,
-           p.altezza_base_mm AS prodotto_altezza_base_mm, p.peso_kg AS prodotto_peso_kg,
-           p.vesa AS prodotto_vesa
+           p.codice AS prodotto_codice, p.categoria AS prodotto_categoria
       FROM noleggi n JOIN prodotti p ON p.id = n.prodotto_id
      WHERE n.fiera_id = ? AND n.stato IN (${SEGNAPOSTO})
      ORDER BY n.stand, n.cliente`).all(fieraId, ...STATI_IMPEGNATIVI).map(installazionePerTecnico);

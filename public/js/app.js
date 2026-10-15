@@ -37,7 +37,7 @@ const SEZIONI_AMMINISTRATORE = [
 // Il tecnico ha una sezione sola: il resto dell'API gli è comunque chiuso dal server.
 const SEZIONI_TECNICO = [
   { id: 'installazioni', titolo: 'Installazioni', icona: '▣', vista: vistaInstallazioni,
-    descrizione: 'Cosa montare e in quale stand. Apri la pianta per vedere dove.' },
+    descrizione: 'Planimetrie, cosa manca e gli stalli dove montarlo.' },
 ];
 
 // L'organizzatore di fiera: le sue fiere e le richieste di monitor.

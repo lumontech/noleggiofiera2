@@ -144,11 +144,13 @@ La sezione **Noleggi** ha tre schermate, in alto. Si apre sulla prima:
   sono ancora liberi nelle sue date (allestimento e smontaggio compresi) e,
   per quelli già impegnati, da chi.
 
-Il **tecnico** entra direttamente nella sua **Planimetria**: in alto il
-riepilogo della fiera (pezzi da installare, installati, da ritirare, stand,
-cosa portare modello per modello e come vanno montati), poi i bottoni dei
-padiglioni e la pianta con stand e monitor, che si apre sul padiglione con
-più monitor. La sezione **Installazioni** resta, con l'elenco stand per stand.
+Il **tecnico** entra direttamente nella sua **Planimetria**, che è la stessa
+schermata dell'ufficio in sola lettura: fiera, bottoni dei padiglioni (si
+apre su quello con più monitor) e pianta. Nella colonna a sinistra, al posto
+dei monitor liberi, c'è il riepilogo (da installare, installati, da ritirare,
+stand, cosa portare) e i monitor del padiglione aperto, stand per stand:
+toccandone uno lo si trova sulla pianta e se ne apre la scheda. La sezione
+**Installazioni** resta, con l'elenco completo.
 Sulla pianta il tecnico ritrova gli stessi segnaposti, in sola lettura: toccandone uno si apre lo stesso popup, senza prezzi e senza
 poter cancellare. Schermata, fiera e padiglione stanno nell'indirizzo
 (`#/noleggi?vista=planimetria&fiera=3&pianta=2`), così si possono mandare a

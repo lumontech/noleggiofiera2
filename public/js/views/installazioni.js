@@ -19,7 +19,7 @@ export function compito(n, fiera) {
 }
 
 /** Le installazioni di una fiera raggruppate per stand (stesso cliente e stesso stand). */
-function perStand(installazioni) {
+export function perStand(installazioni) {
   const gruppi = new Map();
   for (const n of installazioni) {
     const chiave = `${(n.padiglione || '').toLowerCase()}|${(n.stand || '').toLowerCase()}|${(n.cliente || '').toLowerCase()}`;

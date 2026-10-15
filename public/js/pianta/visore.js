@@ -113,6 +113,8 @@ const descrizioneSegnaposto = (n) => [
  * @param {Function} [o.caricaDati] () => Promise<{ noleggi, posizioni }>
  * @param {string} [o.stand]      stand da mettere in evidenza all'apertura
  * @param {HTMLElement} [o.contenitore] se c'è, la pianta sta dentro la pagina invece che a schermo intero
+ * @param {HTMLElement} [o.colonnaSinistra] colonna a sinistra in sola lettura (il tecnico): le voci
+ *   [data-noleggio] si toccano per aprire il monitor e trovarlo sulla pianta
  * @param {boolean} [o.latoIniziale] colonna degli stand aperta (true) o chiusa (false) all'inizio
  * @param {object} [o.disposizione] trascinare apparecchi sulla pianta:
  *   { lato: elemento con le voci [data-prodotto] da trascinare,
@@ -121,11 +123,11 @@ const descrizioneSegnaposto = (n) => [
  */
 export async function apriPianta({
   fiera, allegato, solaLettura = false, caricaDati = () => datiDaAmministratore(fiera, allegato), stand = '',
-  contenitore = null, disposizione = null, latoIniziale = null,
+  contenitore = null, disposizione = null, latoIniziale = null, colonnaSinistra = null,
 }) {
   const incorporata = Boolean(contenitore);
   const radice = h('div', incorporata
-    ? { class: `pianta pianta--incorporata ${disposizione ? 'pianta--disposizione' : ''}` }
+    ? { class: `pianta pianta--incorporata ${disposizione || colonnaSinistra ? 'pianta--disposizione' : ''}` }
     : { class: 'pianta', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Pianta con TV' });
   if (incorporata) {
     monta(contenitore, radice);
@@ -225,6 +227,7 @@ export async function apriPianta({
           bottoneLato))),
     h('div', { class: 'pianta__corpo' },
       disposizione ? h('aside', { class: 'pianta__tavolozza' }, disposizione.lato) : null,
+      colonnaSinistra ? h('aside', { class: 'pianta__tavolozza' }, colonnaSinistra) : null,
       h('div', { class: 'pianta__vista' }, banner, area),
       h('aside', { class: 'pianta__lato' }, elenco)));
 
@@ -577,9 +580,9 @@ export async function apriPianta({
     aggiornaTutto();
   }
 
-  function apriScheda(n) {
+  function apriScheda(n, { tieniStand = false } = {}) {
     stato.scelto = n;
-    stato.evidenziato = null;
+    if (!tieniStand) stato.evidenziato = null;
     aggiornaTutto();
     const riga = (etichetta, valore, mancante = '') => h('div', { class: 'scheda-app__riga' },
       h('dt', {}, etichetta),
@@ -778,6 +781,29 @@ export async function apriPianta({
         disposizione?.dopo?.();
       },
     });
+  });
+
+  // Colonna del tecnico: toccando un monitor lo si trova sulla pianta e se ne aprono i dettagli.
+  colonnaSinistra?.addEventListener('click', async (e) => {
+    const voce = e.target.closest('[data-noleggio]');
+    const n = voce && noleggiPerId.get(Number(voce.dataset.noleggio));
+    if (!n) return;
+    const sp = stato.segnaposti.find((x) => x.noleggio_id === n.id);
+    const g = stato.gruppi.find((x) => x.spazi.length && x.noleggi.some((y) => y.id === n.id));
+    if (sp) {
+      if (sp.pagina !== stato.pagina) await vaiA(sp.pagina);
+      area.scrollTo({
+        left: sp.x * foglio.clientWidth - area.clientWidth / 2,
+        top: sp.y * foglio.clientHeight - area.clientHeight / 2,
+        behavior: 'smooth',
+      });
+      apriScheda(n);
+    } else if (g) {
+      await evidenzia(g, true);
+      apriScheda(n, { tieniStand: true });
+    } else {
+      apriScheda(n);
+    }
   });
 
   // Dall'elenco degli apparecchi liberi alla pianta: nasce il noleggio.

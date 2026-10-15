@@ -259,6 +259,21 @@ aggiungiColonna('noleggi', 'abbinato_a', 'INTEGER');
 aggiungiColonna('noleggi', 'padiglione', "TEXT DEFAULT ''");
 db.exec('CREATE INDEX IF NOT EXISTS idx_noleggi_abbinato ON noleggi(abbinato_a)');
 
+// Il punto esatto della planimetria dove va un apparecchio noleggiato,
+// messo trascinandolo sulla pianta. Uno per noleggio; x e y sono frazioni
+// (0-1) della pagina, come per le posizioni degli stand.
+db.exec(`
+CREATE TABLE IF NOT EXISTS segnaposti (
+  noleggio_id   INTEGER PRIMARY KEY REFERENCES noleggi(id)  ON DELETE CASCADE,
+  allegato_id   INTEGER NOT NULL    REFERENCES allegati(id) ON DELETE CASCADE,
+  pagina        INTEGER NOT NULL DEFAULT 1,
+  x             REAL    NOT NULL,
+  y             REAL    NOT NULL,
+  aggiornato_il TEXT    NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_segnaposti_allegato ON segnaposti(allegato_id);
+`);
+
 // In Airtable i TV da 86" erano segnati con 85 pollici.
 db.exec(`UPDATE prodotti SET pollici = 86 WHERE pollici = 85 AND nome LIKE '%86"%'`);
 

@@ -1,6 +1,6 @@
-// La schermata del tecnico, ridotta all'essenziale: per ogni fiera le
-// planimetrie, cosa manca da installare (o da ritirare) e gli stalli
-// (padiglione e stand) con il bottone che li mostra sulla pianta.
+// "Cosa manca", la seconda schermata del tecnico (la prima è la Planimetria):
+// per ogni fiera, stallo per stallo (padiglione e stand), cosa c'è ancora da
+// installare o da ritirare, con "Dov'è?" che lo mostra sulla pianta.
 // I dati arrivano da /api/tecnico, che non contiene prezzi.
 
 import { api } from '../api.js';
@@ -12,14 +12,14 @@ import {
 } from '../ui.js';
 
 /** Cosa resta da fare su un noleggio; null se è già installato e la fiera è in corso. */
-function compito(n, fiera) {
+export function compito(n, fiera) {
   if (n.stato === 'prenotato') return { testo: 'Da installare', classe: 'da-fare' };
   if (fiera.data_fine < oggiISO()) return { testo: 'Da ritirare', classe: 'ritiro' };
   return null;
 }
 
 /** La piantana abbinata a un TV non fa riga a sé: sta nella riga del TV. */
-function conPiantaneNelTv(righe) {
+export function conPiantaneNelTv(righe) {
   const ids = new Set(righe.map((n) => n.id));
   return righe
     .filter((n) => !(n.abbinato_a && ids.has(n.abbinato_a)))
@@ -27,7 +27,7 @@ function conPiantaneNelTv(righe) {
 }
 
 /** Gli stalli: noleggi raggruppati per padiglione, stand ed espositore, in ordine di giro. */
-function perStallo(installazioni, fiera) {
+export function perStallo(installazioni, fiera) {
   const gruppi = new Map();
   for (const n of installazioni) {
     const posto = standInColonne(n.stand, fiera.padiglione, n.padiglione);
@@ -44,19 +44,23 @@ function perStallo(installazioni, fiera) {
   });
 }
 
+/** I dati della pianta dal canale del tecnico: niente prezzi. */
+export const datiPerTecnico = (fiera, allegato) => async () => {
+  const [dettaglio, posizioni, segnaposti] = await Promise.all([
+    api.installazioniFiera(fiera.id),
+    api.posizioniTecnico(fiera.id, allegato.id),
+    api.segnapostiTecnico(fiera.id, allegato.id),
+  ]);
+  return { noleggi: dettaglio.noleggi, posizioni, segnaposti };
+};
+
 function apriLaPianta(fiera, allegato, stand = '') {
   apriPianta({
     fiera,
     allegato,
     stand,
     solaLettura: true,
-    caricaDati: async () => {
-      const [dettaglio, posizioni] = await Promise.all([
-        api.installazioniFiera(fiera.id),
-        api.posizioniTecnico(fiera.id, allegato.id),
-      ]);
-      return { noleggi: dettaglio.noleggi, posizioni };
-    },
+    caricaDati: datiPerTecnico(fiera, allegato),
   });
 }
 
@@ -113,14 +117,6 @@ function schedaFiera(fiera) {
         daFare ? h('span', { class: 'installa__compito installa__compito--da-fare' }, `${numero(daFare)} da installare`) : null,
         daRitirare ? h('span', { class: 'installa__compito installa__compito--ritiro' }, `${numero(daRitirare)} da ritirare`) : null,
         fatti ? h('span', { class: 'installa__compito installa__compito--fatto' }, `${numero(fatti)} già installati`) : null)),
-    h('h3', { class: 'installa__titolo' }, 'Planimetrie'),
-    fiera.allegati.length ? h('div', { class: 'installa__piante' },
-      fiera.allegati.map((a) => h('button', {
-        class: 'btn btn--primario btn--mini',
-        onclick: () => apriLaPianta(fiera, a),
-      }, fiera.allegati.length > 1 ? a.nome : 'Apri la planimetria con gli stalli')))
-      : h('p', { class: 'installa__senza-pianta' }, 'Non ancora caricata dall\'ufficio.'),
-    h('h3', { class: 'installa__titolo' }, 'Cosa manca'),
     mancano.length
       ? h('ul', { class: 'installa__elenco' }, perStallo(mancano, fiera).map((g) => schedaStallo(g, fiera)))
       : h('p', { class: 'installa__tutto' }, 'Niente: è tutto installato.'));
@@ -131,5 +127,5 @@ export default async function vistaInstallazioni({ corpo }) {
   monta(corpo, fiere.length
     ? h('div', { class: 'installazioni' }, fiere.map(schedaFiera))
     : vuoto('Nessuna installazione in programma',
-      'Quando l\'ufficio prenota del materiale per una fiera, lo trovi qui con gli stalli e la planimetria.'));
+      'Quando l\'ufficio prenota del materiale per una fiera, lo trovi qui stallo per stallo.'));
 }

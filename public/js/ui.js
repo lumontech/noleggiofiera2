@@ -178,8 +178,11 @@ export function modale({
       sottotitolo && h('p', {}, sottotitolo)),
     form);
 
+  // Aperta dalla pianta (popup di uno stand o di un monitor): va sopra la
+  // pianta. Quella da cui la pianta è stata aperta resta sotto.
+  const sopraPianta = document.body.classList.contains('pianta-aperta');
   const sfondo = h('div', {
-    class: 'modale__sfondo',
+    class: `modale__sfondo ${sopraPianta ? 'modale__sfondo--sopra-pianta' : ''}`,
     onclick: (e) => { if (e.target === sfondo) chiudi(); },
   }, pannello);
 

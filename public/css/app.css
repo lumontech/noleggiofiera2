@@ -1,8 +1,8 @@
 /* NoleggioFiera — foglio di stile unico, nessun framework. */
 
 :root {
-  --inchiostro: #0f172a;
-  --inchiostro-2: #1e293b;
+  --inchiostro: #1e1b4b;
+  --inchiostro-2: #312e81;
   --grigio-900: #0f172a;
   --grigio-700: #334155;
   --grigio-500: #64748b;
@@ -12,9 +12,9 @@
   --grigio-100: #f1f5f9;
   --grigio-50: #f8fafc;
   --bianco: #ffffff;
-  --azzurro: #0284c7;
-  --azzurro-chiaro: #38bdf8;
-  --azzurro-tenue: #e0f2fe;
+  --azzurro: #4f46e5;
+  --azzurro-chiaro: #818cf8;
+  --azzurro-tenue: #e0e7ff;
   --verde: #059669;
   --verde-tenue: #d1fae5;
   --ambra: #d97706;
@@ -63,8 +63,8 @@ ul { margin: 0; padding: 0; list-style: none; }
   min-height: 100vh;
   padding: 1.5rem;
   background:
-    radial-gradient(1200px 600px at 10% -10%, #1e3a8a 0%, transparent 60%),
-    radial-gradient(900px 500px at 110% 110%, #0369a1 0%, transparent 55%),
+    radial-gradient(1200px 600px at 10% -10%, #4338ca 0%, transparent 60%),
+    radial-gradient(900px 500px at 110% 110%, #6d28d9 0%, transparent 55%),
     var(--inchiostro);
 }
 
@@ -143,7 +143,7 @@ ul { margin: 0; padding: 0; list-style: none; }
   transition: background 0.15s, color 0.15s;
 }
 .voce:hover { background: rgb(255 255 255 / 6%); color: var(--bianco); }
-.voce--attiva { background: rgb(56 189 248 / 14%); color: var(--bianco); }
+.voce--attiva { background: rgb(129 140 248 / 14%); color: var(--bianco); }
 .voce__icona { width: 18px; text-align: center; color: var(--azzurro-chiaro); }
 
 .contenuto { padding: 2rem 2.25rem 4rem; min-width: 0; }
@@ -183,7 +183,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 .btn:active { transform: translateY(1px); }
 .btn:disabled { opacity: 0.55; cursor: progress; }
 .btn--primario { background: var(--azzurro); border-color: var(--azzurro); color: var(--bianco); }
-.btn--primario:hover { background: #0369a1; border-color: #0369a1; }
+.btn--primario:hover { background: #4338ca; border-color: #4338ca; }
 .btn--pericolo { color: var(--rosso); }
 .btn--pericolo:hover { background: var(--rosso-tenue); border-color: #fca5a5; }
 .btn--fantasma { background: transparent; border-color: rgb(255 255 255 / 18%); color: var(--grigio-300); }
@@ -249,7 +249,7 @@ textarea.controllo { resize: vertical; }
   background: var(--grigio-200);
   color: var(--grigio-700);
 }
-.badge--attivo, .badge--prenotato { background: var(--azzurro-tenue); color: #075985; }
+.badge--attivo, .badge--prenotato { background: var(--azzurro-tenue); color: #3730a3; }
 .badge--in_corso, .badge--consegnato { background: var(--verde-tenue); color: #065f46; }
 .badge--manutenzione, .badge--pianificata { background: var(--ambra-tenue); color: #92400e; }
 .badge--dismesso, .badge--annullata, .badge--annullato { background: var(--rosso-tenue); color: #991b1b; }
@@ -403,7 +403,7 @@ textarea.controllo { resize: vertical; }
   padding: 0.1rem 0.45rem;
   border-radius: 999px;
   background: var(--azzurro-tenue);
-  color: #075985 !important;
+  color: #3730a3 !important;
   font-size: 0.75rem !important;
   font-weight: 600;
 }
@@ -642,7 +642,7 @@ textarea.controllo { resize: vertical; }
   padding: 0.28rem 0.7rem;
   border-radius: 999px;
   background: var(--azzurro-tenue);
-  color: #075985;
+  color: #3730a3;
   font-size: 0.8rem;
   font-weight: 600;
   white-space: nowrap;
@@ -679,7 +679,7 @@ textarea.controllo { resize: vertical; }
   font-size: 0.75rem;
   font-weight: 650;
 }
-.scheda--attiva .scheda__conta { background: var(--azzurro-tenue); color: #075985; }
+.scheda--attiva .scheda__conta { background: var(--azzurro-tenue); color: #3730a3; }
 
 .nol-gruppi { display: flex; flex-direction: column; gap: 0.85rem; }
 
@@ -736,7 +736,7 @@ textarea.controllo { resize: vertical; }
 }
 .nol-quando--in-corso { background: var(--verde-tenue); color: #065f46; }
 .nol-quando--vicina { background: var(--ambra-tenue); color: #92400e; }
-.nol-quando--futura { background: var(--azzurro-tenue); color: #075985; }
+.nol-quando--futura { background: var(--azzurro-tenue); color: #3730a3; }
 
 .nol-gruppo__numeri { display: flex; align-items: baseline; gap: 1.1rem; font-size: 0.84rem; color: var(--grigio-500); }
 .nol-gruppo__numeri strong { color: var(--grigio-900); font-weight: 650; }
@@ -829,8 +829,8 @@ select.controllo option:disabled { color: var(--grigio-400); }
 .campo__aiuto--attenzione { color: #b45309; font-weight: 600; }
 
 /* Il bottone planimetria si distingue quando ce n'è almeno una. */
-.btn--planimetrie-piene { border-color: #7dd3fc; background: var(--azzurro-tenue); color: #075985; }
-.btn--planimetrie-piene:hover { background: #bae6fd; border-color: #38bdf8; }
+.btn--planimetrie-piene { border-color: #a5b4fc; background: var(--azzurro-tenue); color: #3730a3; }
+.btn--planimetrie-piene:hover { background: #c7d2fe; border-color: #818cf8; }
 
 /* ---------- planimetrie ---------- */
 
@@ -969,7 +969,7 @@ body.pianta-aperta { overflow: hidden; }
 .pianta__foglio { position: relative; margin: 0 auto; background: var(--bianco); box-shadow: var(--ombra); }
 .pianta__tela, .pianta__immagine { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .pianta__livello { position: absolute; inset: 0; }
-.pianta__livello--posiziona { cursor: crosshair; background: rgb(2 132 199 / 6%); outline: 3px dashed var(--azzurro); outline-offset: -3px; }
+.pianta__livello--posiziona { cursor: crosshair; background: rgb(79 70 229 / 6%); outline: 3px dashed var(--azzurro); outline-offset: -3px; }
 
 .pianta__banner {
   display: flex;
@@ -982,7 +982,7 @@ body.pianta-aperta { overflow: hidden; }
   font-size: 0.86rem;
   border-bottom: 1px solid #fcd34d;
 }
-.pianta__banner--azione { background: var(--azzurro); color: var(--bianco); border-bottom-color: #0369a1; font-weight: 600; }
+.pianta__banner--azione { background: var(--azzurro); color: var(--bianco); border-bottom-color: #4338ca; font-weight: 600; }
 
 /* La copertura dello stand: arancione, ben distinguibile dai colori delle piante. */
 .pianta__copertura {
@@ -1142,7 +1142,7 @@ body.pianta-aperta { overflow: hidden; }
 }
 .installa__compito--da-fare { background: var(--ambra-tenue); color: #92400e; }
 .installa__compito--fatto { background: var(--verde-tenue); color: #065f46; }
-.installa__compito--ritiro { background: var(--azzurro-tenue); color: #075985; }
+.installa__compito--ritiro { background: var(--azzurro-tenue); color: #3730a3; }
 @media (max-width: 520px) {
   .installa { padding: 0.85rem 0.8rem 0.9rem; }
   .installa__piante .btn { flex: 1 1 100%; }
@@ -1187,7 +1187,7 @@ body.pianta-aperta { overflow: hidden; }
 /* ---------- richieste degli organizzatori ---------- */
 
 .allerta--richieste { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap;
-  background: var(--azzurro-tenue); border-color: #7dd3fc; color: #075985; }
+  background: var(--azzurro-tenue); border-color: #a5b4fc; color: #3730a3; }
 .allerta--richieste .allerta__titolo { margin: 0; }
 .badge--ruolo-organizzatore { background: var(--verde-tenue); color: #065f46; }
 
@@ -1262,7 +1262,7 @@ body.pianta-aperta { overflow: hidden; }
 
 .montaggio { display: inline-block; padding: 0.08rem 0.5rem; border-radius: 999px; font-size: 0.74rem; font-weight: 650; white-space: nowrap; }
 .montaggio--parete { background: #ede9fe; color: #5b21b6; }
-.montaggio--piantana { background: var(--azzurro-tenue); color: #075985; }
+.montaggio--piantana { background: var(--azzurro-tenue); color: #3730a3; }
 .montaggio--tavolo { background: var(--verde-tenue); color: #065f46; }
 .montaggio--da-definire { background: var(--grigio-100); color: var(--grigio-500); font-weight: 500; }
 .installa__montaggio { display: block; margin-top: 0.2rem; }
@@ -1338,10 +1338,295 @@ body.pianta-aperta { overflow: hidden; }
 .nol-riga__montaggio { display: flex; flex-direction: column; align-items: flex-start; gap: 0.2rem; }
 .nol-riga__piantana { font-size: 0.75rem; color: var(--grigio-500); white-space: nowrap; }
 
-/* Tecnico: i titoli delle parti (Planimetrie, Cosa manca). */
-.installa__titolo { margin: 1rem 0 0; font-size: 0.72rem; font-weight: 650; text-transform: uppercase; letter-spacing: 0.06em; color: var(--grigio-500); }
-.installa__titolo + .installa__piante, .installa__titolo + .installa__elenco { margin-top: 0.45rem; }
-.installa__titolo + .installa__senza-pianta { margin-top: 0.3rem; }
+/* ---------- noleggi: elenco, monitor disponibili, planimetria ---------- */
+
+.viste {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border-radius: var(--raggio);
+  background: var(--grigio-200);
+  align-self: flex-start;
+  max-width: 100%;
+  overflow-x: auto;
+}
+.vista-bottone {
+  padding: 0.45rem 0.95rem;
+  border-radius: var(--raggio-s);
+  color: var(--grigio-700);
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.vista-bottone:hover { color: var(--grigio-900); background: rgb(255 255 255 / 55%); }
+.vista-bottone--attiva { background: var(--bianco); color: var(--azzurro); box-shadow: var(--ombra); }
+
+.disp-spunta { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.86rem; color: var(--grigio-700); cursor: pointer; white-space: nowrap; }
+
+.disp-elenco { display: flex; flex-direction: column; gap: 1rem; }
+.disp-gruppo { background: var(--bianco); border-radius: var(--raggio); box-shadow: var(--ombra); overflow: hidden; }
+.disp-gruppo h3, .disp-gruppo summary {
+  padding: 0.8rem 1.1rem;
+  font-size: 0.95rem;
+  border-bottom: 1px solid var(--grigio-200);
+}
+.disp-gruppo h3 span { font-weight: 500; color: var(--grigio-500); font-size: 0.85rem; }
+.disp-gruppo summary { cursor: pointer; font-weight: 600; color: var(--grigio-500); }
+.disp-gruppo--esauriti:not([open]) summary { border-bottom: 0; }
+.disp-riga {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.3fr) minmax(150px, 0.8fr) minmax(0, 1.6fr) auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.65rem 1.1rem;
+  border-bottom: 1px solid var(--grigio-100);
+  font-size: 0.88rem;
+}
+.disp-riga:last-child { border-bottom: 0; }
+.disp-riga__nome { display: flex; flex-direction: column; }
+.disp-riga__nome span { font-size: 0.78rem; color: var(--grigio-500); }
+.disp-riga__conta strong { font-size: 1.05rem; color: var(--verde); }
+.disp-riga--esaurito .disp-riga__conta strong { color: var(--grigio-400); }
+.disp-barra { display: block; height: 4px; margin-top: 0.3rem; border-radius: 99px; background: var(--grigio-200); overflow: hidden; max-width: 140px; }
+.disp-barra span { display: block; height: 100%; background: var(--verde); }
+.disp-riga__occupato { font-size: 0.8rem; color: var(--grigio-500); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+@media (max-width: 820px) {
+  .disp-riga { grid-template-columns: 1fr auto; gap: 0.35rem 1rem; }
+  .disp-riga__occupato { grid-column: 1 / -1; }
+}
+
+/* La pianta dentro la pagina, con l'elenco da trascinare a sinistra. */
+.nol-pianta { min-height: 0; }
+.pianta--incorporata {
+  position: relative;
+  inset: auto;
+  z-index: auto;
+  height: calc(100vh - 250px);
+  min-height: 560px;
+  border-radius: var(--raggio);
+  overflow: hidden;
+  box-shadow: var(--ombra);
+}
+.pianta--incorporata .pianta__corpo { grid-template-columns: minmax(0, 1fr) 300px; }
+.pianta--disposizione .pianta__corpo { grid-template-columns: 250px minmax(0, 1fr) 290px; }
+.pianta__tavolozza { overflow-y: auto; background: var(--bianco); border-right: 1px solid var(--grigio-200); }
+.pianta--trascina, .pianta--trascina * { cursor: grabbing !important; user-select: none; }
+
+.tav-testa { position: sticky; top: 0; z-index: 1; display: flex; flex-direction: column; gap: 0.45rem; padding: 0.9rem; background: var(--bianco); border-bottom: 1px solid var(--grigio-200); }
+.tav-testa p { font-size: 0.78rem; color: var(--grigio-500); }
+.tav-elenco { padding: 0.25rem 0.6rem 1rem; }
+.tav-elenco h3 { margin: 0.9rem 0.3rem 0.35rem; font-size: 0.72rem; font-weight: 650; color: var(--grigio-500); text-transform: uppercase; letter-spacing: 0.04em; }
+.tav-voce {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.3rem;
+  padding: 0.5rem 0.55rem;
+  border: 1px solid var(--grigio-200);
+  border-radius: var(--raggio-s);
+  background: var(--bianco);
+  cursor: grab;
+  user-select: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.tav-voce:hover { border-color: var(--azzurro-chiaro); box-shadow: var(--ombra); }
+.tav-maniglia { color: var(--grigio-400); font-size: 1.1rem; line-height: 1; padding: 0.2rem; touch-action: none; }
+.tav-voce__nome { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.tav-voce__nome strong { font-size: 0.86rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tav-voce__nome span { font-size: 0.74rem; color: var(--grigio-500); }
+.tav-voce__conta { min-width: 1.8rem; padding: 0.1rem 0.45rem; border-radius: 999px; background: var(--verde-tenue); color: #065f46; font-size: 0.78rem; font-weight: 700; text-align: center; }
+
+.pianta__livello--rilascio { background: rgb(79 70 229 / 7%); outline: 3px dashed var(--azzurro); outline-offset: -3px; }
+.pianta__fantasma {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 100;
+  margin: -14px 0 0 12px;
+  padding: 0.35rem 0.65rem;
+  border-radius: var(--raggio-s);
+  background: var(--azzurro);
+  color: var(--bianco);
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: var(--ombra-alta);
+  pointer-events: none;
+}
+
+/* Il segnaposto: dove montare un apparecchio. Indaco, distinto dalle coperture arancioni. */
+.pianta__segnaposto {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  transform: translate(-7px, -7px);
+  cursor: pointer;
+  font: inherit;
+}
+.pianta__segnaposto--mobile { cursor: grab; touch-action: none; }
+.pianta__segnaposto-punto {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--azzurro);
+  border: 2px solid var(--bianco);
+  box-shadow: 0 0 0 1px var(--azzurro), 0 2px 6px rgb(15 23 42 / 35%);
+}
+.pianta__segnaposto-testo {
+  padding: 0.05rem 0.35rem;
+  border-radius: 4px;
+  background: #3730a3;
+  color: var(--bianco);
+  font-size: 0.68rem;
+  font-weight: 650;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.pianta__segnaposto--a-destra { flex-direction: row-reverse; transform: translate(calc(-100% + 7px), -7px); }
+.pianta__segnaposto--incompleto .pianta__segnaposto-punto { background: var(--ambra); box-shadow: 0 0 0 1px var(--ambra), 0 2px 6px rgb(15 23 42 / 35%); }
+.pianta__segnaposto--incompleto .pianta__segnaposto-testo { background: #92400e; }
+.pianta__segnaposto:hover .pianta__segnaposto-punto,
+.pianta__segnaposto--scelto .pianta__segnaposto-punto { transform: scale(1.3); }
+.pianta__segnaposto--scelto { z-index: 4; }
+.pianta__segnaposto--scelto .pianta__segnaposto-testo { box-shadow: 0 0 0 3px rgb(79 70 229 / 35%); }
+.pianta__livello--posiziona .pianta__segnaposto { pointer-events: none; opacity: 0.6; }
+
+.pianta__scelto { margin-bottom: 0.9rem; padding: 0.75rem 0.8rem; border-radius: var(--raggio-s); border: 1px solid var(--azzurro-chiaro); background: var(--azzurro-tenue); }
+.pianta__scelto .pianta__voce-azioni { flex-wrap: wrap; }
+.pianta__suggerimento { margin-bottom: 0.9rem; padding: 0.75rem 0.8rem; border-radius: var(--raggio-s); background: var(--azzurro-tenue); color: #3730a3; font-size: 0.84rem; }
+
+@media (max-width: 1250px) {
+  .pianta--disposizione .pianta__corpo { grid-template-columns: 230px minmax(0, 1fr); }
+  .pianta--disposizione .pianta__lato { grid-column: 1 / -1; max-height: 260px; border-left: 0; border-top: 1px solid var(--grigio-200); }
+  .pianta--incorporata { height: auto; }
+  .pianta--disposizione .pianta__vista { height: calc(100vh - 260px); min-height: 480px; }
+}
+@media (max-width: 760px) {
+  .pianta--disposizione .pianta__corpo, .pianta--incorporata .pianta__corpo { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
+  .pianta--disposizione .pianta__tavolozza { max-height: 230px; border-right: 0; border-bottom: 1px solid var(--grigio-200); }
+  .pianta--disposizione .pianta__vista { height: 60vh; min-height: 360px; }
+}
+
+/* Popup di un apparecchio sulla pianta. */
+.scheda-app { display: grid; gap: 0.1rem; margin: 0; }
+.scheda-app__riga { display: grid; grid-template-columns: 9rem 1fr; gap: 1rem; padding: 0.5rem 0; border-bottom: 1px solid var(--grigio-100); font-size: 0.92rem; }
+.scheda-app__riga:last-child { border-bottom: 0; }
+.scheda-app dt { color: var(--grigio-500); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.03em; padding-top: 0.1rem; }
+.scheda-app dd { margin: 0; font-weight: 600; }
+.scheda-app__mancante { color: #b45309; font-weight: 500 !important; font-style: italic; }
+.scheda-app__altro { margin-top: 0.75rem; }
+.modale__sfondo--sopra-pianta { z-index: 60; }
+
+/* Padiglioni: una planimetria per bottone. */
+.padiglioni { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.padiglione {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--grigio-300);
+  border-radius: 999px;
+  background: var(--bianco);
+  color: var(--grigio-700);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  max-width: 280px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.padiglione:hover { border-color: var(--azzurro-chiaro); color: var(--grigio-900); }
+.padiglione--attivo { background: var(--azzurro); border-color: var(--azzurro); color: var(--bianco); }
+.padiglione__conta { min-width: 1.4rem; padding: 0 0.4rem; border-radius: 999px; background: var(--grigio-100); color: var(--grigio-700); font-size: 0.75rem; text-align: center; }
+.padiglione--attivo .padiglione__conta { background: rgb(255 255 255 / 25%); color: var(--bianco); }
+.pianta__pagina-bottone { display: inline-flex; align-items: center; gap: 0.3rem; }
+.pianta__gruppo-bottoni .pianta__pagina-bottone--attiva, .pianta__gruppo-bottoni .pianta__pagina-bottone--attiva:hover { background: var(--azzurro); border-color: var(--azzurro); color: var(--bianco); }
+.pianta__pagina-conta { font-size: 0.7rem; padding: 0 0.35rem; border-radius: 999px; background: var(--azzurro-tenue); color: #3730a3; }
+.pianta__pagina-bottone--attiva .pianta__pagina-conta { background: rgb(255 255 255 / 25%); color: var(--bianco); }
+
+/* Numero del padiglione in alto sulla pianta. */
+.pianta__pad {
+  flex-shrink: 0;
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--raggio-s);
+  background: var(--bianco);
+  color: var(--inchiostro);
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+/* Colonna degli stand chiusa: la pianta prende tutto lo spazio. */
+.pianta--senza-lato .pianta__lato { display: none; }
+.pianta--senza-lato .pianta__corpo,
+.pianta--incorporata.pianta--senza-lato .pianta__corpo { grid-template-columns: minmax(0, 1fr); }
+.pianta--disposizione.pianta--senza-lato .pianta__corpo { grid-template-columns: 250px minmax(0, 1fr); }
+@media (max-width: 760px) {
+  .pianta--disposizione.pianta--senza-lato .pianta__corpo { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Popup di uno stand: elenco dei monitor, ognuno apribile. */
+.stand-app__elenco { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.6rem; }
+.stand-app {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--grigio-200);
+  border-radius: var(--raggio-s);
+  background: var(--bianco);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.stand-app:hover { border-color: var(--azzurro-chiaro); background: var(--azzurro-tenue); }
+.stand-app__nome { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.stand-app__nome span { font-size: 0.8rem; color: var(--grigio-500); }
+.stand-app__vai { color: var(--grigio-400); font-size: 1.3rem; line-height: 1; }
+.scheda-app__lista { margin: 0; padding-left: 1rem; list-style: disc; font-weight: 500; }
+
+/* Elementi della pianta: si vede che si possono cliccare. */
+.pianta__copertura:hover { box-shadow: 0 0 0 3px rgb(234 88 12 / 30%); }
+.pianta__segnaposto:hover .pianta__segnaposto-testo { box-shadow: 0 0 0 3px rgb(79 70 229 / 30%); }
+.tav-voce { cursor: pointer; }
+
+/* Colonna del tecnico: riepilogo e monitor da installare. */
+.tav-numeri { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.35rem; }
+.tav-numero { display: flex; flex-direction: column; padding: 0.35rem 0.5rem; border-radius: var(--raggio-s); background: var(--grigio-50); font-size: 0.7rem; color: var(--grigio-500); }
+.tav-numero strong { font-size: 1.1rem; color: var(--grigio-900); line-height: 1.2; }
+.tav-numero--da-fare { background: var(--ambra-tenue); color: #92400e; }
+.tav-numero--da-fare strong { color: #92400e; }
+.tav-numero--fatto { background: var(--verde-tenue); color: #065f46; }
+.tav-numero--fatto strong { color: #065f46; }
+.tav-numero--ritiro { background: var(--rosso-tenue); color: #991b1b; }
+.tav-numero--ritiro strong { color: #991b1b; }
+.tav-portare summary { cursor: pointer; font-size: 0.8rem; font-weight: 600; color: var(--azzurro); }
+.tav-portare ul { margin-top: 0.35rem; display: flex; flex-direction: column; gap: 0.15rem; font-size: 0.78rem; }
+.tav-filtro { margin: 0.6rem 0.3rem 0; font-size: 0.75rem; color: var(--grigio-500); }
+.tav-link { padding: 0; border: 0; background: none; color: var(--azzurro); font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline; }
+.tav-stand h3 { text-transform: none; letter-spacing: 0; font-size: 0.82rem; color: var(--grigio-900); margin-bottom: 0; }
+.tav-stand h3 span { font-weight: 500; color: var(--grigio-500); }
+.tav-stand__cliente { margin: 0 0.3rem 0.3rem; font-size: 0.76rem; color: var(--grigio-500); }
+.tav-voce--tecnico { cursor: pointer; }
+.tav-voce--tecnico .installa__compito { flex-shrink: 0; font-size: 0.66rem; }
+@media (max-width: 760px) {
+  /* Sul telefono la colonna è sopra la pianta: niente intestazione fissa, e un po' più alta. */
+  .tav-testa { position: static; }
+  .pianta--disposizione .pianta__tavolozza { max-height: 45vh; }
+}
+
+/* Tecnico: cosa manca. */
 .installa__tutto { margin: 0.3rem 0 0; font-weight: 600; color: var(--verde); }
 .installa__piantana { font-size: 0.8rem; color: var(--grigio-500); }
 .installa__cliente { flex: 1; min-width: 0; }

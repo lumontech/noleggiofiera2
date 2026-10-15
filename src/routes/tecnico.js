@@ -15,6 +15,7 @@ import db from '../lib/db.js';
 import { HttpError, STATI_IMPEGNATIVI, giorniTra } from '../lib/domain.js';
 import * as archivio from '../lib/allegati.js';
 import { noteDelNoleggio } from '../lib/note.js';
+import { segnapostiDi } from '../lib/segnaposti.js';
 
 const router = Router();
 const SEGNAPOSTO = STATI_IMPEGNATIVI.map(() => '?').join(',');
@@ -55,6 +56,8 @@ const installazionePerTecnico = (n) => ({
   prodotto_categoria: n.prodotto_categoria,
   // La piantana abbinata dice di quale TV è: sta con lui.
   abbinato_a: n.abbinato_a,
+  // Su quale planimetria l'ufficio l'ha messo, se l'ha messo.
+  segnaposto_allegato: n.segnaposto_allegato,
 });
 
 const allegatoPerTecnico = (a, fieraId) => ({
@@ -69,7 +72,8 @@ function installazioniDella(fieraId) {
     SELECT n.id, n.cliente, n.stand, n.padiglione, n.quantita, n.data_inizio, n.data_fine, n.stato,
            n.montaggio, n.note_tecnico, n.note, n.abbinato_a,
            p.nome AS prodotto_nome, p.marca AS prodotto_marca, p.pollici AS prodotto_pollici,
-           p.codice AS prodotto_codice, p.categoria AS prodotto_categoria
+           p.codice AS prodotto_codice, p.categoria AS prodotto_categoria,
+           (SELECT s.allegato_id FROM segnaposti s WHERE s.noleggio_id = n.id) AS segnaposto_allegato
       FROM noleggi n JOIN prodotti p ON p.id = n.prodotto_id
      WHERE n.fiera_id = ? AND n.stato IN (${SEGNAPOSTO})
      ORDER BY n.stand, n.cliente`).all(fieraId, ...STATI_IMPEGNATIVI).map(installazionePerTecnico);
@@ -122,6 +126,12 @@ router.get('/fiere/:id/allegati/:allegato', (req, res) => {
 router.get('/fiere/:id/allegati/:allegato/posizioni', (req, res) => {
   const { allegato } = allegatoVisibile(req);
   res.json(db.prepare('SELECT chiave, pagina, x, y FROM posizioni_stand WHERE allegato_id = ?').all(allegato.id));
+});
+
+// Dove montare ogni apparecchio, come l'ha messo l'ufficio sulla pianta.
+router.get('/fiere/:id/allegati/:allegato/segnaposti', (req, res) => {
+  const { allegato } = allegatoVisibile(req);
+  res.json(segnapostiDi(allegato.id, STATI_IMPEGNATIVI));
 });
 
 export default router;

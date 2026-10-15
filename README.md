@@ -111,6 +111,51 @@ partecipano decine di aziende, ognuna con il proprio stand e le proprie date.
 L'importo è quello **del lavoro**, non un prezzo al giorno: è così che vengono
 quotati i noleggi.
 
+### Noleggi: planimetria, elenco e monitor disponibili
+
+La sezione **Noleggi** ha tre schermate, in alto. Si apre sulla prima:
+
+- **Planimetria**: la pianta della fiera, con a sinistra i monitor liberi.
+  Si **trascina un monitor sulla pianta** e lo si lascia dove va montato: il
+  noleggio nasce subito, da un pezzo, con le date della fiera, ed è salvato
+  senza premere nulla. Se lo si lascia sopra uno stand, il numero dello stand
+  (e il cliente, se lo stand ha già altri noleggi) si compila da solo;
+  altrimenti il segnaposto resta arancione finché non si completa il noleggio.
+  I segnaposti si spostano trascinandoli. **Cliccandone uno si apre un popup**
+  con apparecchio, cliente, stand, montaggio, date e stato, e i bottoni
+  **Modifica noleggio**, **Togli solo dalla pianta** (il noleggio resta) ed
+  **Elimina** (il noleggio sparisce; chiede conferma). Funziona col mouse e
+  col dito.
+- Anche le **coperture arancioni degli stand** si cliccano: si apre lo stand
+  con l'elenco dei suoi monitor, e ogni monitor apre la sua scheda. Cliccando
+  un monitor della **lista a sinistra** (senza trascinarlo) si vedono
+  categoria, pollici, quanti ne restano liberi e a chi sono già noleggiati
+  gli altri.
+- **Padiglioni**: in alto sulla pianta c'è il numero del padiglione
+  (**PAD 6**), letto dal titolo della planimetria (la scritta "PAD 6" o
+  "Padiglione 6" più grande) o dal nome del file. Se la fiera ha più
+  planimetrie, sopra la pianta c'è un bottone per ciascuna, in ordine di
+  padiglione e con quanti apparecchi ci sono già sopra: un clic e si cambia
+  padiglione. Se un PDF ha più pagine, ogni pagina ha il suo bottone.
+- La colonna con l'elenco degli stand, a destra, qui parte chiusa: si apre
+  con **Elenco stand** e l'app ricorda la scelta.
+- **Elenco**: i noleggi raggruppati per fiera, come prima.
+- **Monitor disponibili**: scelta una fiera, quanti pezzi di ogni apparecchio
+  sono ancora liberi nelle sue date (allestimento e smontaggio compresi) e,
+  per quelli già impegnati, da chi.
+
+Il **tecnico** entra direttamente nella sua **Planimetria**, che è la stessa
+schermata dell'ufficio in sola lettura: fiera, bottoni dei padiglioni (si
+apre su quello con più monitor) e pianta. Nella colonna a sinistra, al posto
+dei monitor liberi, c'è il riepilogo (da installare, installati, da ritirare,
+stand, cosa portare) e i monitor del padiglione aperto, stand per stand:
+toccandone uno lo si trova sulla pianta e se ne apre la scheda. La sezione
+**Installazioni** resta, con l'elenco completo.
+Sulla pianta il tecnico ritrova gli stessi segnaposti, in sola lettura: toccandone uno si apre lo stesso popup, senza prezzi e senza
+poter cancellare. Schermata, fiera e padiglione stanno nell'indirizzo
+(`#/noleggi?vista=planimetria&fiera=3&pianta=2`), così si possono mandare a
+un collega.
+
 ### Utenti e ruoli
 
 Ognuno entra con il proprio nome utente e la propria password. Gli utenti si
@@ -120,18 +165,21 @@ disattiva, elimina.
 | Ruolo | Cosa vede |
 |---|---|
 | **Amministratore** | Tutto: prodotti, fiere, noleggi, importi, utenti. |
-| **Tecnico** | Solo la sezione **Installazioni**, ridotta all'essenziale: per ogni fiera le **planimetrie**, **cosa manca** (da installare o da ritirare) e gli **stalli** (padiglione e stand, con l'espositore). **Nessun prezzo.** |
+| **Tecnico** | Solo l'essenziale, in due sezioni: **Planimetria** (la pianta con gli stalli e, a lato, cosa manca) e **Cosa manca** (stallo per stallo, cosa c'è da installare o da ritirare). **Nessun prezzo.** |
 | **Organizzatore fiera** | Solo **Le mie fiere**: le edizioni in programma delle fiere che gli assegni (es. Progecta → LTS e Pharmexpo). Da lì manda le **richieste di monitor** per gli espositori e vede se sono confermate. **Nessun prezzo.** |
 
 Il tecnico vede le edizioni in cui c'è materiale prenotato o consegnato;
-quando tutto è rientrato l'edizione sparisce dalla sua lista. Per ogni fiera:
+quando tutto è rientrato l'edizione sparisce dalla sua lista. Entra nella
+**Planimetria**; le sezioni sono due:
 
-- **Planimetrie**: si aprono con gli stalli segnati, in sola lettura.
-- **Cosa manca**: stallo per stallo (in ordine di padiglione e stand), cosa
-  c'è da installare o, a fiera finita, da ritirare: modello e ID, montaggio
-  se deciso, la piantana abbinata e le note. Quello già installato non è in
-  elenco: in alto c'è solo quanti sono. **Dov'è?** apre la pianta con lo
-  stallo evidenziato.
+- **Planimetria**: la pianta della fiera, in sola lettura, con gli stalli e i
+  monitor messi dall'ufficio; a lato cosa manca, stallo per stallo, del
+  padiglione aperto. Toccando uno stand o un monitor se ne vedono i dettagli.
+- **Cosa manca**: per ogni fiera, stallo per stallo (in ordine di padiglione
+  e stand), cosa c'è da installare o, a fiera finita, da ritirare: modello e
+  ID, montaggio se deciso, la piantana abbinata e le note. Quello già
+  installato non è in elenco: in alto c'è solo quanti sono. **Dov'è?** apre
+  la pianta con lo stallo evidenziato.
 
 Niente misure, pesi, ricerca o conteggi: sono cose che servono all'ufficio o
 all'allestitore, non a chi monta. La schermata è pensata per il telefono.
@@ -528,7 +576,7 @@ e `/api/profilo/*`; il resto risponde 403.
 | `GET` | `/api/richieste/:id/proposta` | Apparecchi liberi proposti per confermarla. |
 | `POST` | `/api/richieste/:id/conferma` `/rifiuta` | Conferma (crea i noleggi) o rifiuto. |
 | `GET` | `/api/tecnico/installazioni` | Edizioni con cosa installare, stand e planimetrie. Senza prezzi. Tutti i ruoli. |
-| `GET` | `/api/tecnico/fiere/:id[/allegati/:allegato[/posizioni]]` | Dettaglio, file e posizioni della pianta per il tecnico. |
+| `GET` | `/api/tecnico/fiere/:id[/allegati/:allegato[/posizioni\|/segnaposti]]` | Dettaglio, file, posizioni degli stand e segnaposti della pianta per il tecnico. |
 | `GET` | `/api/prodotti` | Elenco con disponibilità di oggi e picco a 30 giorni. |
 | `POST` `PUT` `DELETE` | `/api/prodotti[/:id]` | Gestione catalogo. |
 | `GET` | `/api/fiere` | Elenco con pezzi impegnati e valore stimato. |
@@ -537,6 +585,9 @@ e `/api/profilo/*`; il resto risponde 403.
 | `GET` `DELETE` | `/api/fiere/:id/allegati/:allegato` | Apertura ed eliminazione di una planimetria. |
 | `GET` `POST` `PUT` `DELETE` | `/api/noleggi[/:id]` | Righe di noleggio, con controllo di capienza. |
 | `PATCH` | `/api/noleggi/:id/stato` | Avanzamento stato. |
+| `POST` | `/api/noleggi/sulla-pianta` | Apparecchio trascinato sulla planimetria: crea il noleggio e il suo segnaposto `{ fiera_id, allegato_id, prodotto_id, pagina, x, y, stand?, cliente?, padiglione? }`. |
+| `PUT` `DELETE` | `/api/noleggi/:id/segnaposto` | Sposta il segnaposto `{ allegato_id, pagina, x, y }` o lo toglie (il noleggio resta). |
+| `GET` | `/api/fiere/:id/allegati/:allegato/segnaposti` | Segnaposti di una planimetria. |
 | `GET` | `/api/disponibilita?from=&to=` | Prospetto *da noleggiare* / *noleggiati*. |
 | `GET` | `/api/disponibilita/timeline?from=&to=` | Dati del calendario di occupazione. |
 | `GET` | `/api/disponibilita/dashboard` | Numeri del cruscotto. |

@@ -12,7 +12,7 @@ import {
 } from '../ui.js';
 
 /** Cosa deve fare il tecnico con un noleggio, detto con le sue parole. */
-function compito(n, fiera) {
+export function compito(n, fiera) {
   if (n.stato === 'prenotato') return { testo: 'Da installare', classe: 'da-fare' };
   if (fiera.data_fine < oggiISO()) return { testo: 'Da ritirare', classe: 'ritiro' };
   return { testo: 'Installato', classe: 'fatto' };
@@ -42,20 +42,23 @@ const testoRicerca = (fiera, g) => [
   ...g.righe.flatMap((n) => [n.prodotto_nome, n.prodotto_marca, idProdotto(n.prodotto_codice)]),
 ].filter(Boolean).join(' ').toLowerCase();
 
+/** I dati della pianta dal canale del tecnico: niente prezzi. */
+export const datiPerTecnico = (fiera, allegato) => async () => {
+  const [dettaglio, posizioni, segnaposti] = await Promise.all([
+    api.installazioniFiera(fiera.id),
+    api.posizioniTecnico(fiera.id, allegato.id),
+    api.segnapostiTecnico(fiera.id, allegato.id),
+  ]);
+  return { noleggi: dettaglio.noleggi, posizioni, segnaposti };
+};
+
 function apriLaPianta(fiera, allegato, stand = '') {
   apriPianta({
     fiera,
     allegato,
     stand,
     solaLettura: true,
-    caricaDati: async () => {
-      const [dettaglio, posizioni, segnaposti] = await Promise.all([
-        api.installazioniFiera(fiera.id),
-        api.posizioniTecnico(fiera.id, allegato.id),
-        api.segnapostiTecnico(fiera.id, allegato.id),
-      ]);
-      return { noleggi: dettaglio.noleggi, posizioni, segnaposti };
-    },
+    caricaDati: datiPerTecnico(fiera, allegato),
   });
 }
 

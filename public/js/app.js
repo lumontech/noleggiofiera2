@@ -9,6 +9,7 @@ import vistaNoleggi from './views/noleggi.js';
 import vistaDisponibilita from './views/disponibilita.js';
 import vistaUtenti from './views/utenti.js';
 import vistaInstallazioni from './views/installazioni.js';
+import vistaPiantaTecnico from './views/pianta-tecnico.js';
 import vistaRichieste from './views/richieste.js';
 import vistaOrganizzatore from './views/organizzatore.js';
 import vistaCatalogoOrganizzatore from './views/catalogo-organizzatore.js';
@@ -36,6 +37,8 @@ const SEZIONI_AMMINISTRATORE = [
 
 // Il tecnico ha una sezione sola: il resto dell'API gli è comunque chiuso dal server.
 const SEZIONI_TECNICO = [
+  { id: 'planimetria', titolo: 'Planimetria', icona: '◫', vista: vistaPiantaTecnico,
+    descrizione: 'La pianta della fiera con i monitor da installare. Tocca uno stand o un monitor per i dettagli.' },
   { id: 'installazioni', titolo: 'Installazioni', icona: '▣', vista: vistaInstallazioni,
     descrizione: 'Cosa montare e in quale stand. Apri la pianta per vedere dove.' },
 ];

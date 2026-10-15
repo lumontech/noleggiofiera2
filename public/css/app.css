@@ -1601,3 +1601,27 @@ body.pianta-aperta .modale__sfondo { z-index: 60; }
 .pianta__copertura:hover { box-shadow: 0 0 0 3px rgb(234 88 12 / 30%); }
 .pianta__segnaposto:hover .pianta__segnaposto-testo { box-shadow: 0 0 0 3px rgb(79 70 229 / 30%); }
 .tav-voce { cursor: pointer; }
+
+/* Riepilogo del tecnico sopra la pianta. */
+.riep-tec { display: flex; flex-direction: column; gap: 0.9rem; padding: 1rem 1.2rem; background: var(--bianco); border-radius: var(--raggio); box-shadow: var(--ombra); }
+.riep-tec__testa { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
+.riep-tec__testa h2 { font-size: 1.2rem; }
+.riep-tec__testa p { font-size: 0.86rem; color: var(--grigio-500); margin-top: 0.15rem; }
+.riep-tec__numeri { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.riep-tec__numero { display: flex; flex-direction: column; align-items: center; min-width: 5.5rem; padding: 0.45rem 0.7rem; border-radius: var(--raggio-s); background: var(--grigio-50); font-size: 0.75rem; color: var(--grigio-500); }
+.riep-tec__numero strong { font-size: 1.35rem; color: var(--grigio-900); line-height: 1.2; }
+.riep-tec__numero--da-fare { background: var(--ambra-tenue); color: #92400e; }
+.riep-tec__numero--da-fare strong { color: #92400e; }
+.riep-tec__numero--fatto { background: var(--verde-tenue); color: #065f46; }
+.riep-tec__numero--fatto strong { color: #065f46; }
+.riep-tec__numero--ritiro { background: var(--rosso-tenue); color: #991b1b; }
+.riep-tec__numero--ritiro strong { color: #991b1b; }
+.riep-tec__dettagli { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+.riep-tec__dettagli h3 { font-size: 0.72rem; font-weight: 650; color: var(--grigio-500); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.35rem; }
+.riep-tec__chip { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.riep-tec__chip li { padding: 0.25rem 0.6rem; border-radius: 999px; background: var(--grigio-100); font-size: 0.82rem; }
+.riep-tec__chip li span { color: var(--grigio-500); font-size: 0.76rem; }
+@media (max-width: 760px) {
+  .riep-tec__numeri { width: 100%; }
+  .riep-tec__numero { flex: 1; min-width: 0; }
+}

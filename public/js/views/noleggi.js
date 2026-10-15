@@ -12,7 +12,8 @@ import { apriPianta } from '../pianta/visore.js';
 import { stato as statoApp } from '../app.js';
 import { selettoreApparecchi } from '../selettore-apparecchi.js';
 import { apriDocumenti } from '../documenti.js';
-import { standInColonne, padiglione } from '../pianta/stand.js';
+import { standInColonne } from '../pianta/stand.js';
+import { disegnaBottoniPadiglioni } from '../pianta/padiglioni.js';
 import {
   h, monta, badge, modale, avviso, campo, input, select, areaTesto,
   griglia, numero, euro, vuoto, intervalloDate, dataLunga, etichetta, oggiISO, nomeBreve,
@@ -445,10 +446,6 @@ async function schermataPlanimetria(corpo, fiereOrdinate) {
 
   // "PAD 6" se il padiglione si legge dal nome del file o dal titolo della pianta.
   const padLetti = new Map();
-  const etichettaPianta = (a) => {
-    const pad = padLetti.get(a.id) || padiglione(String(a.nome || '').replace(/[_-]/g, ' '));
-    return pad ? `PAD ${pad}` : nomePianta(a.nome);
-  };
   let apparecchi = [];
   let aperta = allegato;
   let lato = null;
@@ -465,19 +462,7 @@ async function schermataPlanimetria(corpo, fiereOrdinate) {
     if (piante.length < 2) return;
     const noleggi = await api.noleggi({ fiera_id: fiera.id });
     const conta = (id) => noleggi.filter((n) => n.segnaposto_allegato === id && n.stato !== 'annullato').length;
-    // In ordine di padiglione (PAD 4, PAD 5, PAD 6…), poi le altre per nome.
-    const numeroPad = (a) => Number((etichettaPianta(a).match(/^PAD (\d+)$/) || [])[1]) || Infinity;
-    const ordinate = [...piante].sort((x, y) => numeroPad(x) - numeroPad(y) || x.nome.localeCompare(y.nome, 'it'));
-    monta(barraPadiglioni, ordinate.map((a) => {
-      const quanti = conta(a.id);
-      return h('button', {
-        type: 'button',
-        class: `padiglione ${a.id === aperta.id ? 'padiglione--attivo' : ''}`,
-        'aria-current': a.id === aperta.id ? 'true' : null,
-        title: a.nome,
-        onclick: () => { if (a.id !== aperta.id) apri(a); },
-      }, etichettaPianta(a), h('span', { class: 'padiglione__conta' }, numero(quanti)));
-    }));
+    disegnaBottoniPadiglioni(barraPadiglioni, { piante, aperta, padLetti, conta, onScegli: apri });
   }
 
   const dopoUnaModifica = async () => {
@@ -542,8 +527,6 @@ function dettagliApparecchio(a, finestra) {
   });
 }
 
-/** "Padiglione 5 - pianta.pdf" → "Padiglione 5 - pianta": il nome del file, senza estensione. */
-const nomePianta = (nome) => String(nome || 'Planimetria').replace(/\.(pdf|png|jpe?g|webp)$/i, '');
 
 /* ---------- vista ---------- */
 

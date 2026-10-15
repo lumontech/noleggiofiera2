@@ -113,6 +113,7 @@ const descrizioneSegnaposto = (n) => [
  * @param {Function} [o.caricaDati] () => Promise<{ noleggi, posizioni }>
  * @param {string} [o.stand]      stand da mettere in evidenza all'apertura
  * @param {HTMLElement} [o.contenitore] se c'è, la pianta sta dentro la pagina invece che a schermo intero
+ * @param {boolean} [o.latoIniziale] colonna degli stand aperta (true) o chiusa (false) all'inizio
  * @param {object} [o.disposizione] trascinare apparecchi sulla pianta:
  *   { lato: elemento con le voci [data-prodotto] da trascinare,
  *     crea: async ({ prodotto_id, pagina, x, y, cliente, stand, padiglione }) => noleggio,
@@ -120,7 +121,7 @@ const descrizioneSegnaposto = (n) => [
  */
 export async function apriPianta({
   fiera, allegato, solaLettura = false, caricaDati = () => datiDaAmministratore(fiera, allegato), stand = '',
-  contenitore = null, disposizione = null,
+  contenitore = null, disposizione = null, latoIniziale = null,
 }) {
   const incorporata = Boolean(contenitore);
   const radice = h('div', incorporata
@@ -177,8 +178,9 @@ export async function apriPianta({
   const padDellaPagina = (n) => stato.pagine[n - 1]?.padiglione || padDelFile || null;
 
   // La colonna degli stand si può chiudere; dentro Noleggi parte chiusa.
-  const CHIAVE_LATO = incorporata ? 'nf_lato_stand_noleggi' : 'nf_lato_stand';
-  let latoAperto = !incorporata;
+  // `latoIniziale` sceglie se parte aperta (il tecnico la vuole: è il suo riepilogo).
+  const CHIAVE_LATO = latoIniziale !== null ? 'nf_lato_stand_tecnico' : incorporata ? 'nf_lato_stand_noleggi' : 'nf_lato_stand';
+  let latoAperto = latoIniziale ?? !incorporata;
   try { const v = localStorage.getItem(CHIAVE_LATO); if (v !== null) latoAperto = v === '1'; } catch { /* niente */ }
   const bottoneLato = h('button', { class: 'btn btn--mini', type: 'button' });
   const applicaLato = () => {

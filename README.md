@@ -144,8 +144,12 @@ La sezione **Noleggi** ha tre schermate, in alto. Si apre sulla prima:
   sono ancora liberi nelle sue date (allestimento e smontaggio compresi) e,
   per quelli già impegnati, da chi.
 
-Il **tecnico** ritrova gli stessi segnaposti sulla sua **Pianta con TV**, in
-sola lettura: toccandone uno si apre lo stesso popup, senza prezzi e senza
+Il **tecnico** entra direttamente nella sua **Planimetria**: in alto il
+riepilogo della fiera (pezzi da installare, installati, da ritirare, stand,
+cosa portare modello per modello e come vanno montati), poi i bottoni dei
+padiglioni e la pianta con stand e monitor, che si apre sul padiglione con
+più monitor. La sezione **Installazioni** resta, con l'elenco stand per stand.
+Sulla pianta il tecnico ritrova gli stessi segnaposti, in sola lettura: toccandone uno si apre lo stesso popup, senza prezzi e senza
 poter cancellare. Schermata, fiera e padiglione stanno nell'indirizzo
 (`#/noleggi?vista=planimetria&fiera=3&pianta=2`), così si possono mandare a
 un collega.
@@ -159,7 +163,7 @@ disattiva, elimina.
 | Ruolo | Cosa vede |
 |---|---|
 | **Amministratore** | Tutto: prodotti, fiere, noleggi, importi, utenti. |
-| **Tecnico** | Solo la sezione **Installazioni**: fiera per fiera, quali apparecchi montare (con il codice INV), in quale stand e per quale cliente, e la **Pianta con TV** in sola lettura. **Nessun prezzo.** |
+| **Tecnico** | **Planimetria** (pianta con i monitor da installare e riepilogo) e **Installazioni**: fiera per fiera, quali apparecchi montare (con il codice INV), in quale stand e per quale cliente, e la **Pianta con TV** in sola lettura. **Nessun prezzo.** |
 | **Organizzatore fiera** | Solo **Le mie fiere**: le edizioni in programma delle fiere che gli assegni (es. Progecta → LTS e Pharmexpo). Da lì manda le **richieste di monitor** per gli espositori e vede se sono confermate. **Nessun prezzo.** |
 
 Il tecnico vede le edizioni in cui c'è materiale prenotato ("Da installare")

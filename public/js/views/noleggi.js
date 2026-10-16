@@ -13,7 +13,7 @@ import { stato as statoApp } from '../app.js';
 import { selettoreApparecchi } from '../selettore-apparecchi.js';
 import { apriDocumenti } from '../documenti.js';
 import { standInColonne } from '../pianta/stand.js';
-import { disegnaBottoniPadiglioni } from '../pianta/padiglioni.js';
+import { disegnaBottoniPadiglioni, contaTv, leggiPadiglioni } from '../pianta/padiglioni.js';
 import {
   h, monta, badge, modale, avviso, campo, input, select, areaTesto,
   griglia, numero, euro, vuoto, intervalloDate, dataLunga, etichetta, oggiISO, nomeBreve,
@@ -446,6 +446,8 @@ async function schermataPlanimetria(corpo, fiereOrdinate) {
 
   // "PAD 6" se il padiglione si legge dal nome del file o dal titolo della pianta.
   const padLetti = new Map();
+  // TV contate davvero sulle planimetrie già aperte.
+  const tvTrovate = new Map();
   let apparecchi = [];
   let aperta = allegato;
   let lato = null;
@@ -461,7 +463,8 @@ async function schermataPlanimetria(corpo, fiereOrdinate) {
   async function disegnaPadiglioni() {
     if (piante.length < 2) return;
     const noleggi = await api.noleggi({ fiera_id: fiera.id });
-    const conta = (id) => noleggi.filter((n) => n.segnaposto_allegato === id && n.stato !== 'annullato').length;
+    if (pianta) tvTrovate.set(aperta.id, pianta.tvSullaPianta());
+    const conta = contaTv({ noleggi, padLetti, trovate: tvTrovate, padFiera: fiera.padiglione });
     disegnaBottoniPadiglioni(barraPadiglioni, { piante, aperta, padLetti, conta, onScegli: apri });
   }
 
@@ -475,10 +478,11 @@ async function schermataPlanimetria(corpo, fiereOrdinate) {
     aperta = a;
     // Nell'indirizzo, così ricaricando si torna sullo stesso padiglione.
     history.replaceState(null, '', `${indirizzo('planimetria', fiera.id)}&pianta=${a.id}`);
+    // Prima di ridisegnare i bottoni: il conto della pianta vecchia non va dato a quella nuova.
+    pianta = null;
     disegnaPadiglioni();
     lato = tavolozza();
     lato.aggiorna(apparecchi);
-    pianta = null;
     pianta = await apriPianta({
       fiera,
       allegato: a,
@@ -495,14 +499,20 @@ async function schermataPlanimetria(corpo, fiereOrdinate) {
         dettagli: (id) => dettagliApparecchio(apparecchi.find((x) => x.id === id), finestra),
       },
     });
-    if (pianta?.padiglione && !padLetti.has(a.id)) {
-      padLetti.set(a.id, pianta.padiglione);
-      disegnaPadiglioni();
-    }
+    if (pianta?.padiglione && !padLetti.has(a.id)) padLetti.set(a.id, pianta.padiglione);
+    // Ora che la pianta è letta, il suo bottone porta le TV contate davvero.
+    disegnaPadiglioni();
   }
 
   aggiornaLiberi();
-  await apri(allegato);
+  // Senza una planimetria scelta nell'indirizzo, si apre quella con più TV.
+  let primaDaAprire = allegato;
+  if (piante.length > 1 && !parametri().get('pianta')) {
+    await leggiPadiglioni(piante, padLetti);
+    const conta = contaTv({ noleggi: await api.noleggi({ fiera_id: fiera.id }), padLetti, trovate: tvTrovate, padFiera: fiera.padiglione });
+    primaDaAprire = [...piante].sort((x, y) => conta(y) - conta(x))[0];
+  }
+  await apri(primaDaAprire);
 }
 
 /** Popup di un apparecchio della lista: cos'è, quanti ne restano e chi ha gli altri. */

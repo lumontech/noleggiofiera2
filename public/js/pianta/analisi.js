@@ -43,12 +43,9 @@ async function testiConCodici(pagina, vista) {
   const testi = [];
   // Il padiglione della pagina: la scritta "PAD 6" / "Padiglione 6" più grande,
   // che di solito è il titolo della pianta.
-  let pad = null;
+  const pad = padiglioneDelTesto(contenuto);
   for (const el of contenuto.items) {
     if (!el.str || !el.str.trim()) continue;
-    const numeroPad = padiglione(el.str.replace(/[_-]/g, ' '));
-    const grandezza = Math.hypot(el.transform[2], el.transform[3]) || el.height || 0;
-    if (numeroPad && (!pad || grandezza > pad.grandezza)) pad = { numero: numeroPad, grandezza };
     const codici = codiciStand(el.str);
     if (!codici.length) continue;
     // Gli angoli del testo seguono la sua direzione: vale anche per le
@@ -70,7 +67,19 @@ async function testiConCodici(pagina, vista) {
       ]),
     });
   }
-  return { testi, padiglione: pad?.numero || null };
+  return { testi, padiglione: pad };
+}
+
+/** Il padiglione di una pagina: la scritta "PAD 6" / "Padiglione 6" più grande (di solito il titolo). */
+export function padiglioneDelTesto(contenuto) {
+  let pad = null;
+  for (const el of contenuto.items) {
+    if (!el.str || !el.str.trim()) continue;
+    const numeroPad = padiglione(el.str.replace(/[_-]/g, ' '));
+    const grandezza = Math.hypot(el.transform[2], el.transform[3]) || el.height || 0;
+    if (numeroPad && (!pad || grandezza > pad.grandezza)) pad = { numero: numeroPad, grandezza };
+  }
+  return pad?.numero || null;
 }
 
 /**

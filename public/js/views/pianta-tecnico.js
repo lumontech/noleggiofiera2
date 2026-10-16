@@ -5,7 +5,7 @@
 
 import { api } from '../api.js';
 import { apriPianta } from '../pianta/visore.js';
-import { disegnaBottoniPadiglioni } from '../pianta/padiglioni.js';
+import { disegnaBottoniPadiglioni, contaTv, leggiPadiglioni } from '../pianta/padiglioni.js';
 import { standInColonne } from '../pianta/stand.js';
 import { compito, datiPerTecnico, perStand } from './installazioni.js';
 import {
@@ -122,9 +122,11 @@ export default async function vistaPiantaTecnico({ corpo }) {
   }
 
   const padLetti = new Map();
-  const conta = (id) => fiera.installazioni.filter((n) => n.segnaposto_allegato === id).length;
-  // Senza una scelta precisa, si apre la planimetria con più monitor sopra.
-  const piuPiena = [...piante].sort((x, y) => conta(y.id) - conta(x.id))[0];
+  const tvTrovate = new Map();
+  const conta = contaTv({ noleggi: fiera.installazioni, padLetti, trovate: tvTrovate, padFiera: fiera.padiglione });
+  if (piante.length > 1) await leggiPadiglioni(piante, padLetti);
+  // Senza una scelta precisa, si apre la planimetria con più TV.
+  const piuPiena = [...piante].sort((x, y) => conta(y) - conta(x))[0];
   let aperta = piante.find((a) => a.id === Number(parametri().get('pianta'))) || piuPiena;
 
   async function apri(a) {
@@ -143,11 +145,11 @@ export default async function vistaPiantaTecnico({ corpo }) {
     });
     if (pianta?.padiglione) {
       colonna.padiglione(pianta.padiglione);
-      if (!padLetti.has(a.id)) {
-        padLetti.set(a.id, pianta.padiglione);
-        if (piante.length > 1) disegnaBottoniPadiglioni(barraPadiglioni, { piante, aperta, padLetti, conta, onScegli: apri });
-      }
+      if (!padLetti.has(a.id)) padLetti.set(a.id, pianta.padiglione);
     }
+    // Ora che la pianta è letta, il suo bottone porta le TV contate davvero.
+    if (pianta) tvTrovate.set(a.id, pianta.tvSullaPianta());
+    if (piante.length > 1) disegnaBottoniPadiglioni(barraPadiglioni, { piante, aperta, padLetti, conta, onScegli: apri });
   }
   await apri(aperta);
 }

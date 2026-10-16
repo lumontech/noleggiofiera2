@@ -42,7 +42,7 @@ function contenutoStand(g) {
 const SOGLIA_TRASCINAMENTO = 5;
 
 let pdfjsCaricato = null;
-function caricaPdfjs() {
+export function caricaPdfjs() {
   // Si scarica solo la prima volta che si apre una pianta in PDF.
   pdfjsCaricato ||= import(PDFJS).then((modulo) => {
     modulo.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
@@ -970,5 +970,13 @@ export async function apriPianta({
   aggiornaTutto();
   await disegnaPagina();
   if (richiesto) evidenzia(richiesto, true);
-  return { ricarica: ricaricaDati, padiglione: padDellaPagina(stato.pagina) };
+  // Le TV che stanno su questa planimetria: negli stand trovati o messe a mano, senza contarle due volte.
+  const tvSullaPianta = () => {
+    const ids = new Set(stato.segnaposti.map((sp) => sp.noleggio_id));
+    for (const g of stato.gruppi) if (g.spazi.length) g.noleggi.forEach((n) => ids.add(n.id));
+    return [...ids].map((id) => noleggiPerId.get(id))
+      .filter((n) => n && SCHERMI.includes(n.prodotto_categoria))
+      .reduce((t, n) => t + n.quantita, 0);
+  };
+  return { ricarica: ricaricaDati, padiglione: padDellaPagina(stato.pagina), tvSullaPianta };
 }

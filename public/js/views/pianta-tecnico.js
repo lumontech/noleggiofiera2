@@ -1,13 +1,15 @@
 // La Planimetria del tecnico: la stessa schermata della Planimetria
 // dell'ufficio, in sola lettura. A sinistra, al posto dei monitor liberi da
-// trascinare, il riepilogo e i monitor da installare: toccandone uno lo si
-// trova sulla pianta. Dal canale del tecnico: nessun prezzo arriva fin qui.
+// trascinare, cosa manca da installare stallo per stallo: toccandone uno lo
+// si trova sulla pianta. Dal canale del tecnico: nessun prezzo arriva fin qui.
 
 import { api } from '../api.js';
 import { apriPianta } from '../pianta/visore.js';
 import { disegnaBottoniPadiglioni, contaTv, leggiPadiglioni } from '../pianta/padiglioni.js';
 import { standInColonne } from '../pianta/stand.js';
-import { compito, datiPerTecnico, perStand } from './installazioni.js';
+import {
+  compito, conPiantaneNelTv, datiPerTecnico, perStallo,
+} from './installazioni.js';
 import {
   h, monta, vuoto, numero, nomeBreve, intervalloDate, oggiISO, idProdotto,
   select, etichettaMontaggio, eSchermo,
@@ -15,71 +17,59 @@ import {
 
 const parametri = () => new URLSearchParams(location.hash.split('?')[1] || '');
 
-/** La colonna a sinistra: riepilogo in cima, poi i monitor stand per stand. */
+/**
+ * La colonna a sinistra: cosa manca da installare (o da ritirare), stallo per
+ * stallo. Quello già installato non c'è: sulla pianta si vede comunque.
+ */
 function colonnaTecnico(fiera) {
   const radice = h('div', { class: 'tav' });
   let soloPad = null;
   let tutti = false;
 
   function disegna() {
-    const righe = fiera.installazioni;
-    const pezzi = (classe) => righe.filter((n) => compito(n, fiera).classe === classe).reduce((t, n) => t + n.quantita, 0);
+    const mancano = conPiantaneNelTv(fiera.installazioni)
+      .map((n) => ({ ...n, compito: compito(n, fiera) }))
+      .filter((n) => n.compito);
+    const pezzi = (classe) => mancano.filter((n) => n.compito.classe === classe).reduce((t, n) => t + n.quantita, 0);
     // Del padiglione aperto, se si sa qual è; quelli senza padiglione restano sempre.
-    const delPad = (g) => {
-      const pad = standInColonne(g.stand, fiera.padiglione, g.padiglione).padiglione;
-      return tutti || !soloPad || !pad || String(pad) === String(soloPad);
-    };
-    const gruppi = perStand(righe);
-    const visibili = gruppi.filter(delPad);
-    const nascosti = gruppi.length - visibili.length;
-
-    // Cosa portare, modello per modello.
-    const modelli = new Map();
-    for (const n of righe) {
-      const nome = `${nomeBreve({ nome: n.prodotto_nome, marca: n.prodotto_marca, pollici: n.prodotto_pollici })}`
-        + (n.prodotto_codice ? ` ${idProdotto(n.prodotto_codice)}` : '');
-      modelli.set(nome, (modelli.get(nome) || 0) + n.quantita);
-    }
+    const delPad = (g) => tutti || !soloPad || !g.padiglione || String(g.padiglione) === String(soloPad);
+    const stalli = perStallo(mancano, fiera);
+    const visibili = stalli.filter(delPad);
+    const nascosti = stalli.length - visibili.length;
 
     monta(radice,
       h('div', { class: 'tav-testa' },
-        h('strong', {}, 'Da installare'),
-        h('p', {}, intervalloDate(fiera.data_inizio, fiera.data_fine), fiera.citta ? ` · ${fiera.citta}` : ''),
+        h('strong', {}, 'Cosa manca'),
+        h('p', {}, intervalloDate(fiera.data_inizio, fiera.data_fine)),
         h('div', { class: 'tav-numeri' },
-          h('span', { class: 'tav-numero tav-numero--da-fare' }, h('strong', {}, numero(pezzi('da-fare'))), 'da installare'),
-          h('span', { class: 'tav-numero tav-numero--fatto' }, h('strong', {}, numero(pezzi('fatto'))), 'installati'),
+          pezzi('da-fare') ? h('span', { class: 'tav-numero tav-numero--da-fare' }, h('strong', {}, numero(pezzi('da-fare'))), 'da installare') : null,
           pezzi('ritiro') ? h('span', { class: 'tav-numero tav-numero--ritiro' }, h('strong', {}, numero(pezzi('ritiro'))), 'da ritirare') : null,
-          h('span', { class: 'tav-numero' }, h('strong', {}, numero(gruppi.length)), 'stand')),
-        h('details', { class: 'tav-portare' },
-          h('summary', {}, 'Cosa portare'),
-          h('ul', {}, [...modelli.entries()].sort((a, b) => b[1] - a[1])
-            .map(([nome, q]) => h('li', {}, h('strong', {}, `${q}×`), ` ${nome}`))))),
+          !mancano.length ? h('span', { class: 'tav-numero tav-numero--fatto' }, h('strong', {}, '✓'), 'tutto installato') : null)),
       h('div', { class: 'tav-elenco' },
         soloPad && nascosti ? h('p', { class: 'tav-filtro' },
           tutti ? 'Tutti i padiglioni. ' : `Solo PAD ${soloPad}. `,
           h('button', { type: 'button', class: 'tav-link', onclick: () => { tutti = !tutti; disegna(); } },
-            tutti ? `Solo PAD ${soloPad}` : `Mostra tutti (${numero(nascosti)} stand in altri padiglioni)`)) : null,
-        !visibili.length ? h('p', { class: 'pianta__attesa' }, 'Nessun monitor su questo padiglione.') : null,
+            tutti ? `Solo PAD ${soloPad}` : `Mostra tutti (${numero(nascosti)} stalli in altri padiglioni)`)) : null,
+        mancano.length && !visibili.length ? h('p', { class: 'pianta__attesa' }, 'Niente da fare su questo padiglione.') : null,
         visibili.map((g) => {
           const posto = standInColonne(g.stand, fiera.padiglione, g.padiglione);
           return h('section', { class: 'tav-stand' },
             h('h3', {}, posto.stand ? `Stand ${posto.stand}` : 'Senza stand',
               posto.padiglione ? h('span', {}, ` · PAD ${posto.padiglione}`) : null),
-            h('p', { class: 'tav-stand__cliente' }, g.cliente || 'Cliente non indicato'),
-            h('ul', {}, g.righe.map((n) => {
-              const c = compito(n, fiera);
-              return h('li', {
-                class: 'tav-voce tav-voce--tecnico',
-                dataset: { noleggio: n.id },
-                title: 'Tocca per vederlo sulla pianta',
-              },
-              h('span', { class: 'tav-voce__nome' },
-                h('strong', {}, `${n.quantita > 1 ? `${n.quantita}× ` : ''}${nomeBreve({ nome: n.prodotto_nome, marca: n.prodotto_marca, pollici: n.prodotto_pollici })}`),
-                h('span', {}, [idProdotto(n.prodotto_codice),
-                  eSchermo(n.prodotto_categoria) ? (n.montaggio ? etichettaMontaggio(n.montaggio).toLowerCase() : 'montaggio da definire') : null,
-                ].filter(Boolean).join(' · '))),
-              h('span', { class: `installa__compito installa__compito--${c.classe}` }, c.testo));
-            })));
+            h('p', { class: 'tav-stand__cliente' }, g.cliente || 'Espositore non indicato'),
+            h('ul', {}, g.righe.map((n) => h('li', {
+              class: 'tav-voce tav-voce--tecnico',
+              dataset: { noleggio: n.id },
+              title: 'Tocca per vederlo sulla pianta',
+            },
+            h('span', { class: 'tav-voce__nome' },
+              h('strong', {}, `${n.quantita > 1 ? `${n.quantita}× ` : ''}${nomeBreve({ nome: n.prodotto_nome, marca: n.prodotto_marca, pollici: n.prodotto_pollici })}`),
+              h('span', {}, [idProdotto(n.prodotto_codice),
+                // Il montaggio solo se deciso; la piantana abbinata sta col suo TV.
+                eSchermo(n.prodotto_categoria) && n.montaggio ? etichettaMontaggio(n.montaggio).toLowerCase() : null,
+                n.piantane.length ? `piantana ${n.piantane.map((p) => idProdotto(p.prodotto_codice)).join(', ')}` : null,
+              ].filter(Boolean).join(' · '))),
+            h('span', { class: `installa__compito installa__compito--${n.compito.classe}` }, n.compito.testo)))));
         })));
   }
   disegna();

@@ -38,9 +38,9 @@ const SEZIONI_AMMINISTRATORE = [
 // Il tecnico ha una sezione sola: il resto dell'API gli è comunque chiuso dal server.
 const SEZIONI_TECNICO = [
   { id: 'planimetria', titolo: 'Planimetria', icona: '◫', vista: vistaPiantaTecnico,
-    descrizione: 'La pianta della fiera con i monitor da installare. Tocca uno stand o un monitor per i dettagli.' },
-  { id: 'installazioni', titolo: 'Installazioni', icona: '▣', vista: vistaInstallazioni,
-    descrizione: 'Cosa montare e in quale stand. Apri la pianta per vedere dove.' },
+    descrizione: 'La pianta con gli stalli e, a lato, cosa manca. Tocca uno stand o un monitor per i dettagli.' },
+  { id: 'installazioni', titolo: 'Cosa manca', icona: '▣', vista: vistaInstallazioni,
+    descrizione: 'Stallo per stallo, cosa c\'è ancora da installare o da ritirare.' },
 ];
 
 // L'organizzatore di fiera: le sue fiere e le richieste di monitor.

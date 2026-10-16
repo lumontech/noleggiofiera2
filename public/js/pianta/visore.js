@@ -180,8 +180,9 @@ export async function apriPianta({
   const suTasto = (e) => {
     if (e.key !== 'Escape') return;
     if (!radice.isConnected) { chiudi(); return; }
-    // Con un popup aperto, Esc chiude il popup e basta.
-    if (document.querySelector('#modale-host .modale__sfondo')) return;
+    // Con un popup aperto dalla pianta, Esc chiude il popup e basta (la
+    // finestra da cui si è aperta la pianta, sotto, non conta).
+    if (document.querySelector('#modale-host .modale__sfondo--sopra-pianta')) return;
     if (incorporata && !stato.posiziona) return;
     e.stopImmediatePropagation();
     if (stato.posiziona) annullaPosizionamento();
@@ -626,8 +627,10 @@ export async function apriPianta({
         h('dl', { class: 'scheda-app' },
           riga('Cliente', n.cliente, 'da indicare'),
           riga('Stand', [n.padiglione ? `Pad. ${n.padiglione}` : null, n.stand].filter(Boolean).join(' · '), 'da indicare'),
-          riga('Montaggio', n.montaggio ? etichettaMontaggio(n.montaggio) : '', 'da definire'),
+          // Al tecnico il montaggio solo se deciso, e anche le altre note (es. "montaggio verticale").
+          !solaLettura || n.montaggio ? riga('Montaggio', n.montaggio ? etichettaMontaggio(n.montaggio) : '', 'da definire') : null,
           n.note_tecnico ? riga('Note per il tecnico', n.note_tecnico) : null,
+          solaLettura && n.note_altre ? riga('Note', n.note_altre) : null,
           riga('Date', intervalloDate(n.data_inizio, n.data_fine)),
           h('div', { class: 'scheda-app__riga' }, h('dt', {}, 'Stato'), h('dd', {}, badge(n.stato)))),
         togli ? h('div', { class: 'scheda-app__altro' }, togli) : null,
@@ -660,7 +663,8 @@ export async function apriPianta({
       },
       h('span', { class: 'stand-app__nome' },
         h('strong', {}, `${n.quantita > 1 ? `${n.quantita}× ` : ''}${nomeBreve({ nome: n.prodotto_nome, marca: n.prodotto_marca, pollici: n.prodotto_pollici })}`),
-        h('span', {}, [idProdotto(n.prodotto_codice), n.montaggio ? etichettaMontaggio(n.montaggio) : 'montaggio da definire',
+        h('span', {}, [idProdotto(n.prodotto_codice),
+          n.montaggio ? etichettaMontaggio(n.montaggio) : (solaLettura ? null : 'montaggio da definire'),
           n.note_tecnico].filter(Boolean).join(' · '))),
       badge(n.stato),
       h('span', { class: 'stand-app__vai', 'aria-hidden': 'true' }, '›')));

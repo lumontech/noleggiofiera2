@@ -1180,7 +1180,6 @@ body.pianta-aperta { overflow: hidden; }
   display: inline-block; margin-right: 0.4rem; padding: 0.05rem 0.45rem; border-radius: 6px;
   background: var(--inchiostro); color: var(--bianco); font-size: 0.8rem; vertical-align: 0.1em;
 }
-.installa__misure { display: block; margin-top: 0.1rem; font-size: 0.76rem; color: var(--grigio-500); }
 .prodotto__oggi--libero { color: var(--verde); }
 .prodotto__oggi--fuori { color: var(--ambra); }
 .prodotto__oggi--fermo { color: var(--rosso); }
@@ -1523,7 +1522,7 @@ body.pianta-aperta { overflow: hidden; }
 .scheda-app dd { margin: 0; font-weight: 600; }
 .scheda-app__mancante { color: #b45309; font-weight: 500 !important; font-style: italic; }
 .scheda-app__altro { margin-top: 0.75rem; }
-body.pianta-aperta .modale__sfondo { z-index: 60; }
+.modale__sfondo--sopra-pianta { z-index: 60; }
 
 /* Padiglioni: una planimetria per bottone. */
 .padiglioni { display: flex; gap: 0.4rem; flex-wrap: wrap; }
@@ -1626,3 +1625,23 @@ body.pianta-aperta .modale__sfondo { z-index: 60; }
   .tav-testa { position: static; }
   .pianta--disposizione .pianta__tavolozza { max-height: 45vh; }
 }
+
+/* Tecnico: cosa manca. */
+.installa__tutto { margin: 0.3rem 0 0; font-weight: 600; color: var(--verde); }
+.installa__piantana { font-size: 0.8rem; color: var(--grigio-500); }
+.installa__cliente { flex: 1; min-width: 0; }
+
+/* Scarica PDF: i noleggi da mettere, con le caselle per toglierli. */
+.pdf-noleggi { margin: 0.25rem 0 0.75rem; }
+.pdf-noleggi[hidden] { display: none; }
+.pdf-noleggi__testa { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.pdf-noleggi__conta { margin-left: 0.3rem; font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--grigio-500); }
+.pdf-noleggi__elenco { margin-top: 0.4rem; max-height: 300px; overflow-y: auto; border: 1px solid var(--grigio-200); border-radius: var(--raggio-s); padding: 0.4rem 0.6rem; }
+.pdf-noleggi__nome-fiera { margin: 0.4rem 0 0.2rem; font-size: 0.72rem; font-weight: 650; text-transform: uppercase; letter-spacing: 0.05em; color: var(--azzurro); }
+.pdf-noleggi__cliente { padding: 0.3rem 0; border-bottom: 1px solid var(--grigio-100); }
+.pdf-noleggi__cliente:last-child { border-bottom: 0; }
+.pdf-noleggi__voce { display: flex; gap: 0.5rem; align-items: flex-start; padding: 0.15rem 0; font-size: 0.88rem; cursor: pointer; }
+.pdf-noleggi__voce input { margin-top: 0.2rem; flex: none; }
+.pdf-noleggi__voce small { color: var(--grigio-500); }
+.pdf-noleggi__voci { padding-left: 1.5rem; }
+.pdf-noleggi__vuoto { margin: 0.3rem 0; font-size: 0.85rem; color: var(--grigio-500); }

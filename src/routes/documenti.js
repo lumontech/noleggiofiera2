@@ -3,7 +3,7 @@
 import express, { Router } from 'express';
 import { intero } from '../lib/domain.js';
 import { scriviCatalogo } from '../lib/catalogo-pdf.js';
-import { scriviNoleggi } from '../lib/noleggi-pdf.js';
+import { scriviNoleggi, noleggiPerDocumento } from '../lib/noleggi-pdf.js';
 import {
   leggiIntestazione, salvaIntestazione, salvaLogo, eliminaLogo, percorsoLogo,
 } from '../lib/intestazione.js';
@@ -39,7 +39,15 @@ router.get('/noleggi.pdf', (req, res) => {
   res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(`${nome}.pdf`)}`);
   res.setHeader('Cache-Control', 'no-store');
   const disponibile = req.query.disponibile === '1' || req.query.disponibile === 'true';
-  scriviNoleggi(res, { prezzi, fiera, disponibile });
+  // ?escludi=4,9,12: i noleggi tolti a mano prima di scaricare.
+  const escludi = new Set(String(req.query.escludi || '').split(',').map(Number).filter((n) => Number.isInteger(n) && n > 0));
+  scriviNoleggi(res, { prezzi, fiera, disponibile, escludi });
+});
+
+// Cosa finirebbe nel PDF dei noleggi, per scegliere cosa togliere.
+router.get('/noleggi', (req, res) => {
+  const fiera = req.query.fiera_id ? trovaFiera(intero(req.query.fiera_id, 'fiera', { min: 1 })) : null;
+  res.json(noleggiPerDocumento(fiera));
 });
 
 router.get('/intestazione', (_req, res) => res.json(leggiIntestazione()));

@@ -1,46 +1,48 @@
-// La schermata del tecnico: fiera per fiera, cosa installare e in quale stand,
-// con la pianta che mostra dove. I dati arrivano da /api/tecnico, che non
-// contiene prezzi: qui non c'è nulla da nascondere, perché non arriva.
+// "Cosa manca", la seconda schermata del tecnico (la prima è la Planimetria):
+// per ogni fiera, stallo per stallo (padiglione e stand), cosa c'è ancora da
+// installare o da ritirare, con "Dov'è?" che lo mostra sulla pianta.
+// I dati arrivano da /api/tecnico, che non contiene prezzi.
 
 import { api } from '../api.js';
 import { apriPianta } from '../pianta/visore.js';
 import { codiciStand, standInColonne } from '../pianta/stand.js';
 import {
   h, monta, vuoto, numero, nomeBreve, intervalloDate, dataLunga, addGiorni, oggiISO,
-  idProdotto,
-  badgeMontaggio, eSchermo,
+  idProdotto, badgeMontaggio, eSchermo,
 } from '../ui.js';
 
-/** Cosa deve fare il tecnico con un noleggio, detto con le sue parole. */
+/** Cosa resta da fare su un noleggio; null se è già installato e la fiera è in corso. */
 export function compito(n, fiera) {
   if (n.stato === 'prenotato') return { testo: 'Da installare', classe: 'da-fare' };
   if (fiera.data_fine < oggiISO()) return { testo: 'Da ritirare', classe: 'ritiro' };
-  return { testo: 'Installato', classe: 'fatto' };
+  return null;
 }
 
-/** Le installazioni di una fiera raggruppate per stand (stesso cliente e stesso stand). */
-export function perStand(installazioni) {
+/** La piantana abbinata a un TV non fa riga a sé: sta nella riga del TV. */
+export function conPiantaneNelTv(righe) {
+  const ids = new Set(righe.map((n) => n.id));
+  return righe
+    .filter((n) => !(n.abbinato_a && ids.has(n.abbinato_a)))
+    .map((n) => ({ ...n, piantane: righe.filter((p) => p.abbinato_a === n.id) }));
+}
+
+/** Gli stalli: noleggi raggruppati per padiglione, stand ed espositore, in ordine di giro. */
+export function perStallo(installazioni, fiera) {
   const gruppi = new Map();
   for (const n of installazioni) {
-    const chiave = `${(n.padiglione || '').toLowerCase()}|${(n.stand || '').toLowerCase()}|${(n.cliente || '').toLowerCase()}`;
-    if (!gruppi.has(chiave)) gruppi.set(chiave, { stand: n.stand, padiglione: n.padiglione, cliente: n.cliente, righe: [] });
+    const posto = standInColonne(n.stand, fiera.padiglione, n.padiglione);
+    const chiave = `${posto.padiglione}|${(n.stand || '').toLowerCase()}|${(n.cliente || '').toLowerCase()}`;
+    if (!gruppi.has(chiave)) gruppi.set(chiave, { stand: n.stand, padiglione: posto.padiglione, cliente: n.cliente, righe: [] });
     gruppi.get(chiave).righe.push(n);
   }
-  // Un padiglione alla volta, poi stand per stand.
-  const pad = (g) => standInColonne(g.stand, '', g.padiglione).padiglione || '~';
   return [...gruppi.values()].sort((a, b) => {
-    const pa = pad(a).localeCompare(pad(b), 'it', { numeric: true });
+    const pa = (a.padiglione || '~').localeCompare(b.padiglione || '~', 'it', { numeric: true });
     if (pa) return pa;
     const ca = codiciStand(a.stand)[0] || '~';
     const cb = codiciStand(b.stand)[0] || '~';
     return ca.localeCompare(cb, 'it', { numeric: true }) || (a.cliente || '').localeCompare(b.cliente || '', 'it');
   });
 }
-
-const testoRicerca = (fiera, g) => [
-  fiera.nome, fiera.citta, fiera.luogo, g.stand, g.padiglione && `pad ${g.padiglione}`, g.cliente,
-  ...g.righe.flatMap((n) => [n.prodotto_nome, n.prodotto_marca, idProdotto(n.prodotto_codice)]),
-].filter(Boolean).join(' ').toLowerCase();
 
 /** I dati della pianta dal canale del tecnico: niente prezzi. */
 export const datiPerTecnico = (fiera, allegato) => async () => {
@@ -62,105 +64,68 @@ function apriLaPianta(fiera, allegato, stand = '') {
   });
 }
 
-/** "123 × 72 cm · con base 77 cm · 11 kg · VESA 200x400": quello che serve per montarlo. */
-function misure(n) {
-  const cm = (mm) => String(Math.round(mm / 10));
-  return [
-    n.prodotto_larghezza_mm && n.prodotto_altezza_mm
-      ? `${cm(n.prodotto_larghezza_mm)} × ${cm(n.prodotto_altezza_mm)} cm` : null,
-    n.prodotto_altezza_base_mm ? `con base ${cm(n.prodotto_altezza_base_mm)} cm` : null,
-    n.prodotto_peso_kg ? `${String(n.prodotto_peso_kg).replace('.', ',')} kg` : null,
-    n.prodotto_vesa ? `VESA ${n.prodotto_vesa}` : null,
-  ].filter(Boolean).join(' · ');
+/** Un apparecchio da installare: modello, ID, come si monta, la sua piantana e le note. */
+function apparecchio(n, c) {
+  const piantane = n.piantane.map((p) => idProdotto(p.prodotto_codice)).filter(Boolean);
+  return h('li', {},
+    h('span', { class: 'installa__apparecchio' },
+      n.quantita > 1 ? h('strong', {}, `${n.quantita}× `) : null,
+      nomeBreve({ nome: n.prodotto_nome, marca: n.prodotto_marca, pollici: n.prodotto_pollici }),
+      n.prodotto_codice ? h('span', { class: 'installa__codice' }, idProdotto(n.prodotto_codice)) : null,
+      // Il montaggio solo se deciso: "da definire" non dice niente a chi monta.
+      eSchermo(n.prodotto_categoria) && n.montaggio
+        ? h('span', { class: 'installa__montaggio' }, badgeMontaggio(n.montaggio),
+          n.piantane.length ? h('span', { class: 'installa__piantana' },
+            ` ${piantane.length > 1 ? 'piantane' : 'piantana'} ${piantane.join(', ')}`) : null)
+        : null,
+      n.note_tecnico ? h('span', { class: 'installa__nota' }, n.note_tecnico) : null,
+      n.note_altre ? h('span', { class: 'installa__nota' }, n.note_altre) : null),
+    h('span', { class: `installa__compito installa__compito--${c.classe}` }, c.testo));
 }
 
-function schedaStand(g, fiera) {
-  const tv = g.righe.reduce((t, n) => t + n.quantita, 0);
-  // Se la nota è la stessa per tutto lo stand, si scrive una volta sola.
-  const note = [...new Set(g.righe.map((n) => n.note_tecnico || ''))];
-  const notaComune = note.length === 1 && note[0] ? note[0] : null;
+function schedaStallo(g, fiera) {
   const planimetria = fiera.allegati[0];
-  const posto = standInColonne(g.stand, fiera.padiglione, g.padiglione);
   return h('li', { class: 'installa__stand' },
     h('div', { class: 'installa__stand-testa' },
       h('div', { class: 'installa__numero' },
-        h('span', { class: 'installa__etichetta' }, posto.padiglione ? `Pad. ${posto.padiglione} · Stand` : 'Stand'),
+        h('span', { class: 'installa__etichetta' }, g.padiglione ? `Pad. ${g.padiglione} · Stand` : 'Stand'),
         h('strong', {}, g.stand || '—')),
-      h('div', { class: 'installa__cliente' },
-        h('strong', {}, g.cliente || 'Cliente non indicato'),
-        h('span', {}, `${numero(tv)} ${tv === 1 ? 'apparecchio' : 'apparecchi'}`)),
+      h('strong', { class: 'installa__cliente' }, g.cliente || 'Espositore non indicato'),
       planimetria && g.stand ? h('button', {
         class: 'btn btn--mini',
         onclick: () => apriLaPianta(fiera, planimetria, g.stand),
       }, 'Dov\'è?') : null),
-    notaComune ? h('p', { class: 'installa__nota installa__nota--stand' }, notaComune) : null,
-    h('ul', { class: 'installa__apparecchi' }, g.righe.map((n) => {
-      const c = compito(n, fiera);
-      return h('li', {},
-        h('span', { class: 'installa__apparecchio' },
-          n.quantita > 1 ? h('strong', {}, `${n.quantita}× `) : null,
-          nomeBreve({ nome: n.prodotto_nome, marca: n.prodotto_marca, pollici: n.prodotto_pollici }),
-          n.prodotto_codice ? h('span', { class: 'installa__codice' }, idProdotto(n.prodotto_codice)) : null,
-          eSchermo(n.prodotto_categoria) ? h('span', { class: 'installa__montaggio' }, badgeMontaggio(n.montaggio)) : null,
-          misure(n) ? h('span', { class: 'installa__misure' }, misure(n)) : null,
-          n.note_tecnico && !notaComune ? h('span', { class: 'installa__nota' }, n.note_tecnico) : null,
-          n.note_altre ? h('span', { class: 'installa__nota' }, n.note_altre) : null),
-        h('span', { class: `installa__compito installa__compito--${c.classe}` }, c.testo));
-    })));
+    h('ul', { class: 'installa__apparecchi' }, g.righe.map((n) => apparecchio(n, n.compito))));
 }
 
-function schedaFiera(fiera, gruppi) {
-  const righe = gruppi.flatMap((g) => g.righe);
-  const conta = (classe) => righe.filter((n) => compito(n, fiera).classe === classe)
-    .reduce((t, n) => t + n.quantita, 0);
-  const daFare = conta('da-fare');
-  const daRitirare = conta('ritiro');
+function schedaFiera(fiera) {
+  const righe = conPiantaneNelTv(fiera.installazioni).map((n) => ({ ...n, compito: compito(n, fiera) }));
+  const mancano = righe.filter((n) => n.compito);
+  const pezzi = (classe) => mancano.filter((n) => n.compito.classe === classe).reduce((t, n) => t + n.quantita, 0);
+  const daFare = pezzi('da-fare');
+  const daRitirare = pezzi('ritiro');
+  const fatti = righe.filter((n) => !n.compito).reduce((t, n) => t + n.quantita, 0);
   const montaggio = fiera.giorni_allestimento > 0 ? addGiorni(fiera.data_inizio, -fiera.giorni_allestimento) : null;
-  const dove = [fiera.luogo, fiera.citta, fiera.padiglione && `pad. ${fiera.padiglione}`].filter(Boolean).join(' · ');
 
   return h('section', { class: 'installa' },
     h('header', { class: 'installa__testa' },
       h('div', {},
         h('h2', {}, fiera.nome),
         h('p', { class: 'installa__quando' }, intervalloDate(fiera.data_inizio, fiera.data_fine),
-          montaggio ? h('span', {}, ` · montaggio dal ${dataLunga(montaggio)}`) : null),
-        dove ? h('p', { class: 'installa__dove' }, dove) : null),
+          montaggio ? h('span', {}, ` · montaggio dal ${dataLunga(montaggio)}`) : null)),
       h('div', { class: 'installa__conteggi' },
         daFare ? h('span', { class: 'installa__compito installa__compito--da-fare' }, `${numero(daFare)} da installare`) : null,
         daRitirare ? h('span', { class: 'installa__compito installa__compito--ritiro' }, `${numero(daRitirare)} da ritirare`) : null,
-        !daFare && !daRitirare ? h('span', { class: 'installa__compito installa__compito--fatto' }, 'Tutto installato') : null)),
-    fiera.allegati.length ? h('div', { class: 'installa__piante' },
-      fiera.allegati.map((a) => h('button', {
-        class: 'btn btn--primario btn--mini',
-        onclick: () => apriLaPianta(fiera, a),
-      }, fiera.allegati.length > 1 ? `Pianta con TV · ${a.nome}` : 'Pianta con TV')))
-      : h('p', { class: 'installa__senza-pianta' }, 'Planimetria non ancora caricata dall\'ufficio.'),
-    h('ul', { class: 'installa__elenco' }, gruppi.map((g) => schedaStand(g, fiera))));
+        fatti ? h('span', { class: 'installa__compito installa__compito--fatto' }, `${numero(fatti)} già installati`) : null)),
+    mancano.length
+      ? h('ul', { class: 'installa__elenco' }, perStallo(mancano, fiera).map((g) => schedaStallo(g, fiera)))
+      : h('p', { class: 'installa__tutto' }, 'Niente: è tutto installato.'));
 }
 
 export default async function vistaInstallazioni({ corpo }) {
   const fiere = await api.installazioni();
-  if (!fiere.length) {
-    monta(corpo, vuoto('Nessuna installazione in programma',
-      'Quando l\'ufficio prenota dei televisori per una fiera, li trovi qui con stand e pianta.'));
-    return;
-  }
-
-  const cerca = h('input', {
-    class: 'controllo', type: 'search', placeholder: 'Cerca stand, cliente, fiera o ID…', 'aria-label': 'Cerca',
-  });
-  const elenco = h('div', { class: 'installazioni' });
-
-  const disegna = () => {
-    const q = cerca.value.trim().toLowerCase();
-    const sezioni = fiere.map((f) => {
-      const gruppi = perStand(f.installazioni).filter((g) => !q || testoRicerca(f, g).includes(q));
-      return gruppi.length ? schedaFiera(f, gruppi) : null;
-    }).filter(Boolean);
-    monta(elenco, sezioni.length ? sezioni : vuoto('Nessun risultato', 'Prova con un altro numero di stand o nome.'));
-  };
-  cerca.addEventListener('input', disegna);
-
-  monta(corpo, h('div', { class: 'filtri' }, cerca), elenco);
-  disegna();
+  monta(corpo, fiere.length
+    ? h('div', { class: 'installazioni' }, fiere.map(schedaFiera))
+    : vuoto('Nessuna installazione in programma',
+      'Quando l\'ufficio prenota del materiale per una fiera, lo trovi qui stallo per stallo.'));
 }

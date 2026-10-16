@@ -41,6 +41,8 @@ export const api = {
   eliminaUtente: (id) => richiesta('DELETE', `/api/utenti/${id}`),
 
   // Documenti e intestazione.
+  // I noleggi che finirebbero nel PDF, per togliere quelli da non mandare.
+  noleggiDocumento: (fieraId = '') => richiesta('GET', `/api/documenti/noleggi${fieraId ? `?fiera_id=${fieraId}` : ''}`),
   intestazione: () => richiesta('GET', '/api/documenti/intestazione'),
   salvaIntestazione: (d) => richiesta('PUT', '/api/documenti/intestazione', d),
   eliminaLogo: () => richiesta('DELETE', '/api/documenti/intestazione/logo'),

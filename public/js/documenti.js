@@ -1,5 +1,6 @@
 // "Scarica PDF": i documenti con l'intestazione dell'azienda.
-//   - Noleggi: per fiera, chi ha cosa e in quale stand (con o senza importi)
+//   - Noleggi: per fiera, chi ha cosa e in quale stand (con o senza importi);
+//     prima di scaricare si possono togliere i noleggi da non mandare
 //   - Materiale disponibile: il listino del parco, tutto o libero per una fiera
 
 import { api, caricaLogo, scaricaFile } from './api.js';
@@ -32,6 +33,74 @@ export async function apriDocumenti({ fieraId = '' } = {}) {
     h('span', {}, h('strong', {}, 'Aggiungi il materiale ancora disponibile'),
       h('small', {}, 'In fondo a ogni fiera, quello che è ancora libero nelle sue date: utile da girare all\'organizzatore.')));
 
+  // I noleggi da mettere nel PDF: tutti spuntati, si tolgono quelli da non
+  // mandare (es. un documento per un solo cliente). Per cliente, con una
+  // casella che li prende tutti.
+  const elencoNoleggi = h('div', { class: 'pdf-noleggi__elenco' });
+  const contaScelti = h('span', { class: 'pdf-noleggi__conta' });
+  const caselle = () => [...elencoNoleggi.querySelectorAll('input[data-noleggio]')];
+  const aggiornaConta = () => {
+    const tutte = caselle();
+    const scelte = tutte.filter((c) => c.checked).length;
+    contaScelti.textContent = `${scelte} di ${tutte.length}`;
+    // La casella del cliente è piena, vuota o a metà.
+    for (const gruppo of elencoNoleggi.querySelectorAll('.pdf-noleggi__cliente')) {
+      const sue = [...gruppo.querySelectorAll('input[data-noleggio]')];
+      const capo = gruppo.querySelector('input[data-cliente]');
+      const n = sue.filter((c) => c.checked).length;
+      capo.checked = n === sue.length;
+      capo.indeterminate = n > 0 && n < sue.length;
+    }
+  };
+  const tutti = (valore) => { caselle().forEach((c) => { c.checked = valore; }); aggiornaConta(); };
+  const sezioneNoleggi = h('div', { class: 'pdf-noleggi' },
+    h('div', { class: 'pdf-noleggi__testa' },
+      h('span', { class: 'campo__etichetta' }, 'Noleggi nel PDF ', contaScelti),
+      h('span', {},
+        h('button', { type: 'button', class: 'btn btn--mini', onclick: () => tutti(true) }, 'Tutti'), ' ',
+        h('button', { type: 'button', class: 'btn btn--mini', onclick: () => tutti(false) }, 'Nessuno'))),
+    h('small', { class: 'campo__aiuto' }, 'Togli la spunta a quelli da non mettere, per esempio se il PDF è per un solo cliente.'),
+    elencoNoleggi);
+
+  const voceNoleggio = (n) => h('label', { class: 'pdf-noleggi__voce' },
+    h('input', { type: 'checkbox', checked: true, 'data-noleggio': n.id, onchange: aggiornaConta }),
+    h('span', {}, n.apparecchio,
+      n.codice ? h('small', {}, ` · ${/^\d+$/.test(n.codice) ? `ID ${n.codice}` : n.codice}`) : null,
+      n.piantane ? h('small', {}, ` · con piantana`) : null,
+      (n.padiglione || n.stand) ? h('small', {}, ` · ${[n.padiglione && `pad. ${n.padiglione}`, n.stand && `stand ${n.stand}`].filter(Boolean).join(' · ')}`) : null));
+
+  let richiestaLista = 0;
+  const caricaNoleggi = async (fiera) => {
+    const numero = ++richiestaLista;
+    monta(elencoNoleggi, h('p', { class: 'pdf-noleggi__vuoto' }, 'Carico i noleggi…'));
+    const fiereDoc = await api.noleggiDocumento(fiera);
+    if (numero !== richiestaLista) return; // nel frattempo si è scelta un'altra fiera
+    const blocchi = fiereDoc.filter((f) => f.noleggi.length).map((f) => {
+      const clienti = new Map();
+      for (const n of f.noleggi) {
+        const chi = n.cliente || 'Cliente non indicato';
+        if (!clienti.has(chi)) clienti.set(chi, []);
+        clienti.get(chi).push(n);
+      }
+      return h('div', { class: 'pdf-noleggi__fiera' },
+        fiereDoc.length > 1 ? h('p', { class: 'pdf-noleggi__nome-fiera' }, f.nome) : null,
+        [...clienti.entries()].sort((a, b) => a[0].localeCompare(b[0], 'it')).map(([chi, voci]) => h('div', { class: 'pdf-noleggi__cliente' },
+          h('label', { class: 'pdf-noleggi__voce pdf-noleggi__voce--cliente' },
+            h('input', {
+              type: 'checkbox', checked: true, 'data-cliente': chi,
+              onchange: (e) => {
+                e.target.closest('.pdf-noleggi__cliente').querySelectorAll('input[data-noleggio]')
+                  .forEach((c) => { c.checked = e.target.checked; });
+                aggiornaConta();
+              },
+            }),
+            h('strong', {}, chi)),
+          h('div', { class: 'pdf-noleggi__voci' }, voci.map(voceNoleggio)))));
+    });
+    monta(elencoNoleggi, blocchi.length ? blocchi : h('p', { class: 'pdf-noleggi__vuoto' }, 'Nessun noleggio.'));
+    aggiornaConta();
+  };
+
   modale({
     titolo: 'Scarica PDF',
     sottotitolo: `Con l'intestazione di ${intestazione.ragione_sociale}.`,
@@ -46,6 +115,7 @@ export async function apriDocumenti({ fieraId = '' } = {}) {
         scelta('prezzi', '1', 'Con prezzi', 'Importi e totali, IVA esclusa.', true),
         scelta('prezzi', '0', 'Senza prezzi', 'Da dare al tecnico o all\'organizzatore.')),
       campoFiera,
+      sezioneNoleggi,
       casellaDisponibile,
       h('p', { class: 'pdf-intestazione' },
         intestazione.logo ? 'Intestazione con logo. ' : 'Intestazione senza logo. ',
@@ -55,6 +125,11 @@ export async function apriDocumenti({ fieraId = '' } = {}) {
       const parametri = new URLSearchParams({ prezzi: dati.prezzi });
       if (dati.fiera_id) parametri.set('fiera_id', dati.fiera_id);
       if (dati.tipo === 'noleggi' && dati.disponibile) parametri.set('disponibile', '1');
+      if (dati.tipo === 'noleggi') {
+        const tolti = caselle().filter((c) => !c.checked).map((c) => c.dataset.noleggio);
+        if (tolti.length && tolti.length === caselle().length) throw new Error('Hai tolto tutti i noleggi: spuntane almeno uno.');
+        if (tolti.length) parametri.set('escludi', tolti.join(','));
+      }
       const percorso = dati.tipo === 'materiale' ? 'materiale' : 'noleggi';
       await scaricaFile(`/api/documenti/${percorso}.pdf?${parametri}`, 'Documento.pdf');
       avviso('PDF scaricato.');
@@ -66,12 +141,16 @@ export async function apriDocumenti({ fieraId = '' } = {}) {
   const aggiornaAiuto = () => {
     const tipo = modulo.querySelector('input[name=tipo]:checked').value;
     casellaDisponibile.hidden = tipo !== 'noleggi';
+    sezioneNoleggi.hidden = tipo !== 'noleggi';
     aiutoFiera.textContent = tipo === 'materiale'
       ? 'Con una fiera, i pezzi liberi nelle sue date; senza, quelli liberi oggi.'
       : 'Con una fiera, tutti i suoi noleggi; altrimenti quelli delle fiere in programma.';
   };
   modulo.addEventListener('change', aggiornaAiuto);
   aggiornaAiuto();
+  // La lista dei noleggi segue la fiera scelta.
+  selFiera.addEventListener('change', () => caricaNoleggi(selFiera.value).catch((e) => avviso(e.message, 'errore')));
+  caricaNoleggi(selFiera.value).catch((e) => avviso(e.message, 'errore'));
 }
 
 export async function apriIntestazione() {

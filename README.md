@@ -165,20 +165,31 @@ disattiva, elimina.
 | Ruolo | Cosa vede |
 |---|---|
 | **Amministratore** | Tutto: prodotti, fiere, noleggi, importi, utenti. |
-| **Tecnico** | **Planimetria** (pianta con i monitor da installare e riepilogo) e **Installazioni**: fiera per fiera, quali apparecchi montare (con il codice INV), in quale stand e per quale cliente, e la **Pianta con TV** in sola lettura. **Nessun prezzo.** |
+| **Tecnico** | Solo l'essenziale, in due sezioni: **Planimetria** (la pianta con gli stalli e, a lato, cosa manca) e **Cosa manca** (stallo per stallo, cosa c'è da installare o da ritirare). **Nessun prezzo.** |
 | **Organizzatore fiera** | Solo **Le mie fiere**: le edizioni in programma delle fiere che gli assegni (es. Progecta → LTS e Pharmexpo). Da lì manda le **richieste di monitor** per gli espositori e vede se sono confermate. **Nessun prezzo.** |
 
-Il tecnico vede le edizioni in cui c'è materiale prenotato ("Da installare")
-o consegnato ("Installato", oppure "Da ritirare" a fiera finita); quando tutto
-è rientrato l'edizione sparisce dalla sua lista. Da ogni stand, **Dov'è?** apre
-la pianta con quello stand evidenziato. La schermata è pensata per il telefono.
+Il tecnico vede le edizioni in cui c'è materiale prenotato o consegnato;
+quando tutto è rientrato l'edizione sparisce dalla sua lista. Entra nella
+**Planimetria**; le sezioni sono due:
+
+- **Planimetria**: la pianta della fiera, in sola lettura, con gli stalli e i
+  monitor messi dall'ufficio; a lato cosa manca, stallo per stallo, del
+  padiglione aperto. Toccando uno stand o un monitor se ne vedono i dettagli.
+- **Cosa manca**: per ogni fiera, stallo per stallo (in ordine di padiglione
+  e stand), cosa c'è da installare o, a fiera finita, da ritirare: modello e
+  ID, montaggio se deciso, la piantana abbinata e le note. Quello già
+  installato non è in elenco: in alto c'è solo quanti sono. **Dov'è?** apre
+  la pianta con lo stallo evidenziato.
+
+Niente misure, pesi, ricerca o conteggi: sono cose che servono all'ufficio o
+all'allestitore, non a chi monta. La schermata è pensata per il telefono.
 
 Perché al tecnico non arrivi mai un prezzo, la separazione è fatta dal server,
 non dall'interfaccia:
 
 - il tecnico legge solo da `/api/tecnico`, che restituisce campi scelti uno per
-  uno (niente importi, niente note libere, dove un prezzo potrebbe essere
-  scritto a mano);
+  uno (niente importi; delle note libere solo le righe che non parlano di
+  soldi);
 - tutto il resto dell'API gli risponde 403, anche chiamandola a mano.
 
 Altre regole:
@@ -202,6 +213,10 @@ Due documenti, **con prezzi** o **senza prezzi**:
   all'organizzatore. Con la casella "Aggiungi il materiale ancora disponibile"
   (già spuntata) in fondo a ogni fiera c'è anche cosa è ancora libero nelle
   sue date: da girare all'organizzatore per fargli vedere cosa si può offrire.
+  Sotto la fiera c'è l'elenco dei noleggi che finiranno nel PDF, per cliente,
+  tutti spuntati: togli la spunta a quelli da non mettere (o a un cliente
+  intero), per esempio per fare un PDF per un solo cliente. La piantana
+  abbinata segue il suo TV.
 - **Materiale disponibile**: quello che si può offrire, un rigo per modello
   con misure, attacco VESA e pezzi liberi: nelle date di una fiera, o oggi se
   non se ne sceglie una. Quello già impegnato non compare.
@@ -549,7 +564,8 @@ e `/api/profilo/*`; il resto risponde 403.
 | `POST` | `/api/accesso` | Login con `{ utente, password }` (senza `utente` vale il primo amministratore). |
 | `POST` | `/api/profilo/password` | Cambio della propria password `{ attuale, nuova }`. Tutti i ruoli. |
 | `GET` `POST` `PUT` `DELETE` | `/api/utenti[/:id]` | Gestione utenti. Solo amministratori. |
-| `GET` | `/api/documenti/noleggi.pdf?prezzi=1&fiera_id=` | PDF dei noleggi di una fiera o di quelle in programma. |
+| `GET` | `/api/documenti/noleggi.pdf?prezzi=1&fiera_id=&escludi=` | PDF dei noleggi di una fiera o di quelle in programma, senza quelli in `escludi` (id separati da virgola). |
+| `GET` | `/api/documenti/noleggi?fiera_id=` | I noleggi che finirebbero nel PDF, per sceglierli. |
 | `GET` | `/api/documenti/materiale.pdf?prezzi=1&fiera_id=` | PDF del materiale, con o senza prezzi, tutto o libero per una fiera. |
 | `GET` `PUT` | `/api/documenti/intestazione` | Dati dell'intestazione dei documenti. |
 | `POST` `DELETE` | `/api/documenti/intestazione/logo` | Logo (PNG o JPG nel corpo). |
